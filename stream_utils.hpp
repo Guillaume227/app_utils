@@ -12,7 +12,7 @@ namespace app_utils
   string parseTypeName(string paramName, bool minimal = false);
   template<typename T>
   string typeName(bool minimal=false){
-    return parseTypeName(typeid(T).name(), minimmal);
+    return parseTypeName(typeid(T).name(), minimal);
   }
 
   template<typename T>
@@ -68,8 +68,7 @@ namespace app_utils
         StreamPrinter<TF>::toStream(m_out, f);
         if constexpr(sizeof...(rest) == 0)
         {
-          if(m_writeLine)
-          {
+          if(m_writeLine){
             m_out << std::endl;
           }
           return m_out;
@@ -89,7 +88,7 @@ namespace app_utils
       static string writeStr(Ts&&... args)
       {
         std::ostringstream oss;
-        StreamWriter(oss).write<Ts...>(std::forward(args)...);
+        StreamWriter(oss).write<Ts...>(std::forward<Ts>(args)...);
         return oss.str();
       }
     };

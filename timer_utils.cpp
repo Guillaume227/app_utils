@@ -1,5 +1,3 @@
-#pragma once
-
 #include "timer_utils.hpp"
 #include "time_utils.hpp"
 
@@ -11,22 +9,22 @@ namespace app_utils
     class AutoIndent
     {
       static constexpr char const* indentStr = "  ";
-      inline static unsigned depth_ = 0u;
+      inline static unsigned m_depth = 0u;
     public:
       AutoIndent() { increment(); }
       ~AutoIndent() { decrement(); }
 
-      static void increment() { ++depth_; }
+      static void increment() { ++m_depth; }
       static void decrement()
       {
-        --depth_;
+        --m_depth;
       }
-      static unsigned getIndentDepth() { return depth_; }
+      static unsigned getIndentDepth() { return m_depth; }
 
       template<typename StreamOut>
       static StreamOut& printIndent(StreamOut& os)
       {
-        for (uint d = 0; d < depth_; d++)
+        for (unsigned d = 0; d < m_depth; d++)
           os << indentStr;
         return os;
       }
@@ -68,7 +66,7 @@ namespace app_utils
       auto elapsed = timeSinceStart();
       if(m_active)
       {
-        AutoIndent::decrement()();
+        AutoIndent::decrement();
         if(elapsed >= chrono::abs(m_printThreshold))
         {
           AutoIndent::printIndent(std::cout) << m_description << " took ";
@@ -76,9 +74,9 @@ namespace app_utils
             elapsed = chrono::duration_cast<chrono::milliseconds>(elapsed);
           std::cout << time::formatDuration(elapsed, 1) << std::endl;
         }
-        m_active = false;
-        return elapsed;
+        m_active = false;       
       }
+      return elapsed;
     }
   }
 }

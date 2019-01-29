@@ -44,12 +44,11 @@ namespace app_utils
       return d;
     }
   }
-
 }
 
 namespace std
 {
-  template<typename Duration, typename Ghost=app_utils::time::DurationTraits<Duration>::Type>
+  template<typename Duration, typename Ghost=typename app_utils::time::DurationTraits<Duration>::Type>
   inline ostream& operator << (ostream& os, Duration const& v) {
     return os << v.count() << app_utils::time::DurationTraits<Duration>::units();
   }

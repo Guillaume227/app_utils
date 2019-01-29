@@ -1,48 +1,62 @@
-#pragma once
-
-
 #include "time_utils.hpp"
 #include "stream_utils.hpp"
+#include "check_cond.hpp"
+
+namespace chrono = std::chrono;
 
 namespace app_utils::time
 {
+  template<typename D1, typename D2>
+  bool durationCastNoLoss(int const num, string const units, D1& to)
+  {
+    if (DurationTraits<D2>::units() == units)
+    {
+      D2 from{num};
+      to = chrono::duration_cast<D1>(from);
+      checkCond(chrono::duration_cast<D2>(to) == from, 
+        "lossy conversion of", from, "to", DurationTraits<D1>::prettyName());
+      return true;
+    }
+    return false;
+  }
+
+
   template<typename Duration>
   void durationFromString(string const& val, Duration& v)
   {
     string::size_type sz;
-    auto const num  =[&]{
+    auto const num = [&]{
       try
       {
         return std::stoi(val, &sz);
       }catch(...)
       {
-        condCheck("failed converting", val, "to", app_utils::typeName<Duration>());
+        throwExc("failed converting", val, "to", app_utils::typeName<Duration>());
       }
     }();
 
     if(sz >= val.size())
     {
-      condCheck("missing duration units for value:", val);
-    } else
-    {
+      throwExc("missing duration units for value:", val);
+    } else {
       auto const nextDigitPos = val.find_first_of("0123456789", sz);
       auto const unitStr = val.substr(sz, nextDigitPos - sz);
 
       using namespace std::chrono;
 
       bool const converted =
-        durationCastNoLoss<Duration, nanoseconds>(Num, unitStr, v) ||
-        durationCastNoLoss<Duration, microseconds>(Num, unitStr, v) ||
-        durationCastNoLoss<Duration, milliseconds>(Num, unitStr, v) ||
-        durationCastNoLoss<Duration, seconds>(Num, unitStr, v) ||
-        durationCastNoLoss<Duration, minutes>(Num, unitStr, v) ||
-        durationCastNoLoss<Duration, hours>(Num, unitStr, v);
+        durationCastNoLoss<Duration, nanoseconds>(num, unitStr, v) ||
+        durationCastNoLoss<Duration, microseconds>(num, unitStr, v) ||
+        durationCastNoLoss<Duration, milliseconds>(num, unitStr, v) ||
+        durationCastNoLoss<Duration, seconds>(num, unitStr, v) ||
+        durationCastNoLoss<Duration, minutes>(num, unitStr, v) ||
+        durationCastNoLoss<Duration, hours>(num, unitStr, v);
 
-      condCheck(converted, "unsupported duration units:", unitStr);
+      checkCond(converted, "unsupported duration units:", unitStr);
       if(nextDigitPos != string::npos)
       {
         Duration vv{};
-        durationFromString(val.substr(nextDigitPos), vv, noUnitOk);
+        durationFromString(val.substr(nextDigitPos), vv);
         v += vv;
       }
     }
@@ -69,8 +83,8 @@ namespace std{
 #undef DURATION_INPUT_OPERATOR
 
 template<typename DurationIn, typename FirstDuration, typename...RestDurations>
-void formatDurationRecurse(std::ostream&, DurationIn d, int significantLevel, bool foundNonZero) {
-  if (foundNonZero && significantlevel > 0)
+void formatDurationRecurse(std::ostream& out, DurationIn d, int significantLevel, bool foundNonZero) {
+  if (foundNonZero && significantLevel > 0)
     significantLevel--;
 
   auto val = chrono::duration_cast<FirstDuration>(d);
