@@ -10,6 +10,8 @@ add_library(app_utils STATIC ${HEADER_FILES} ${SOURCE_FILES} )
 
 set_target_properties(app_utils PROPERTIES CXX_STANDARD 17)
 
+target_include_directories(app_utils PUBLIC ${PROJECT_SOURCE_DIR})
+
 
 if (UNIX)
 	set(CPP_WARN -fsingle-precision-constant
@@ -20,5 +22,6 @@ if (UNIX)
 				 -Werror)
 
 	target_compile_options(app_utils PUBLIC ${CPP_WARN})
+	set_target_properties(app_utils  PROPERTIES COMPILE_FLAGS "-m32" LINK_FLAGS "-m32")
 
 endif(UNIX)
