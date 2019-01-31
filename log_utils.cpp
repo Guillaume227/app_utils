@@ -2,6 +2,21 @@
 
 namespace app_utils
 {
+  BlockIndent::BlockIndent(std::string const& message, bool incremIndent)
+    : m_incremIndent(incremIndent)
+  {
+    if(!message.empty())
+      AutoIndent::printIndent(std::cout) << message << std::endl;
+
+    if (m_incremIndent)
+      AutoIndent::decrement();
+  }
+
+  BlockIndent::~BlockIndent() {
+    if (m_incremIndent)
+      AutoIndent::decrement();
+  }
+
   string parsePrettyFunction(string nameStr)
   {
     auto argStart = nameStr.find('(');

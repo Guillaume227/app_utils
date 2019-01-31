@@ -27,7 +27,7 @@ namespace app_utils
     DEFINE_DURATION_TRAITS(hours, h);
     DEFINE_DURATION_TRAITS(minutes, min);
     DEFINE_DURATION_TRAITS(seconds, s);
-    DEFINE_DURATION_TRAITS(milliseconds, h);
+    DEFINE_DURATION_TRAITS(milliseconds, ms);
     DEFINE_DURATION_TRAITS(microseconds, us);
     DEFINE_DURATION_TRAITS(nanoseconds, ns);
 

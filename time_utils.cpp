@@ -2,8 +2,6 @@
 #include "stream_utils.hpp"
 #include "check_cond.hpp"
 
-namespace chrono = std::chrono;
-
 namespace app_utils::time
 {
   template<typename D1, typename D2>
@@ -62,6 +60,50 @@ namespace app_utils::time
     }
   }
 
+
+  template<typename DurationIn, typename FirstDuration, typename...RestDurations>
+  void formatDurationRecurse(std::ostream& out, DurationIn d, int significantLevel, bool foundNonZero) {
+    if (foundNonZero && significantLevel > 0)
+      significantLevel--;
+
+    auto val = chrono::duration_cast<FirstDuration>(d);
+    if (val.count()) {
+      out << val;
+      foundNonZero = true;
+    }
+
+    if constexpr(sizeof...(RestDurations) > 0) {
+      auto rest = d - val;
+      if (rest.count() > 0 && significantLevel != 0)
+        formatDurationRecurse<DurationIn, RestDurations...>(out, rest, significantLevel, foundNonZero);
+    }
+  }
+
+  template<typename Duration>
+  std::string formatDur(Duration duration, int significantLevel)
+  {
+    std::ostringstream oss;
+    if (duration.count() == 0)
+    {
+      oss << duration;
+    }
+    else
+    {
+      using namespace std::chrono;
+      formatDurationRecurse<Duration,
+        hours,
+        minutes,
+        seconds,
+        milliseconds,
+        microseconds>(oss, duration, significantLevel, /*foundNonZero*/ false);
+
+    }
+    return oss.str();
+  }
+
+  std::string formatDuration(std::chrono::microseconds duration, int significantLevel){
+    return formatDur(duration, significantLevel);
+  }
 }
 
 #define DURATION_INPUT_OPERATOR(T)\
@@ -72,7 +114,7 @@ namespace app_utils::time
     return is;\
   }
 
-namespace std{
+namespace std {
   DURATION_INPUT_OPERATOR(chrono::nanoseconds)
   DURATION_INPUT_OPERATOR(chrono::microseconds)
   DURATION_INPUT_OPERATOR(chrono::milliseconds)
@@ -81,47 +123,3 @@ namespace std{
   DURATION_INPUT_OPERATOR(chrono::hours)
 }
 #undef DURATION_INPUT_OPERATOR
-
-template<typename DurationIn, typename FirstDuration, typename...RestDurations>
-void formatDurationRecurse(std::ostream& out, DurationIn d, int significantLevel, bool foundNonZero) {
-  if (foundNonZero && significantLevel > 0)
-    significantLevel--;
-
-  auto val = chrono::duration_cast<FirstDuration>(d);
-  if(val.count()){
-    out << val;
-    foundNonZero = true;
-  }
-
-  if constexpr(sizeof...(RestDurations) > 0){
-    auto rest = d - val;
-    if (rest.count() > 0 && significantLevel != 0)
-      formatDurationRecurse<DurationIn, RestDurations...>(out, rest, significantLevel, foundNonZero);
-  }
-}
-
-template<typename Duration>
-std::string formatDur(Duration duration, int significantLevel)
-{
-  std::ostringstream oss;
-  if(duration.count() == 0)
-  {
-    oss << duration;
-  }else
-  {
-    using namespace std::chrono;
-    formatDurationRecurse<Duration,
-      hours,
-      minutes,
-      seconds,
-      milliseconds,
-      microseconds>(oss, duration, significantLevel, /*foundNonZero*/ false);
-
-  }
-  return oss.str();
-}
-
-std::string formatDuration(std::chrono::microseconds duration, int significantLevel)
-{
-  return formatDur(duration, significantLevel);
-}

@@ -44,9 +44,11 @@ namespace app_utils
   }
 }
 
-
 #define TIME_BLOCK(...) \
-  app_utils::BlockTimer PPCAT(blockTimer_, __LINE__) (app_utils::StreamWriter::writeStr(__VA__ARGS__))
+  app_utils::timer::BlockTimer PPCAT(blockTimer_, __LINE__) (app_utils::stream::StreamWriter::writeStr(__VA_ARGS__))
 
-#define TIME_FUNC(...)\
+#define TIME_FUNC\
+  TIME_BLOCK(FUNCTION_NAME)
+
+#define TIME_FUNC_ARGS(...)\
   TIME_BLOCK(FUNCTION_NAME, ##__VA_ARGS__)
