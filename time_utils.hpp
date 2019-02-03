@@ -33,7 +33,8 @@ namespace app_utils
 
 #undef DEFINE_DURATION_TRAITS
 
-    string formatDuration(chrono::microseconds duration, int significantLevel = -1);
+    string formatDuration(chrono::nanoseconds duration, int significantLevel = -1);
+
     template<typename D=chrono::seconds>
     D durationFromStr(string const& inputStr)
     {

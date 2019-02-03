@@ -101,7 +101,7 @@ namespace app_utils::time
     return oss.str();
   }
 
-  std::string formatDuration(std::chrono::microseconds duration, int significantLevel){
+  std::string formatDuration(std::chrono::nanoseconds duration, int significantLevel){
     return formatDur(duration, significantLevel);
   }
 }
