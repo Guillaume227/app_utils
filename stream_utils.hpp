@@ -59,8 +59,8 @@ namespace app_utils
       bool m_writeLine;
       char m_separator;
     public:
-      StreamWriter(ostream& os, bool writeLIne=false, char separator = ' ') :
-      m_out(os), m_writeLine(writeLIne), m_separator(separator){}
+      StreamWriter(ostream& os, bool writeLine=false, char separator = ' ') :
+      m_out(os), m_writeLine(writeLine), m_separator(separator){}
 
       template<typename TF, typename ...TR>
       ostream& write(TF const& f, TR const&... rest)
