@@ -16,8 +16,7 @@ namespace app_utils
   }
 
   template<typename T>
-  string typeName(T const& t, bool minimal=false)
-  {
+  string typeName(T const& t, bool minimal=false){
     return parseTypeName(typeid(t).name(), minimal);
   }
 
