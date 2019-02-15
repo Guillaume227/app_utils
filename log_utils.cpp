@@ -9,7 +9,7 @@ namespace app_utils
       AutoIndent::printIndent(std::cout) << message << std::endl;
 
     if (m_incremIndent)
-      AutoIndent::decrement();
+      AutoIndent::increment();
   }
 
   BlockIndent::~BlockIndent() {
