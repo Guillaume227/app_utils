@@ -4,7 +4,6 @@
 #include <iostream>
 #include <string>
 #include <sstream>
-#include <cstring>
 
 namespace app_utils
 {
@@ -66,11 +65,11 @@ namespace app_utils
         case ')':
         case ']':
         case '}':
-        case ' ':
         case ';':
         case ':':
         case ',':
         case '.':
+        case ' ':
         case '\n':
         case '\t':
           return false;
@@ -92,25 +91,11 @@ namespace app_utils
       }
     };
 
-    using io_manipulator = std::ios_base& (std::ios_base& str);
+    using ios_manipulator = std::ios_base& (std::ios_base&);
     template<>
-    struct SeparatorRequirement<io_manipulator> {
-      static constexpr bool needs_before(io_manipulator const&) {
-        return true;
-      }
-      static constexpr bool needs_after(io_manipulator const&) {
-        return false;
-      }
-    };
-
-    template<>
-    struct SeparatorRequirement<char const*> {
-      static constexpr bool needs_before(char const* const& val) {
-        return val && std::strlen(val) > 0 && SeparatorRequirement<char>::needs_before(val[0]);
-      }
-      static constexpr bool needs_after(char const* const& val) {
-        return val && std::strlen(val) > 0 && SeparatorRequirement<char>::needs_after(val[std::strlen(val)-1]);
-      }
+    struct SeparatorRequirement<ios_manipulator> {
+      static constexpr bool needs_before(ios_manipulator const&) { return true; }
+      static constexpr bool needs_after(ios_manipulator const&) { return false; }
     };
 
     template<>
@@ -140,23 +125,20 @@ namespace app_utils
       StreamWriter(ostream& os, bool writeLine=false, char separator = ' ') :
       m_out(os), m_writeLine(writeLine), m_separator(separator){}
 
-      template<typename TF, typename TF2, typename ...TR>
-      ostream& write(TF const& f, TF2 const& f2, TR const&... rest)
+      template<typename TF, typename TS, typename ...TR>
+      ostream& write(TF const& first, TS const& second, TR&&... rest)
       {
-        StreamPrinter<TF>::toStream(m_out, f);
-        if (m_separator && SeparatorRequirement<TF>::needs_after(f) && SeparatorRequirement<TF2>::needs_before(f2)) {
+        StreamPrinter<TF>::toStream(m_out, first);
+        if (m_separator && SeparatorRequirement<TF>::needs_after(first) && SeparatorRequirement<TS>::needs_before(second)) {
           m_out << m_separator;
         }
-        if constexpr(sizeof...(rest) == 0) {
-          return write(f2);
-        } else {
-          return write(f2, rest...);
-        }
+        
+        return write(second, std::forward<TR>(rest)...);
       }
 
-      template<typename TF>
-      ostream& write(TF const& f) {
-        StreamPrinter<TF>::toStream(m_out, f);
+      template<typename T>
+      ostream& write(T const& last) {
+        StreamPrinter<T>::toStream(m_out, last);
         if (m_writeLine) {
           m_out << std::endl;
         }
@@ -167,7 +149,7 @@ namespace app_utils
       static string writeStr(Ts&&... args)
       {
         std::ostringstream oss;
-        StreamWriter(oss).write<Ts...>(std::forward<Ts>(args)...);
+        StreamWriter(oss).write(std::forward<Ts>(args)...);
         return oss.str();
       }
     };
