@@ -1,5 +1,6 @@
 #pragma once
 #include "stream_utils.hpp"
+#include <string>
 
 namespace app_utils
 {
@@ -28,12 +29,12 @@ namespace app_utils
   struct BlockIndent
   {
     bool m_incremIndent = true;
-    explicit BlockIndent(string const& message, bool incremIndent = true);
+    explicit BlockIndent(std::string const& message, bool incremIndent = true);
     ~BlockIndent();
   };
 
-  string parsePrettyFunction(string name);
-}
+  std::string parsePrettyFunction(std::string name);
+  }
 #ifdef WIN32
 #define FUNCTION_NAME app_utils::parsePrettyFunction(__FUNCTION__)
 #else

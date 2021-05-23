@@ -2,6 +2,7 @@
 
 #include "stream_utils.hpp"
 #include <chrono>
+#include <string>
 
 namespace app_utils
 {
@@ -25,12 +26,12 @@ namespace app_utils
       BlockTimer(BlockTimer const&) = delete;
       BlockTimer& operator=(BlockTimer const&) = delete;
 
-      string const m_description;
+      std::string const m_description;
 
       resolution_t const m_printThreshold;
       TimePoint m_start_time;
 
-      explicit BlockTimer(string description, bool printStart = false, resolution_t printThreshold = resolution_t(0));
+      explicit BlockTimer(std::string description, bool printStart = false, resolution_t printThreshold = resolution_t(0));
 
       resolution_t stopTime();
       resolution_t timeSinceStart() const
