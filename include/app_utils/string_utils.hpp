@@ -73,7 +73,7 @@ std::string stripVectorBraces(std::string const& valStr);
 
 std::size_t findMatchingClose(std::string const& valStr, size_t startFrom);
 // constexpr std::string length computation
-template <typename size_t N>
+template <size_t N>
 constexpr size_t length(char const (&)[N]) {
   return N - 1;
 }
