@@ -1,6 +1,12 @@
 #pragma once
 
-#include <map>
+#include <app_utils/rtti_check.hpp>
+
+#ifndef RTTI_ENABLED
+#define ENUMATIC_DEFINE(EnumName, ...) enum EnumName { __VA_ARGS__ }
+
+#else
+
 #include <string>
 #include <array>
 
@@ -196,3 +202,5 @@ void wrap_enumatic(EnumParent& pymodule) {
 
 #define ENUMATIC_DEFINE(EnumName, ...) ENUM_CLASS_DEFINE(EnumName, false, __VA_ARGS__)
 #define ENUMATIC_DEFINE_idx(EnumName, ...) ENUM_CLASS_DEFINE(EnumName, true, __VA_ARGS__)
+
+#endif // RTTI_ENABLED
