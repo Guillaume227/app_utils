@@ -144,6 +144,16 @@ struct Enumatic {
   }
 };
 
+namespace pybind11 {
+template <typename EnumaticT, typename EnumParent>
+void wrap_enumatic(EnumParent& pymodule) {
+  auto wrappedEnum = enum_<EnumaticT>(pymodule, typeName(EnumaticT{}));
+  for (auto const& value : Enumatic<EnumaticT>::getValues()) {
+    wrappedEnum.value(Enumatic<EnumaticT>::toString(value).c_str(), value);
+  }
+}
+}  // namespace pybind11
+
 #define ENUMATIC_DEFINE_IMPL(EnumClass, StorageType, EnumName, allowFromIdx, ...)                                  \
   struct EnumName##Wrapper {                                                                                       \
     EnumClass EnumType : StorageType;                                                                              \
