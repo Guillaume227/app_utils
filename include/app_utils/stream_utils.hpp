@@ -94,8 +94,8 @@ namespace app_utils
     using ios_manipulator = std::ios_base& (std::ios_base&);
     template<>
     struct SeparatorRequirement<ios_manipulator> {
-      static constexpr bool needs_before(ios_manipulator const&) { return true; }
-      static constexpr bool needs_after(ios_manipulator const&) { return false; }
+      static constexpr bool needs_before(ios_manipulator) { return true; }
+      static constexpr bool needs_after(ios_manipulator) { return false; }
     };
 
     template<>
@@ -129,7 +129,7 @@ namespace app_utils
       ostream& write(TF const& first, TS const& second, TR&&... rest)
       {
         StreamPrinter<TF>::toStream(m_out, first);
-        if (m_separator && SeparatorRequirement<TF>::needs_after(first) && SeparatorRequirement<TS>::needs_before(second)) {
+        if (m_separator and SeparatorRequirement<TF>::needs_after(first) and SeparatorRequirement<TS>::needs_before(second)) {
           m_out << m_separator;
         }
         
