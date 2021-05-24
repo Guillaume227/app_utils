@@ -44,9 +44,9 @@ if (UNIX)
 				 -Wextra
 				 -Wundef
 				 -Werror
-				 -Wfatal-error)
+				 -Wfatal-errors)
 
-	target_compile_options(app_utils PUBLIC ${CPP_WARN})
-	set_target_properties(app_utils  PROPERTIES COMPILE_FLAGS "-m32" LINK_FLAGS "-m32")
+	target_compile_options(app_utils PUBLIC ${CPP_WARN} -fPIC)
+	#set_target_properties(app_utils  PROPERTIES COMPILE_FLAGS "-m32" LINK_FLAGS "-m32")
 
 endif(UNIX)

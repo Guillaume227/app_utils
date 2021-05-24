@@ -1,9 +1,8 @@
-﻿#pragma once
-
-#include <app_utils/cond_check.hpp>
+﻿#include <app_utils/cond_check.hpp>
 #include <app_utils/string_utils.hpp>
 
 #include <sstream>
+#include <cstring> // strlen
 #include <string>
 #include <vector>
 

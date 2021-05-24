@@ -61,7 +61,7 @@ struct Enumatic {
   }
 
   /* list of all enum values as strings */
-  constexpr static std::vector<std::string> const& getValuesStr() {
+  static std::vector<std::string> const& getValuesStr() {
     static std::vector<std::string> const valuesStr = [] {
       std::vector<std::string> values(size());
       std::stringstream ss(enumValuesAsString(EnumType{} /*dummy value - only type matters here for ADL*/));

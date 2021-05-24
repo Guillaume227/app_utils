@@ -1,6 +1,4 @@
-﻿#pragma once
-
-#include <cstring>
+﻿#include <cstring>
 #include <regex>
 #include <sstream>
 #include <vector>
@@ -41,7 +39,7 @@ std::string toLower(std::string str) {
   return str;
 }
 
-bool contains(std::string const& src, std::string const& substr) { return src.find(src) != std::string::npos; }
+bool contains(std::string const& src, std::string const& substr) { return src.find(substr) != std::string::npos; }
 
 bool contains(std::string const& src, char const c) { return src.find(c) != std::string::npos; }
 
@@ -255,7 +253,7 @@ std::string stripVectorBraces(std::string const& valStr) { return stripBraces(va
 
 std::string stripBraces(std::string const& valStr, std::string const& braces) { 
   std::string out = strip(valStr); 
-  if (enclosedInBraces(out)) {
+  if (enclosedInBraces(out, braces)) {
     return out.substr(1, out.size() - 2);
   }
   return out;
