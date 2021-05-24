@@ -151,6 +151,9 @@ struct Enumatic {
 };
 
 namespace pybind11 {
+template <typename Type>
+class enum_;
+
 template <typename EnumaticT, typename EnumParent>
 void wrap_enumatic(EnumParent& pymodule) {
   auto wrappedEnum = enum_<EnumaticT>(pymodule, typeName(EnumaticT{}));
