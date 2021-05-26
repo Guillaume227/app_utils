@@ -3,20 +3,19 @@
 #include <cstdio>
 #include <iostream>
 #include <string>
+#include <string_view>
 #include <sstream>
 
 namespace app_utils
-{
-  using std::string;
-  
-  string parseTypeName(string paramName, bool minimal = false);
+{  
+  std::string parseTypeName(std::string paramName, bool minimal = false);
   template<typename T>
-  string typeName(bool minimal=false){
+  std::string typeName(bool minimal = false) {
     return parseTypeName(typeid(T).name(), minimal);
   }
 
   template<typename T>
-  string typeName(T const& t, bool minimal=false){
+  std::string typeName(T const& t, bool minimal = false) {
     return parseTypeName(typeid(t).name(), minimal);
   }
 
@@ -34,6 +33,22 @@ namespace app_utils
     struct StreamPrinter<char const*> {
       static ostream& toStream(ostream& os, char const* const& param) {
         return os << param;
+      }
+    };
+
+    template <>
+    struct StreamPrinter<uint8_t const*> {
+      static ostream& toStream(ostream& os, uint8_t const* const& param) { 
+        return os << param; }
+    };
+
+    template <typename U>
+    struct StreamPrinter<std::basic_string_view<uint8_t, U>> {
+      static ostream& toStream(ostream& os, std::basic_string_view<uint8_t, U> const& param) {
+        for (size_t i = 0; i < param.size(); i++) {
+          os << std::hex << *(param.data() + i);
+        }
+        return os;
       }
     };
 
@@ -146,7 +161,7 @@ namespace app_utils
       }
 
       template<typename ...Ts>
-      static string writeStr(Ts&&... args)
+      static std::string writeStr(Ts&&... args)
       {
         std::ostringstream oss;
         StreamWriter(oss).write(std::forward<Ts>(args)...);
@@ -155,7 +170,7 @@ namespace app_utils
     };
 
     template<>
-    inline string StreamWriter::writeStr() {
+    inline std::string StreamWriter::writeStr() {
       return "";
     }
   }

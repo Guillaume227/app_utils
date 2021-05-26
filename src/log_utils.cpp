@@ -17,11 +17,11 @@ namespace app_utils
       AutoIndent::decrement();
   }
 
-  string parsePrettyFunction(string nameStr)
+  std::string parsePrettyFunction(std::string nameStr)
   {
     auto argStart = nameStr.find('(');
     auto strippos = nameStr.rfind(' ', nameStr.rfind("::", argStart));
-    if (strippos != string::npos)
+    if (strippos != std::string::npos)
     {
       // case when there is a return type
       strippos += 1; // skip white space

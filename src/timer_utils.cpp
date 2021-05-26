@@ -16,7 +16,7 @@ namespace app_utils
       }      
     }();
 
-    BlockTimer::BlockTimer(string description, bool printStart, resolution_t printThreshold)
+    BlockTimer::BlockTimer(std::string description, bool printStart, resolution_t printThreshold)
       : m_description(std::move(description)),
         m_printThreshold(m_env_threshold != m_env_threshold.zero() ? m_env_threshold : printThreshold)
     {
