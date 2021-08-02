@@ -9,8 +9,7 @@
 namespace app_utils
 {
   namespace time
-  {
-    using std::string;
+  {    
     namespace chrono = std::chrono;
 
     template<typename Duration>
@@ -33,15 +32,15 @@ namespace app_utils
 
 #undef DEFINE_DURATION_TRAITS
 
-    string formatDuration(chrono::nanoseconds duration, int significantLevel = -1);
+    std::string formatDuration(chrono::nanoseconds duration, int significantLevel = -1);
 
     template<typename D=chrono::seconds>
-    D durationFromStr(string const& inputStr)
+    D durationFromStr(std::string inputStr)
     {
       D d;
       std::istringstream iss(inputStr);
       iss >> d;
-      checkCond(iss.eof(), "failed parsing duration", typeName<D>(), "from string '" + inputStr + "'");
+      checkCond(iss.eof(), "failed parsing duration", typeName<D>(), "from string '", inputStr, "'");
       return d;
     }
   }
@@ -49,10 +48,6 @@ namespace app_utils
 
 namespace std
 {
-  template<typename Duration, typename Ghost=typename app_utils::time::DurationTraits<Duration>::Type>
-  inline ostream& operator << (ostream& os, Duration const& v) {
-    return os << v.count() << app_utils::time::DurationTraits<Duration>::units();
-  }
 
   istream& operator >>(istream& is, chrono::nanoseconds& v);
   istream& operator >>(istream& is, chrono::microseconds& v);

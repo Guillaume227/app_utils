@@ -1,11 +1,12 @@
 #include <app_utils/time_utils.hpp>
 #include <app_utils/stream_utils.hpp>
 #include <app_utils/cond_check.hpp>
+#include <charconv>
 
 namespace app_utils::time
 {
   template<typename D1, typename D2>
-  bool durationCastNoLoss(int const num, string const units, D1& to)
+  bool durationCastNoLoss(int const num, std::string_view const units, D1& to)
   {
     if (DurationTraits<D2>::units() == units)
     {
@@ -20,17 +21,18 @@ namespace app_utils::time
 
 
   template<typename Duration>
-  void durationFromString(string const& val, Duration& v)
+  void durationFromString(std::string_view const& val, Duration& v)
   {
-    string::size_type sz;
+    std::string::size_type sz;
+
     auto const num = [&]{
-      try
-      {
-        return std::stoi(val, &sz);
-      }catch(...)
-      {
+      int converted_int;
+      auto result = std::from_chars(val.data(), val.data() + val.size(), converted_int);
+      if (result.ec == std::errc::invalid_argument) {
         throwExc("failed converting", val, "to", app_utils::typeName<Duration>());
       }
+      sz = result.ptr - val.data();
+      return converted_int;
     }();
 
     if(sz >= val.size())
@@ -51,7 +53,7 @@ namespace app_utils::time
         durationCastNoLoss<Duration, hours>(num, unitStr, v);
 
       checkCond(converted, "unsupported duration units:", unitStr);
-      if(nextDigitPos != string::npos)
+      if(nextDigitPos != std::string::npos)
       {
         Duration vv{};
         durationFromString(val.substr(nextDigitPos), vv);
@@ -108,7 +110,7 @@ namespace app_utils::time
 
 #define DURATION_INPUT_OPERATOR(T)\
   std::istream& operator>>(std::istream& is, T&v){\
-    string val;\
+    std::string val;\
     is >> val;\
     app_utils::time::durationFromString(val, v);\
     return is;\

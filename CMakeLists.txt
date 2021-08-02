@@ -20,12 +20,12 @@ file(GLOB_RECURSE SOURCE_FILES ${PROJECT_SOURCE_DIR}/src/*.cpp)
 
 add_library(app_utils STATIC ${HEADER_FILES} ${SOURCE_FILES})
 
-set_target_properties(app_utils PROPERTIES CXX_STANDARD 17)
+set_target_properties(app_utils PROPERTIES CXX_STANDARD 20)
 
 target_include_directories(app_utils PUBLIC ./include)
 
 # All users of this library will need at least C++17
-target_compile_features(app_utils PUBLIC cxx_std_17)
+target_compile_features(app_utils PUBLIC cxx_std_20)
 
 
 # Testing only available if this is the main app
