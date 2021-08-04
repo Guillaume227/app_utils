@@ -8,6 +8,7 @@ struct timeval;  // Windows-specific: forward declaration to fix compilation err
 #include <pybind11/stl.h>
 #include <pybind11/cast.h>
 #include <pybind11/functional.h>
+#include <pybind11/operators.h>
 
 
 #include <app_utils/relfexio.hpp>
@@ -19,7 +20,8 @@ ENUMATIC_DEFINE(TestEnum, EnumVal1, EnumVal2);
 REFLEXIO_STRUCT_DEFINE(MyStruct, 
   REFLEXIO_MEMBER_VAR_DEFINE(int, var1, 12, "var1 doc");
   REFLEXIO_MEMBER_VAR_DEFINE(std::string, var2, "var2_val", "var2 doc");
-  REFLEXIO_MEMBER_VAR_DEFINE(float, var3, 1.5f, "var3 doc"););
+  REFLEXIO_MEMBER_VAR_DEFINE(float, var3, 1.5f, "var3 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(TestEnum, var4, TestEnum::EnumVal2, "var4 doc"););
 
 
 namespace py = pybind11;

@@ -178,18 +178,20 @@ void wrap_enumatic(EnumParent& pymodule) {
     }                                                                                                              \
     friend constexpr bool is_enumatic_type(EnumType*) noexcept { return true; }                                    \
                                                                                                                    \
-    friend std::string const& asString(EnumType arg) { return Enumatic<EnumType>::toString(arg); }                 \
+    friend std::string const& to_string(EnumType arg) { return Enumatic<EnumType>::toString(arg); }                \
                                                                                                                    \
-    friend std::ostream& operator<<(std::ostream& output, EnumType const& arg) { return output << asString(arg); } \
+    friend std::ostream& operator<<(std::ostream& output, EnumType const& arg) {                                   \
+      return output << Enumatic<EnumType>::toString(arg);                                                          \
+    }                                                                                                              \
                                                                                                                    \
-    friend void valueFromString(std::string const& valStr, EnumType& arg) {                                        \
+    friend void from_string(std::string const& valStr, EnumType& arg) {                                            \
       arg = Enumatic<EnumType>::fromString(valStr);                                                                \
     }                                                                                                              \
                                                                                                                    \
     friend std::istream& operator>>(std::istream& input, EnumType& arg) {                                          \
       std::string valStr;                                                                                          \
       input >> valStr;                                                                                             \
-      valueFromString(valStr, arg);                                                                                \
+      from_string(valStr, arg);                                                                                    \
       return input;                                                                                                \
     }                                                                                                              \
                                                                                                                    \

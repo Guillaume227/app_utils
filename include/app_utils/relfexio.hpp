@@ -6,6 +6,7 @@
 #include <memory>
 #include <array>
 #include <typeinfo>
+#include <sstream>
 
 struct member_descriptor_t {
 
@@ -23,9 +24,13 @@ struct member_descriptor_t {
 
   virtual std::type_info const& get_member_type_info() const = 0;
   virtual std::string default_value_as_string() const = 0;
+  virtual std::string value_as_string(void const* host) const = 0;
+  virtual bool is_at_default(void const* host) const = 0;
+  virtual bool values_differ(void const* host1, void const* host2) const = 0;
 
   std::string const& get_name() const { return m_name; }
   std::string const& get_description() const { return m_description; }
+
 
   /*
   virtual std::bytes value_as_bytes() const = 0;
@@ -49,7 +54,7 @@ struct member_descriptor_impl_t : public member_descriptor_t {
   template<typename ...Args>
   constexpr member_descriptor_impl_t(MemberType HostType::*member_var_ptr, MemberType defaultValue, Args&& ...args)
       : member_descriptor_t(std::forward<Args>(args)...)
-      , m_default_value(defaultValue)
+      , m_default_value(std::move(defaultValue))
       , m_member_var_ptr(member_var_ptr)
   {}
 
@@ -57,6 +62,21 @@ struct member_descriptor_impl_t : public member_descriptor_t {
   std::string default_value_as_string() const override { 
     using namespace app_utils::strutils;
     return to_string(m_default_value); 
+  }
+  std::string value_as_string(void const* host) const override {
+    using namespace app_utils::strutils;
+    return to_string(get_value(host));
+  }
+
+  MemberType const& get_value(void const* host) const { 
+    return static_cast<HostType const*>(host)->*m_member_var_ptr;
+  }
+
+  bool values_differ(void const* host1, void const* host2) const override {
+    return get_value(host1) != get_value(host2);
+  }
+  bool is_at_default(void const* host) const override { 
+    return get_value(host) == m_default_value;
   }
 
 #ifdef REFLEXIO_STRUCT_USE_PYBIND_MODULE
@@ -110,7 +130,55 @@ struct ReflexioStructBase {
     static CRTP type; // forces population of member register once
     return s_member_register; 
   }
-  
+
+  bool has_all_default_values() const {
+    for (auto& descriptor : get_member_descriptors()) {
+      if (not descriptor->is_at_default(this)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  std::vector<std::string> non_default_values() const {
+    std::vector<std::string> res;
+    for (auto& descriptor : get_member_descriptors()) {
+      if (not descriptor->is_at_default(this)) {
+        res.push_back(descriptor->get_name());
+      }
+    }
+    return res;
+  }
+
+  std::vector<std::string> differing_values(CRTP const& other) const {
+    std::vector<std::string> res;
+    for (auto& descriptor : get_member_descriptors()) {
+      if (descriptor->values_differ(this, &other)) {
+        res.push_back(descriptor->get_name());
+      }
+    }
+    return res;
+  }
+
+  bool operator==(CRTP const& other) const {
+    for (auto& descriptor : get_member_descriptors()) {
+      if (descriptor->values_differ(this, &other)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool operator!=(CRTP const& other) const { return not(*this == other); }
+
+  friend std::string to_string(CRTP const& instance) { 
+    std::ostringstream oss;
+    for (auto& descriptor : CRTP::get_member_descriptors()) {
+      oss << descriptor->get_name() << ": " << descriptor->value_as_string(&instance) << "\n";
+    }
+    return oss.str();
+  }
+
   static constexpr size_t num_members() { return NumMemberVariables; }
 };
 
@@ -137,7 +205,15 @@ template <typename ReflexioStruct, typename PyModule>
 void wrap_reflexio_struct(PyModule& pymodule) {
   static std::string const typeName = app_utils::typeName<ReflexioStruct>();
   auto wrappedType = typename ReflexioStruct::PybindClassType(pymodule, typeName.c_str());
-  wrappedType.def(pybind11::init<>());
+  wrappedType
+    .def(pybind11::init<>())
+    .def(pybind11::self == pybind11::self)
+    .def(pybind11::self != pybind11::self)
+    .def("__str__", [](ReflexioStruct const& self) { return to_string(self);  })
+    .def("non_default_values", &ReflexioStruct::non_default_values)
+    .def("has_all_default_values", &ReflexioStruct::has_all_default_values)
+    .def("differing_values", &ReflexioStruct::differing_values);
+
   for (auto& member_descriptor : ReflexioStruct::get_member_descriptors()) {
     member_descriptor->wrap_in_pybind(&wrappedType);
   }

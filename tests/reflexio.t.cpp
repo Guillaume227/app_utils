@@ -32,4 +32,9 @@ TEST_CASE("reflexio_declare", "[reflexio]") {
   REQUIRE(MyStruct::get_member_descriptors()[0]->default_value_as_string() == "12");
   REQUIRE(MyStruct::get_member_descriptors()[1]->default_value_as_string() == "var2_val");
 
+  REQUIRE(myStruct == myStruct2);
+  REQUIRE(myStruct.has_all_default_values());
+  myStruct.var1 = 11;
+  REQUIRE(not myStruct.has_all_default_values());
+  REQUIRE(myStruct != myStruct2);
 }
