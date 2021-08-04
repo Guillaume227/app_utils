@@ -2,11 +2,14 @@
 
 #include <app_utils/cond_check.hpp>
 #include <app_utils/string_utils.hpp>
+#include <app_utils/serial_utils.hpp>
 #include <string>
 #include <memory>
 #include <array>
 #include <typeinfo>
 #include <sstream>
+#include <cstddef> // std::byte
+
 
 struct member_descriptor_t {
 
@@ -15,7 +18,6 @@ struct member_descriptor_t {
 
   constexpr member_descriptor_t(std::string name,                                
                                 std::string description)
-      
     : m_name(std::move(name))
     , m_description(std::move(description))
   {}
@@ -28,17 +30,16 @@ struct member_descriptor_t {
   virtual bool is_at_default(void const* host) const = 0;
   virtual bool values_differ(void const* host1, void const* host2) const = 0;
 
+  virtual size_t get_serial_size() const = 0;
+
   std::string const& get_name() const { return m_name; }
   std::string const& get_description() const { return m_description; }
 
-
-  /*
-  virtual std::bytes value_as_bytes() const = 0;
-  virtual set_value(std::bytes);
-  virtual std::string value_as_string() const = 0;
-  virtual set_value(std::string);
-  */
-  
+  // returns number of bytes written
+  virtual size_t write_to_bytes(std::byte* buffer, size_t buffer_size, void const* host) const = 0;
+  // returns number of bytes read
+  virtual size_t read_from_bytes(std::byte const* buffer, size_t buffer_size, void* host) const = 0;
+    
  #ifdef REFLEXIO_STRUCT_USE_PYBIND_MODULE
   virtual void wrap_in_pybind(void* pybindclass_) const = 0;
 #endif
@@ -52,11 +53,21 @@ struct member_descriptor_impl_t : public member_descriptor_t {
   MemberType const m_default_value; 
 
   template<typename ...Args>
-  constexpr member_descriptor_impl_t(MemberType HostType::*member_var_ptr, MemberType defaultValue, Args&& ...args)
+  constexpr member_descriptor_impl_t(MemberType HostType::*member_var_ptr, 
+                                     MemberType defaultValue, 
+                                     Args&& ...args)
       : member_descriptor_t(std::forward<Args>(args)...)
       , m_default_value(std::move(defaultValue))
       , m_member_var_ptr(member_var_ptr)
   {}
+
+  MemberType const& get_value(void const* host) const { 
+    return static_cast<HostType const*>(host)->*m_member_var_ptr; 
+  }
+
+  MemberType& get_mutable_value(void* host) const { 
+    return static_cast<HostType*>(host)->*m_member_var_ptr; 
+  }
 
   std::type_info const& get_member_type_info() const override { return typeid(MemberType); }
   std::string default_value_as_string() const override { 
@@ -68,16 +79,23 @@ struct member_descriptor_impl_t : public member_descriptor_t {
     return to_string(get_value(host));
   }
 
-  MemberType const& get_value(void const* host) const { 
-    return static_cast<HostType const*>(host)->*m_member_var_ptr;
-  }
-
   bool values_differ(void const* host1, void const* host2) const override {
     return get_value(host1) != get_value(host2);
   }
   bool is_at_default(void const* host) const override { 
     return get_value(host) == m_default_value;
   }
+
+  // returns number of bytes written
+  size_t write_to_bytes(std::byte* buffer, size_t buffer_size, void const* host) const override {
+    return to_bytes(buffer, buffer_size, get_value(host));
+  }
+  // return number of bytes read
+  size_t read_from_bytes(std::byte const* buffer, size_t buffer_size, void* host) const override {
+    return from_bytes(buffer, buffer_size, get_mutable_value(host));
+  }
+  
+  size_t get_serial_size() const override { return serial_size(MemberType{}); }
 
 #ifdef REFLEXIO_STRUCT_USE_PYBIND_MODULE
   void wrap_in_pybind(void* pybindclass_) const override {
@@ -126,6 +144,8 @@ struct ReflexioStructBase {
   }
 
  public:
+  static constexpr size_t num_members() { return NumMemberVariables; }
+
   static member_register_t const& get_member_descriptors() { 
     static CRTP type; // forces population of member register once
     return s_member_register; 
@@ -179,7 +199,34 @@ struct ReflexioStructBase {
     return oss.str();
   }
 
-  static constexpr size_t num_members() { return NumMemberVariables; }
+  friend size_t serial_size(CRTP const&) { return CRTP::serial_size(); }
+
+  static size_t serial_size() { 
+    size_t res = 0;
+    for (auto& descriptor : CRTP::get_member_descriptors()) {
+      res += descriptor->get_serial_size();
+    }
+    return res;
+  }
+
+  // return number of written bytes
+  friend size_t to_bytes(std::byte* buffer, size_t buffer_size, CRTP const& instance) {
+    size_t res = 0;
+    for (auto& descriptor : CRTP::get_member_descriptors()) {
+      res += descriptor->write_to_bytes(buffer + res, buffer_size - res, &instance);
+    }
+    checkCond(buffer_size >= res, "buffer is not big enough");
+    return res;
+  }
+  // return number of bytes read
+  friend size_t from_bytes(std::byte const* buffer, size_t buffer_size, CRTP& instance) {
+    size_t res = 0;
+    for (auto& descriptor : CRTP::get_member_descriptors()) {
+      res += descriptor->read_from_bytes(buffer + res, buffer_size - res, &instance);
+    }
+    checkCond(buffer_size >= res, "buffer is not big enough");
+    return res;
+  }
 };
 
 constexpr size_t count_chars(std::string const text, char char_to_count) {
