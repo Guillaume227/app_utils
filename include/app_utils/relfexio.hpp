@@ -10,25 +10,22 @@
 struct member_descriptor_t {
 
   std::string const m_name;
-  std::string const m_default_str;
   std::string const m_description;
 
-  constexpr member_descriptor_t(std::string name, 
-                                std::string default_str, 
+  constexpr member_descriptor_t(std::string name,                                
                                 std::string description)
       
     : m_name(std::move(name))
-    , m_default_str(std::move(default_str))
     , m_description(std::move(description))
   {}
 
   virtual ~member_descriptor_t() = default;
 
   virtual std::type_info const& get_member_type_info() const = 0;
+  virtual std::string default_value_as_string() const = 0;
 
   std::string const& get_name() const { return m_name; }
   std::string const& get_description() const { return m_description; }
-  std::string const& default_as_string() const { return m_default_str; }
 
   /*
   virtual std::bytes value_as_bytes() const = 0;
@@ -46,14 +43,21 @@ struct member_descriptor_t {
 template<typename MemberType, typename HostType>
 struct member_descriptor_impl_t : public member_descriptor_t {
 
-  MemberType HostType::* m_member_var_ptr;
+  MemberType HostType::* const m_member_var_ptr;
+  MemberType const m_default_value; 
 
   template<typename ...Args>
-  constexpr member_descriptor_impl_t(MemberType HostType::*member_var_ptr, Args&& ...args)
+  constexpr member_descriptor_impl_t(MemberType HostType::*member_var_ptr, MemberType defaultValue, Args&& ...args)
       : member_descriptor_t(std::forward<Args>(args)...)
+      , m_default_value(defaultValue)
       , m_member_var_ptr(member_var_ptr)
   {}
+
   std::type_info const& get_member_type_info() const override { return typeid(MemberType); }
+  std::string default_value_as_string() const override { 
+    using namespace app_utils::strutils;
+    return to_string(m_default_value); 
+  }
 
 #ifdef REFLEXIO_STRUCT_USE_PYBIND_MODULE
   void wrap_in_pybind(void* pybindclass_) const override {
@@ -73,7 +77,7 @@ REFLEXIO_MEMBER_VAR_DEFINE(type2, member2, default_val2, description2);
   struct var_name ## _descriptor_t {\
     static void register_descriptor(ReflexioStructBase& reflexioStruct) { \
       static bool registered = (TypeName::register_member(                                                               \
-              std::make_unique<member_descriptor_impl_t<var_type, TypeName>>(&TypeName::var_name, #var_name, app_utils::strutils::to_string(default_value), description)), \
+              std::make_unique<member_descriptor_impl_t<var_type, TypeName>>(&TypeName::var_name, default_value, #var_name, description)), \
                                 true); \
     } \
   };\

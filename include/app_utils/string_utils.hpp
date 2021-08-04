@@ -90,6 +90,11 @@ std::string to_string(T val) {
   return std::to_string(val);
 }
 
+template <>
+inline std::string to_string<std::string>(std::string val) {
+  return val;
+ }
+
 template <size_t N>
 std::string to_string(char const (&val)[N] ) {
   return val;

@@ -29,7 +29,7 @@ TEST_CASE("reflexio_declare", "[reflexio]") {
   REQUIRE(MyStruct::num_members() == 2);
 
 
-  REQUIRE(MyStruct::get_member_descriptors()[0]->default_as_string() == "12");
-  REQUIRE(MyStruct::get_member_descriptors()[1]->default_as_string() == "var2_val");
+  REQUIRE(MyStruct::get_member_descriptors()[0]->default_value_as_string() == "12");
+  REQUIRE(MyStruct::get_member_descriptors()[1]->default_value_as_string() == "var2_val");
 
 }
