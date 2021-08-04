@@ -11,6 +11,9 @@ list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/contrib) # for finding catch_
 include(CTest)
 include(Catch)
 
+set(CTEST_OUTPUT_ON_FAILURE 1)
+
+
 file(GLOB_RECURSE TEST_HEADER_FILES ${CMAKE_CURRENT_LIST_DIR}/*.hpp)
 file(GLOB_RECURSE TEST_SOURCE_FILES ${CMAKE_CURRENT_LIST_DIR}/*.cpp)
 
@@ -19,11 +22,11 @@ file(GLOB_RECURSE TEST_SOURCE_FILES ${CMAKE_CURRENT_LIST_DIR}/*.cpp)
 add_executable(app_utils_tests ${TEST_HEADER_FILES} ${TEST_SOURCE_FILES})
 
 ## I'm using C++17 in the test
-#target_compile_features(app_utils_tests PRIVATE cxx_std_20)
+target_compile_features(app_utils_tests PRIVATE cxx_std_20)
 
 
 # Should be linked to the main library, as well as the Catch2 testing library
-target_link_libraries(app_utils_tests PRIVATE app_utils Catch2::Catch2)
+target_link_libraries(app_utils_tests PRIVATE app_utils Catch2::Catch2 )
 
 
 # If you register a test, then ctest and make test will run it.

@@ -1,6 +1,5 @@
 #include <catch2/catch.hpp>
 
-
 #include <app_utils/relfexio.hpp>
 
 
@@ -14,7 +13,9 @@ REFLEXIO_STRUCT_DEFINE(MyOtherStruct,
 
 
 TEST_CASE("reflexio_declare", "[reflexio]") { 
-  
+
+  REQUIRE(MyStruct::num_members() == 2);
+
   MyStruct myStruct; 
   
   REQUIRE(MyStruct::num_members() == 2);
@@ -26,4 +27,9 @@ TEST_CASE("reflexio_declare", "[reflexio]") {
   MyOtherStruct myOtherStruct;
 
   REQUIRE(MyStruct::num_members() == 2);
+
+
+  REQUIRE(MyStruct::get_member_descriptors()[0]->default_as_string() == "12");
+  REQUIRE(MyStruct::get_member_descriptors()[1]->default_as_string() == "var2_val");
+
 }

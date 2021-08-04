@@ -24,7 +24,7 @@ set_target_properties(app_utils PROPERTIES CXX_STANDARD 20)
 
 target_include_directories(app_utils PUBLIC ./include)
 
-# All users of this library will need at least C++17
+# All users of this library will need at least C++20
 target_compile_features(app_utils PUBLIC cxx_std_20)
 
 
@@ -33,6 +33,7 @@ target_compile_features(app_utils PUBLIC cxx_std_20)
 if((CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME OR MODERN_CMAKE_BUILD_TESTING)
    AND BUILD_TESTING)
   add_subdirectory(tests)
+  add_subdirectory(tests_py)
 endif()
 
 

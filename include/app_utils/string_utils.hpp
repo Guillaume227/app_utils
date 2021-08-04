@@ -83,6 +83,16 @@ char getCloseSymbol(char openSymbol);
 inline bool hasOnlyDigits(std::string const& s) { return s.find_first_not_of("0123456789") == std::string::npos; }
 
 void replaceAll(std::string& str, std::string const& from, std::string const& to);
-}  // namespace strutils
 
+
+template<typename T>
+std::string to_string(T val) {
+  return std::to_string(val);
+}
+
+template <size_t N>
+std::string to_string(char const (&val)[N] ) {
+  return val;
+}
+}  // namespace strutils
 }  // namespace app_utils
