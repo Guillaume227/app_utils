@@ -94,12 +94,8 @@ struct Enumatic {
 
     auto const& strValues = getValuesStr();
 
-    // For legacy reasons we want to support parsing enum values in <>, e.g. <value1>
-    if (val.front() == '<' && val.back() == '>') {
-      val = val.substr(1, val.size() - 2);
-    }
-
-    // strip out enum name from value. '.' can be used as a separator in a python binding
+    // strip out enum name from value. 
+    // '.' can be used as a separator in a python binding
     for (auto const& separator : {"::", "."}) {
       if (app_utils::strutils::contains(val, separator)) {
         std::string const enum_typeNamePrefix = name() + std::string(separator);
@@ -165,7 +161,7 @@ void wrap_enumatic(EnumParent& pymodule) {
 
 #define ENUMATIC_DEFINE_IMPL(EnumClass, StorageType, EnumName, allowFromIdx, ...)                                  \
   struct EnumName##Wrapper {                                                                                       \
-    EnumClass EnumType : StorageType;                                                                              \
+    EnumClass EnumType StorageType;                                                                              \
                                                                                                                    \
     friend constexpr char const* typeName(EnumType) { return #EnumName; }                                          \
     friend constexpr char const* enumValuesAsString(EnumType) { return #__VA_ARGS__; }                             \
@@ -197,13 +193,13 @@ void wrap_enumatic(EnumParent& pymodule) {
                                                                                                                    \
     friend constexpr bool allowConvertFRomIndex(EnumType) { return allowFromIdx; }                                 \
                                                                                                                    \
-    EnumClass EnumType : StorageType{__VA_ARGS__};                                                                 \
+    EnumClass EnumType StorageType {__VA_ARGS__};                                                                 \
   };                                                                                                               \
                                                                                                                    \
   using EnumName = EnumName##Wrapper::EnumType
 
-#define ENUM_CLASS_DEFINE(EnumName, fromIdx, ...) ENUMATIC_DEFINE_IMPL(enum class, int, EnumName, fromIdx, __VA_ARGS__)
-#define ENUM_DEFINE(EnumName, ...) ENUMATIC_DEFINE_IMPL(enum, int, EnumName, false, __VA_ARGS__)
+#define ENUM_CLASS_DEFINE(EnumName, fromIdx, ...) ENUMATIC_DEFINE_IMPL(enum class, , EnumName, fromIdx, __VA_ARGS__)
+#define ENUM_DEFINE(EnumName, ...) ENUMATIC_DEFINE_IMPL(enum, , EnumName, false, __VA_ARGS__)
 
 #define ENUMATIC_DEFINE(EnumName, ...) ENUM_CLASS_DEFINE(EnumName, false, __VA_ARGS__)
 #define ENUMATIC_DEFINE_idx(EnumName, ...) ENUM_CLASS_DEFINE(EnumName, true, __VA_ARGS__)
