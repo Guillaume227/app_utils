@@ -39,20 +39,20 @@ std::string toLower(std::string str) {
   return str;
 }
 
-bool contains(std::string const& src, std::string const& substr) { return src.find(substr) != std::string::npos; }
+bool contains(std::string_view src, std::string_view substr) { return src.find(substr) != std::string::npos; }
 
-bool contains(std::string const& src, char const c) { return src.find(c) != std::string::npos; }
+bool contains(std::string_view src, char const c) { return src.find(c) != std::string::npos; }
 
-bool startswith(std::string const& src, std::string const& suffix) {
+bool startswith(std::string_view src, std::string_view suffix) {
   auto pos = src.find(suffix);
   return pos == 0;
 }
 
-bool startswith(std::string const& src, char const prefix) { return not src.empty() and src.front() == prefix; }
+bool startswith(std::string_view src, char const prefix) { return not src.empty() and src.front() == prefix; }
 
-bool endswith(std::string const& src, char const suffix) { return not src.empty() and src.back() == suffix; }
+bool endswith(std::string_view src, char const suffix) { return not src.empty() and src.back() == suffix; }
 
-bool endswith(std::string const& src, std::string const& suffix) {
+bool endswith(std::string_view src, std::string_view suffix) {
   auto pos = src.rfind(suffix);
   if (pos != std::string::npos) {
     return src.length() == pos + suffix.length();
@@ -60,7 +60,7 @@ bool endswith(std::string const& src, std::string const& suffix) {
   return false;
 }
 
-std::string strip(std::string const& str, std::string const& whitespace) {
+std::string_view strip(std::string_view const str, std::string_view const whitespace) {
   auto const strBegin = str.find_first_not_of(whitespace);
   if (strBegin == std::string::npos) {
     return "";  // no content
@@ -71,14 +71,41 @@ std::string strip(std::string const& str, std::string const& whitespace) {
   }
 }
 
-std::vector<std::string> split(char const delim, std::string const& str, bool const doStrip, bool const discardEmpty,
-                               int const nSplits) {
+size_t split(std::string_view const str,
+          char const delim, 
+          std::string_view& outBuffer, 
+          size_t maxNumTokens) {
+  
+  size_t leftIndexPos = 0;
+  
+  std::string_view* outputPointer = &outBuffer;
+
+  size_t parsedTokens = 0;
+  for (size_t i = 0; i < str.size(); i++) {
+    if (str.at(i) == delim) {
+      *outputPointer = str.substr(leftIndexPos, i - leftIndexPos);      
+      leftIndexPos = i+1;      
+      if (++parsedTokens >= maxNumTokens) {
+        return parsedTokens;
+      }
+      outputPointer++;
+    }
+  }
+  *outputPointer  = str.substr(leftIndexPos + 1);
+  return ++parsedTokens;
+}
+
+std::vector<std::string_view> split(char const delim, 
+                                    std::string_view const str, 
+                                    bool const doStrip, 
+                                    bool const discardEmpty,
+                                    int const nSplits) {
   if (str.empty()) return {};
 
   if (nSplits == 0) return {doStrip ? strip(str) : str};
 
-  std::vector<std::string> res;
-  std::stringstream ss(str);
+  std::vector<std::string_view> res;
+  std::stringstream ss(std::string{str});
   std::string item;
   for (int splitCount = 0; nSplits < 0 or splitCount < nSplits; splitCount++) {
     if (not std::getline(ss, item, delim)) {
@@ -112,24 +139,27 @@ std::vector<std::string> split(char const delim, std::string const& str, bool co
   return res;
 }
 
-std::vector<std::string> splitNoEmpty(char const delim, std::string const& str) {
+std::vector<std::string_view> splitNoEmpty(char const delim, std::string_view str) {
   return split(delim, str, true, true, -1);
 }
 
-std::vector<std::string> split(char const delim, std::string const& str, bool const doStrip, int const nSplits) {
+std::vector<std::string_view> split(char const delim, 
+  std::string_view const str, 
+  bool const doStrip, 
+  int const nSplits) {
   return split(delim, str, doStrip, /*discardEmpty*/ false, nSplits);
 }
 
 // that version takes a multi-char delimiter
-std::vector<std::string> splitM(char const* delim, std::string const& str) {
-  std::vector<std::string> res;
+std::vector<std::string_view> splitM(std::string_view const delim, std::string_view const str) {
+  std::vector<std::string_view> res;
 
   auto const pos = str.find(delim);
   if (pos == std::string::npos) {
     res.push_back(str);
   } else {
     res.push_back(str.substr(0, pos));
-    res.push_back(str.substr(pos + strlen(delim)));
+    res.push_back(str.substr(pos + delim.size()));
   }
 
   return res;
@@ -146,7 +176,7 @@ std::vector<std::string> splitByRegex(std::string const& s, char const* delim) {
   return result;
 }
 
-std::string lastLine(std::string const& src) {
+std::string_view lastLine(std::string_view const src) {
   auto pos = src.find_last_of('\n');
   if (pos == std::string::npos) {
     return src;
@@ -158,10 +188,12 @@ namespace {
 
 class SplitIter {
  public:
-  explicit SplitIter(std::string data, char separator = ',', int maxSplits = 1)
-      : m_data(std::move(data)), m_separator(separator), m_maxSplits(maxSplits) {}
+  explicit SplitIter(std::string_view data, char separator = ',', int maxSplits = 1)
+      : m_data(data)
+      , m_separator(separator)
+      , m_maxSplits(maxSplits) {}
 
-  std::string next() {
+  std::string_view next() {
     std::vector<char> expectedBrackets;
     m_start_i = ++m_end_i;
 
@@ -196,8 +228,8 @@ class SplitIter {
             expectedBrackets.pop_back();
           }
 
-          checkCond(not expectedBrackets.empty(), "Inbalanced brackets in std::string \"" + m_data + "\".",
-                    "Found closing bracket", character, "without any matching", "opening bracket.");
+          checkCond(not expectedBrackets.empty(), "Inbalanced brackets in string \"", m_data, "\".",
+                    "Found closing bracket", character, "without any matching opening bracket.");
 
           auto const expectedBracket = expectedBrackets.back();
           expectedBrackets.pop_back();
@@ -223,7 +255,7 @@ class SplitIter {
   bool hasNext() const { return not m_data.empty() and m_end_i < int(m_data.size()); }
 
  private:
-  std::string const m_data;
+  std::string_view const m_data;
   char const m_separator;
   int const m_maxSplits;
 
@@ -232,10 +264,10 @@ class SplitIter {
 };
 }  // namespace
 
-std::vector<std::string> splitParse(std::string const& valStr, char delimiter, bool doStrip, int maxSplits) {
-  SplitIter splitIter(valStr, delimiter, maxSplits);
+std::vector<std::string_view> splitParse(std::string_view const valStr, char delimiter, bool doStrip, int maxSplits) {
+  SplitIter splitIter(std::string{valStr}, delimiter, maxSplits);
 
-  std::vector<std::string> res;
+  std::vector<std::string_view> res;
   while (splitIter.hasNext()) {
     res.emplace_back(splitIter.next());
     if (doStrip) {
@@ -245,21 +277,21 @@ std::vector<std::string> splitParse(std::string const& valStr, char delimiter, b
   return res;
 }
 
-std::vector<std::string> splitParse(std::string const& valStr, char delimiter, bool doStrip) {
+std::vector<std::string_view> splitParse(std::string_view const valStr, char delimiter, bool doStrip) {
   return splitParse(valStr, delimiter, doStrip, -1);
 }
 
-std::string stripVectorBraces(std::string const& valStr) { return stripBraces(valStr); }
+std::string_view stripVectorBraces(std::string_view const valStr) { return stripBraces(valStr); }
 
-std::string stripBraces(std::string const& valStr, std::string const& braces) { 
-  std::string out = strip(valStr); 
+std::string_view stripBraces(std::string_view const valStr, std::string_view const braces) { 
+  std::string_view out = strip(valStr); 
   if (enclosedInBraces(out, braces)) {
     return out.substr(1, out.size() - 2);
   }
   return out;
 }
 
-std::size_t findMatchingClose(std::string const& valStr, size_t const startFrom) {
+std::size_t findMatchingClose(std::string_view const valStr, size_t const startFrom) {
   checkCond(valStr.size() > startFrom, "inconsistent inputs");
   char openSymbol = valStr[startFrom];
   checkCond(isOpenSymbol(openSymbol), openSymbol, "is not a supported open symbol in", valStr);
@@ -278,7 +310,7 @@ std::size_t findMatchingClose(std::string const& valStr, size_t const startFrom)
   return std::string::npos;
 }
 
-bool enclosedInBraces(std::string const& valStr, std::string const& braces) {
+bool enclosedInBraces(std::string_view const valStr, std::string_view const braces) {
   checkCond(braces.size() == 2, "invalid braces specification:", braces);
   // Vector braces only exist as the first and last character.
   if (not startswith(valStr, braces[0])) {
@@ -296,7 +328,7 @@ bool enclosedInBraces(std::string const& valStr, std::string const& braces) {
   return false;
 }
 
-void replaceAll(std::string& str, const std::string& from, const std::string& to) {
+void replaceAll(std::string& str, std::string_view const from, std::string_view const to) {
   if (from.empty()) return;
   size_t start_pos = 0;
   while ((start_pos = str.find(from, start_pos)) != std::string::npos) {

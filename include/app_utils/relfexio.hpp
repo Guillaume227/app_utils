@@ -30,7 +30,7 @@ struct member_descriptor_t {
   virtual bool is_at_default(void const* host) const = 0;
   virtual bool values_differ(void const* host1, void const* host2) const = 0;
 
-  virtual size_t get_serial_size() const = 0;
+  virtual size_t get_serial_size(void const* host) const = 0;
 
   std::string const& get_name() const { return m_name; }
   std::string const& get_description() const { return m_description; }
@@ -88,14 +88,19 @@ struct member_descriptor_impl_t : public member_descriptor_t {
 
   // returns number of bytes written
   size_t write_to_bytes(std::byte* buffer, size_t buffer_size, void const* host) const override {
+    using namespace app_utils::serial;
     return to_bytes(buffer, buffer_size, get_value(host));
   }
   // return number of bytes read
   size_t read_from_bytes(std::byte const* buffer, size_t buffer_size, void* host) const override {
+    using namespace app_utils::serial;
     return from_bytes(buffer, buffer_size, get_mutable_value(host));
   }
   
-  size_t get_serial_size() const override { return serial_size(MemberType{}); }
+  size_t get_serial_size(void const* host) const override { 
+    using namespace app_utils::serial; 
+    return serial_size(get_value(host));
+  }
 
 #ifdef REFLEXIO_STRUCT_USE_PYBIND_MODULE
   void wrap_in_pybind(void* pybindclass_) const override {
@@ -104,36 +109,30 @@ struct member_descriptor_impl_t : public member_descriptor_t {
 #endif
 };
 
-/*
-#define REFLEXIO_STRUCT_DEFINE(StructName,
-REFLEXIO_MEMBER_VAR_DEFINE(type1, member1, default_val1, description1);
-REFLEXIO_MEMBER_VAR_DEFINE(type2, member2, default_val2, description2);
-);
-*/
-
 #define REFLEXIO_MEMBER_VAR_DEFINE(var_type, var_name, default_value, description) \
   struct var_name ## _descriptor_t {\
     static void register_descriptor(ReflexioStructBase& reflexioStruct) { \
-      static bool registered = (TypeName::register_member(                                                               \
-              std::make_unique<member_descriptor_impl_t<var_type, TypeName>>(&TypeName::var_name, default_value, #var_name, description)), \
+      static bool registered = (ReflexioTypeName::register_member(                                                               \
+              std::unique_ptr<member_descriptor_t>(       \
+               new member_descriptor_impl_t<var_type, ReflexioTypeName>(                  \
+                                        &ReflexioTypeName::var_name, default_value, #var_name, description))), \
                                 true); \
     } \
   };\
-  var_type var_name = (var_name##_descriptor_t :: register_descriptor(*this), default_value)
-
+  var_type var_name = (var_name##_descriptor_t ::register_descriptor(*this), var_type(default_value))
 
 template<typename CRTP, size_t NumMemberVariables>
 struct ReflexioStructBase {
-  using TypeName = CRTP;
+  using ReflexioTypeName = CRTP;
 #ifdef REFLEXIO_STRUCT_USE_PYBIND_MODULE
   using PybindClassType = pybind11::class_<CRTP>;
 #endif
 
- private:
+ //private:
   using member_register_t = std::array<std::unique_ptr<member_descriptor_t const>, NumMemberVariables>;  
   inline static member_register_t s_member_register;
 
- protected:
+ //protected:
   static void register_member(std::unique_ptr<member_descriptor_t> member_descriptor) { 
     for (auto& slot : s_member_register) {
       if (slot == nullptr) {
@@ -143,7 +142,7 @@ struct ReflexioStructBase {
     }
   }
 
- public:
+ //public:
   static constexpr size_t num_members() { return NumMemberVariables; }
 
   static member_register_t const& get_member_descriptors() { 
@@ -199,12 +198,12 @@ struct ReflexioStructBase {
     return oss.str();
   }
 
-  friend size_t serial_size(CRTP const&) { return CRTP::serial_size(); }
+  friend size_t serial_size(CRTP const& val) { return val.get_serial_size(); }
 
-  static size_t serial_size() { 
+  size_t get_serial_size() const { 
     size_t res = 0;
     for (auto& descriptor : CRTP::get_member_descriptors()) {
-      res += descriptor->get_serial_size();
+      res += descriptor->get_serial_size(this);
     }
     return res;
   }
@@ -229,19 +228,27 @@ struct ReflexioStructBase {
   }
 };
 
-constexpr size_t count_chars(std::string const text, char char_to_count) {
+constexpr size_t count_member_var_declarations(std::string_view const text) {
   size_t count = 0;
 
+  std::string const using_str = "using ";
+
+  size_t num_using_statements = 0;
+
   for (size_t i = 0; i < text.size(); i++) {
-    if (text[i] == char_to_count) {
+    if (text[i] == ';') {
       count++;
+    } else if (text.substr(i, using_str.size()) == using_str) {
+      if (i == 0 or text[i - 1] == ' ' or text[i - 1] == ';') {
+        num_using_statements++;
+      }
     }
   }
-  return count;
+  return count - num_using_statements;
 }
 
 #define REFLEXIO_STRUCT_DEFINE(StructName, ...)  \
-  struct StructName : ReflexioStructBase<StructName, count_chars(#__VA_ARGS__, ';')> {\
+  struct StructName : ReflexioStructBase<StructName, count_member_var_declarations(#__VA_ARGS__)> {\
     __VA_ARGS__;                                 \
   }
 
