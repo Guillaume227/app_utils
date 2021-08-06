@@ -1,12 +1,13 @@
 #pragma once
 
-#include <app_utils/cond_check.hpp>
 #include <cstddef> // std::byte
 #include <type_traits>
 
 #include <string>
 #include <vector>
 #include <array>
+
+#include <app_utils/cond_check.hpp>
 
 namespace app_utils::serial {
 

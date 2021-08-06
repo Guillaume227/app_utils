@@ -5,7 +5,7 @@
 #include <type_traits>
 #include <vector>
 
-#include "stream_utils.hpp"
+#include <app_utils/stream_utils.hpp>
 
 namespace app_utils {
 
