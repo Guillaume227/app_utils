@@ -2,17 +2,18 @@
 
 #include <app_utils/rtti_check.hpp>
 
+
 #ifndef RTTI_ENABLED
 #define ENUMATIC_DEFINE(EnumName, ...) enum EnumName { __VA_ARGS__ }
+#define throwExc(...)
 
 #else
+#include <app_utils/cond_check.hpp>
 
-#include <string>
+
+#include <string_view>
 #include <array>
 #include <charconv>
-
-#include <app_utils/string_utils.hpp>
-#include <app_utils/cond_check.hpp>
 
 namespace enumatic {
 
@@ -64,27 +65,52 @@ struct Enumatic {
   }
 
   /* list of all enum values as strings */
-  constexpr static std::array<std::string_view, size()> const& getValuesStr() {
-    static std::array<std::string_view, size()> const valuesStr = [] {
-      std::array<std::string_view, size()> values;
-      app_utils::strutils::split(
-        enumValuesAsString(EnumType{} /*dummy value - only type matters here for ADL*/),
-        ',', 
-        values.front(), 
-        values.size());
-      
-      for (auto& value : values) {        
-        auto pos = value.find('=');
-        // strip out explicit enum value specification
-        if (pos != std::string::npos) {
-          value = value.substr(0, pos);
-        }
-        value = app_utils::strutils::strip(value);
-      }
-      return values;
-    }();
+  static std::array<std::string_view, size()> const& getValuesStr() {
+    static std::array<std::string_view, size()> const valuesStr = parseStringValues();
     return valuesStr;
   }
+
+    /* list of all enum values as strings */
+  constexpr static std::array<std::string_view, size()> parseStringValues() {    
+    std::array<std::string_view, size()> values;
+
+    size_t token_found = 0;
+    size_t left_index = 0;
+    size_t num_chars = 0;
+    bool new_val_can_start = true; // strip out explicit value specialization ( e.g. "val1 = 0, ...")
+    std::string_view const& full_string = enumValuesAsString(EnumType{});
+    for (size_t i = 0; i < full_string.size(); i++) {
+      
+      switch (char c = full_string[i]) { 
+      case ' ':
+      case '\n':
+      case ',':
+      case '=':
+        if (num_chars > 0) {
+          values[token_found++] = full_string.substr(left_index, num_chars);
+          num_chars = 0;
+          new_val_can_start = false;
+        }
+        if (c == ',') {
+          new_val_can_start = true;
+        }
+        left_index = i + 1;
+        break;      
+      default:
+        if (new_val_can_start) {
+          num_chars++;
+        }
+        break;
+      }
+    }
+
+    if (num_chars > 0) {
+      values[token_found++] = full_string.substr(left_index, num_chars);
+    }
+
+    return values;    
+  }
+
 
   constexpr static auto getValues() { return make_array(std::make_index_sequence<size()>()); }
 
@@ -104,13 +130,10 @@ struct Enumatic {
 
     // strip out enum name from value. 
     // '.' can be used as a separator in a python binding
-    for (std::string_view separator : {"::", "."}) {
-      using namespace app_utils::strutils;
-      if (contains(val, separator)) {        
-        if (startswith(val, name()) and startswith(val.substr(name().size()), separator)) {
-          val = val.substr(name().size() + separator.size());
-        }
-      }
+    for (std::string_view separator : {"::", "."}) {            
+      if (val.starts_with(name()) and val.substr(name().size()).starts_with(separator)) {
+        val.remove_prefix(name().size() + separator.size());
+      }      
     }
 
     for (size_t i = 0; i < strValues.size(); i++) {
@@ -120,9 +143,9 @@ struct Enumatic {
       }
     }
 
-    using namespace enumatic;
     if constexpr (allowConvertFromIndex(EnumType{})) {
-      if (app_utils::strutils::hasOnlyDigits(val)) {
+      bool hasOnlyDigits = val.find_first_not_of("-0123456789") == std::string::npos;
+      if (hasOnlyDigits) {
         int intVal;
         auto result = std::from_chars(val.data(), val.data() + val.size(), intVal);
         if (result.ec == std::errc::invalid_argument) {
@@ -170,16 +193,15 @@ void wrap_enumatic(EnumParent& pymodule) {
 }  // namespace pybind11
 
 /*
-* Regarding the use of ADL in the Wrapper class containing the actual enum definition:
+* Regarding the use of ADL in the wrapper class containing the actual enum definition:
  For arguments of enumeration type, the innermost enclosing namespace 
  of the declaration of the enumeration type is defined is added to the set. 
  If the enumeration type is a member of a class, that class is added to the set.
  */
 
 #define ENUMATIC_DEFINE_IMPL(EnumClass, StorageType, EnumName, allowFromIdx, ...)                                  \
-  struct EnumName##Wrapper {                                                                                       \
-    EnumClass EnumType StorageType;                                                                                \
-                                                                                                                   \
+  struct EnumName##_wrapper_t {                                                                                       \
+    EnumClass EnumType StorageType {__VA_ARGS__};                                                                  \
     friend constexpr std::string_view typeName(EnumType) { return #EnumName; }                                     \
     friend constexpr std::string_view enumValuesAsString(EnumType) { return #__VA_ARGS__; }                        \
     friend constexpr size_t size(EnumType) {                                                                       \
@@ -208,7 +230,7 @@ void wrap_enumatic(EnumParent& pymodule) {
       return input;                                                                                                \
     }                                                                                                              \
                                                                                                                    \
-    friend constexpr bool allowConvertFRomIndex(EnumType) { return allowFromIdx; }                                 \
+    friend constexpr bool allowConvertFromIndex(EnumType) { return allowFromIdx; }                                 \
                                                                                                                    \
     friend constexpr size_t serial_size(EnumType) {                                                                \
       if constexpr (size(EnumType{}) > 255) {                                                                      \
@@ -217,11 +239,9 @@ void wrap_enumatic(EnumParent& pymodule) {
         return 1;                                                                                                  \
       }                                                                                                            \
     }                                                                                                              \
-                                                                                                                   \
-    EnumClass EnumType StorageType {__VA_ARGS__};                                                                  \
   };                                                                                                               \
                                                                                                                    \
-  using EnumName = EnumName##Wrapper::EnumType
+  using EnumName = EnumName##_wrapper_t::EnumType
 
 #define ENUM_CLASS_DEFINE(EnumName, fromIdx, ...) ENUMATIC_DEFINE_IMPL(enum class, , EnumName, fromIdx, __VA_ARGS__)
 #define ENUM_DEFINE(EnumName, ...) ENUMATIC_DEFINE_IMPL(enum, , EnumName, false, __VA_ARGS__)
