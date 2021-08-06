@@ -49,7 +49,7 @@ constexpr bool is_enumatic_type(T*) noexcept {
 
 template <typename T>
 constexpr bool is_enumatic_type() noexcept {
-  return is_enumatic_type<T>(nullptr);
+  return is_enumatic_type((T*)nullptr);
 }
 }  // namespace enumatic
 
@@ -64,7 +64,7 @@ struct Enumatic {
   }
 
   /* list of all enum values as strings */
-  static std::array<std::string_view, size()> const& getValuesStr() {
+  constexpr static std::array<std::string_view, size()> const& getValuesStr() {
     static std::array<std::string_view, size()> const valuesStr = [] {
       std::array<std::string_view, size()> values;
       app_utils::strutils::split(
@@ -89,12 +89,13 @@ struct Enumatic {
   constexpr static auto getValues() { return make_array(std::make_index_sequence<size()>()); }
 
   /* To/from std::string conversion */
-  constexpr static std::string_view toString(EnumType arg) { return getValuesStr().at(static_cast<unsigned>(arg)); }
+  static std::string_view toString(EnumType arg) { 
+    return getValuesStr().at(static_cast<unsigned>(arg)); 
+  }
 
   /* returns true if conversion was successfull */
   static bool fromString(std::string_view val, EnumType& enumVal) {
-    // for legacy reasons we sometimes want case-insensitivity.
-
+    
     if (val.empty()) {
       return false;
     }
@@ -103,11 +104,11 @@ struct Enumatic {
 
     // strip out enum name from value. 
     // '.' can be used as a separator in a python binding
-    for (auto const& separator : {"::", "."}) {
-      if (app_utils::strutils::contains(val, separator)) {
-        std::string const enum_typeNamePrefix = std::string{name()} + separator;
-        if (app_utils::strutils::startswith(val, enum_typeNamePrefix)) {
-          val = val.substr(enum_typeNamePrefix.size());
+    for (std::string_view separator : {"::", "."}) {
+      using namespace app_utils::strutils;
+      if (contains(val, separator)) {        
+        if (startswith(val, name()) and startswith(val.substr(name().size()), separator)) {
+          val = val.substr(name().size() + separator.size());
         }
       }
     }
@@ -120,16 +121,18 @@ struct Enumatic {
     }
 
     using namespace enumatic;
-    if (allowConvertFromIndex(enumVal) and app_utils::strutils::hasOnlyDigits(val)) {
-      int intVal;
-      auto result = std::from_chars(val.data(), val.data() + val.size(), intVal);
-      if (result.ec == std::errc::invalid_argument) {
-        return false;
-      }
-      for (auto value : getValues()) {
-        if (static_cast<int>(value) == intVal) {
-          enumVal = value;
-          return true;
+    if constexpr (allowConvertFromIndex(EnumType{})) {
+      if (app_utils::strutils::hasOnlyDigits(val)) {
+        int intVal;
+        auto result = std::from_chars(val.data(), val.data() + val.size(), intVal);
+        if (result.ec == std::errc::invalid_argument) {
+          return false;
+        }
+        for (auto value : getValues()) {
+          if (static_cast<int>(value) == intVal) {
+            enumVal = value;
+            return true;
+          }
         }
       }
     }
@@ -166,6 +169,13 @@ void wrap_enumatic(EnumParent& pymodule) {
 }
 }  // namespace pybind11
 
+/*
+* Regarding the use of ADL in the Wrapper class containing the actual enum definition:
+ For arguments of enumeration type, the innermost enclosing namespace 
+ of the declaration of the enumeration type is defined is added to the set. 
+ If the enumeration type is a member of a class, that class is added to the set.
+ */
+
 #define ENUMATIC_DEFINE_IMPL(EnumClass, StorageType, EnumName, allowFromIdx, ...)                                  \
   struct EnumName##Wrapper {                                                                                       \
     EnumClass EnumType StorageType;                                                                                \
@@ -181,7 +191,7 @@ void wrap_enumatic(EnumParent& pymodule) {
     }                                                                                                              \
     friend constexpr bool is_enumatic_type(EnumType*) noexcept { return true; }                                    \
                                                                                                                    \
-    friend std::string to_string(EnumType arg) { return std::string{Enumatic<EnumType>::toString(arg)}; }          \
+    friend constexpr std::string to_string(EnumType arg) { return std::string{Enumatic<EnumType>::toString(arg)}; }\
                                                                                                                    \
     friend std::ostream& operator<<(std::ostream& output, EnumType const& arg) {                                   \
       return output << Enumatic<EnumType>::toString(arg);                                                          \
@@ -200,7 +210,15 @@ void wrap_enumatic(EnumParent& pymodule) {
                                                                                                                    \
     friend constexpr bool allowConvertFRomIndex(EnumType) { return allowFromIdx; }                                 \
                                                                                                                    \
-    EnumClass EnumType StorageType {__VA_ARGS__};                                                                 \
+    friend constexpr size_t serial_size(EnumType) {                                                                \
+      if constexpr (size(EnumType{}) > 255) {                                                                      \
+        return sizeof(EnumType);                                                                                   \
+      } else {                                                                                                     \
+        return 1;                                                                                                  \
+      }                                                                                                            \
+    }                                                                                                              \
+                                                                                                                   \
+    EnumClass EnumType StorageType {__VA_ARGS__};                                                                  \
   };                                                                                                               \
                                                                                                                    \
   using EnumName = EnumName##Wrapper::EnumType

@@ -15,19 +15,31 @@ constexpr size_t serial_size(T const&) requires std::is_arithmetic_v<T> or std::
   return sizeof(T);
 }
 
-constexpr size_t serial_size(std::string const& str) {
-  return 1 + str.size();
+inline constexpr size_t serial_size(std::string const& str) {
+  return 1 + str.size(); // 1 extra byte for holding the size
 }
 
 template<typename T, size_t N>
-constexpr size_t serial_size(std::array<T, N> const&) { 
-  return N * sizeof(T);
+constexpr size_t serial_size(std::array<T, N> const& val) { 
+  size_t num_bytes = 0;
+  for (auto& item : val) {
+    num_bytes += serial_size(item);
+  }
+  return num_bytes;
 }
 
 template <typename T>
 constexpr size_t serial_size(std::vector<T> const& val) {
-  return 1 + val.size() * sizeof(T);
+  size_t num_bytes = 1; // 1 byte for holding the size
+  for (auto& item : val) {
+    num_bytes += serial_size(item);
+  }
+  return num_bytes;
 }
+
+/*
+  arithmetic types
+*/
 
 template<typename T>
 size_t from_bytes(std::byte const* buffer, size_t buffer_size, T& val) requires std::is_arithmetic_v<T> {
@@ -45,43 +57,67 @@ size_t to_bytes(std::byte* buffer, size_t buffer_size, T const& val) requires st
   return num_bytes;
 }
 
-size_t from_bytes(std::byte const* buffer, size_t buffer_size, bool& val) {
+/*
+  bool
+*/
+
+inline size_t from_bytes(std::byte const* buffer, size_t buffer_size, bool& val) {
   val = std::to_integer<uint8_t>(buffer[0]) != 0;
   return 1;
 }
 
-size_t to_bytes(std::byte* buffer, size_t buffer_size, bool const& val) {
+inline size_t to_bytes(std::byte* buffer, size_t buffer_size, bool const& val) {
   buffer[0] = static_cast<std::byte>(val);
   return 1;
 }
 
+/*
+  enum
+*/
+
 template <typename T>
 size_t from_bytes(std::byte const* buffer, size_t buffer_size, T& val) requires std::is_enum_v<T> {
-  size_t num_bytes = serial_size(val);
-  std::memcpy(&val, buffer, num_bytes);
+  constexpr size_t num_bytes = serial_size(T{});
+  if constexpr (num_bytes == 1) {
+    val = static_cast<T>(std::to_integer<std::underlying_type_t<T>>(buffer[0]));
+  } else {
+    std::memcpy(&val, buffer, num_bytes);
+  }
   return num_bytes;
 }
 
 template <typename T>
 size_t to_bytes(std::byte* buffer, size_t buffer_size, T const& val) requires std::is_enum_v<T> {
-  size_t num_bytes = serial_size(val);
-  std::memcpy(buffer, &val, num_bytes);
+  constexpr size_t num_bytes = serial_size(T{});
+  if constexpr (num_bytes == 1) {
+    buffer[0] = static_cast<std::byte>(val);
+  } else {    
+    std::memcpy(buffer, &val, num_bytes);
+  }
   return num_bytes;
 }
 
-size_t from_bytes(std::byte const* buffer, size_t buffer_size, std::string& val) {
+/*
+  std::string
+*/
+
+inline size_t from_bytes(std::byte const* buffer, size_t buffer_size, std::string& val) {
   size_t str_size = std::to_integer<size_t>(buffer[0]);
   val.resize(str_size);
   std::memcpy(val.data(), buffer+1, str_size);
   return str_size + 1;
 }
 
-size_t to_bytes(std::byte* buffer, size_t buffer_size, std::string const& val) {  
+inline size_t to_bytes(std::byte* buffer, size_t buffer_size, std::string const& val) {  
   size_t str_size = val.size();
   buffer[0] = static_cast<std::byte>(str_size);
   std::memcpy(buffer+1, val.c_str(), str_size);
   return str_size + 1;
 }
+
+/* 
+  C-style array
+*/
 
 template <typename T, int N>
 size_t from_bytes(std::byte const* buffer, size_t buffer_size, T (&val)[N]) requires std::is_arithmetic_v<T> {
@@ -94,6 +130,10 @@ size_t to_bytes(std::byte* buffer, size_t buffer_size, T const (&val) [N]) requi
   std::memcpy(buffer, val, N);
   return N;
 }
+
+/*
+  std::array
+*/
 
 template <typename T, int N>
 size_t from_bytes(std::byte const* buffer, size_t buffer_size, std::array<T, N>& val) {
@@ -112,6 +152,10 @@ size_t to_bytes(std::byte* buffer, size_t buffer_size, std::array<T, N> const& v
   }
   return num_bytes;
 }
+
+/*
+  std::vector
+*/
 
 template<typename T>
 size_t from_bytes(std::byte const* buffer, size_t buffer_size, std::vector<T>& val) {

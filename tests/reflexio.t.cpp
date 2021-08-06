@@ -84,7 +84,13 @@ TEST_CASE("reflexio_serialize", "[reflexio]") {
   REQUIRE(sendStruct != receiveStruct);
   std::vector<std::byte> buffer(256);
   
-  size_t written_bytes = to_bytes(buffer.data(), buffer.size(), sendStruct);
+  size_t const written_bytes = to_bytes(buffer.data(), buffer.size(), sendStruct);
+
+  size_t const expected_serial_size = sizeof(int) + /*string*/ 8 + sizeof(float) +
+                                      /*TestEnum*/ 1 + /*bool*/ 1 +
+                                      8 * sizeof(float) + 3 * sizeof(float) + 1;
+  
+  REQUIRE(written_bytes == expected_serial_size);
 
   from_bytes(buffer.data(), written_bytes, receiveStruct);
 

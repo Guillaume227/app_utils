@@ -264,6 +264,7 @@ void wrap_reflexio_struct(PyModule& pymodule) {
     .def(pybind11::self == pybind11::self)
     .def(pybind11::self != pybind11::self)
     .def("__str__", [](ReflexioStruct const& self) { return to_string(self);  })
+    .def("get_serial_size", &ReflexioStruct::get_serial_size)
     .def("non_default_values", &ReflexioStruct::non_default_values)
     .def("has_all_default_values", &ReflexioStruct::has_all_default_values)
     .def("differing_values", &ReflexioStruct::differing_values);
