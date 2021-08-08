@@ -72,11 +72,11 @@ struct member_descriptor_impl_t : public member_descriptor_t {
   std::type_info const& get_member_type_info() const override { return typeid(MemberType); }
   std::string default_value_as_string() const override { 
     using namespace app_utils::strutils;
-    return to_string(m_default_value); 
+    return std::string{to_string(m_default_value)};
   }
   std::string value_as_string(void const* host) const override {
     using namespace app_utils::strutils;
-    return to_string(get_value(host));
+    return std::string{to_string(get_value(host))};
   }
 
   bool values_differ(void const* host1, void const* host2) const override {
