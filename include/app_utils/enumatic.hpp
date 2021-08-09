@@ -104,27 +104,21 @@ struct Enumatic {
   }
 
   /* list of all enum values as strings */
-  static std::array<std::string_view, size()> const& getValuesStr() {
-    constexpr static auto const valuesStr = enumatic::parseEnumDefinition<size()>(enumValuesAsString(EnumType{}));
-    return valuesStr;
-  }
+  constexpr static std::array<std::string_view, size()> enum_value_details = enumatic::parseEnumDefinition<size()>(enumValuesAsString(EnumType{}));
 
   consteval static auto getValues() { return make_array(std::make_index_sequence<size()>()); }
 
   /* To/from std::string conversion */
-  constexpr static std::string_view toString(EnumType arg) {
-    constexpr auto strValues = enumatic::parseEnumDefinition<size()>(enumValuesAsString(EnumType{}));
-    return strValues[static_cast<unsigned>(arg)];
+  constexpr static std::string_view toString(EnumType arg) {    
+    return enum_value_details[static_cast<unsigned>(arg)];
   }
 
   /* returns true if conversion was successfull */
-  static bool fromString(std::string_view val, EnumType& enumVal) {
+  constexpr static bool fromString(std::string_view val, EnumType& enumVal) {
     
     if (val.empty()) {
       return false;
     }
-
-    auto const& strValues = getValuesStr();
 
     // strip out enum name from value. 
     // '.' can be used as a separator in a python binding
@@ -134,8 +128,8 @@ struct Enumatic {
       }      
     }
 
-    for (size_t i = 0; i < strValues.size(); i++) {
-      if (val == strValues[i]) {
+    for (size_t i = 0; i < size(); i++) {
+      if (val == enum_value_details[i]) {
         enumVal = getValues()[i];
         return true;
       }
