@@ -10,7 +10,6 @@
 
 #include <string_view>
 #include <array>
-#include <charconv>
 
 namespace enumatic {
 
@@ -35,16 +34,53 @@ constexpr size_t numListItems(std::string_view const valStr) {
   }
 }
 
+struct enum_value_detail_t {
+  std::string_view value_name;
+  int int_value;
+};
+
+inline void compile_time_error(std::string_view /*message*/) {}
+
+constexpr int stoi(std::string_view const str) {
+  bool has_negative_sign = false;
+  int value = 0;
+  auto const is_digit = [](char c) { return c <= '9' and c >= '0'; };
+
+  for (char c : str) {
+    if (c == '-') {
+      has_negative_sign = true;
+    } else {
+      if (not is_digit(c)) {
+        compile_time_error("not a digit");
+      }
+      value = value * 10 + (c - '0');
+    }
+  }
+  if (has_negative_sign) {
+    value *= -1;
+  }
+  return value;
+}
+
 /* list of all enum values as strings */
 template<size_t N>
-consteval std::array<std::string_view, N> parseEnumDefinition(std::string_view const enum_vals_as_str) {
+consteval std::array<enum_value_detail_t, N> parseEnumDefinition(std::string_view const enum_vals_as_str) {
 
-  std::array<std::string_view, N> values;
+  std::array<enum_value_detail_t, N> value_details;
 
-  size_t token_found = 0;
+  size_t token_index = 0;
   size_t left_index = 0;
   size_t num_chars = 0;
-  bool new_val_can_start = true; // strip out explicit value specialization ( e.g. "val1 = 0, ...")  
+  bool is_parsing_name = true; // strip out explicit value specialization ( e.g. "val1 = 0, ...")  
+
+  auto const assign_detail = [&]() {
+    auto token_str = enum_vals_as_str.substr(left_index, num_chars);
+    if (is_parsing_name) {
+      value_details[token_index].value_name = token_str;
+    } else {     
+      value_details[token_index].int_value = stoi(token_str);
+    }
+  };
   for (size_t i = 0; i < enum_vals_as_str.size(); i++) {
 
     switch (char c = enum_vals_as_str[i]) {
@@ -53,28 +89,39 @@ consteval std::array<std::string_view, N> parseEnumDefinition(std::string_view c
     case ',':
     case '=':
       if (num_chars > 0) {
-        values[token_found++] = enum_vals_as_str.substr(left_index, num_chars);
+        assign_detail();        
         num_chars = 0;
-        new_val_can_start = false;
       }
       if (c == ',') {
-        new_val_can_start = true;
+        if (is_parsing_name) {
+          value_details[token_index].int_value = token_index == 0
+              ? 0
+              : value_details [token_index - 1].int_value + 1;
+        } else {
+          is_parsing_name = true;
+        }
+        token_index++;
+      } else if (c == '=') {
+        is_parsing_name = false;
       }
       left_index = i + 1;
       break;
     default:
-      if (new_val_can_start) {
-        num_chars++;
-      }
+      num_chars++;
       break;
     }
   }
 
   if (num_chars > 0) {
-    values[token_found++] = enum_vals_as_str.substr(left_index, num_chars);
+    assign_detail();
+    if (is_parsing_name) {
+      value_details[token_index].int_value = token_index == 0
+          ? 0
+          : value_details[token_index - 1].int_value + 1;
+    } 
   }
 
-  return values;
+  return value_details;
 }
 
 template <typename EnumClass>
@@ -104,13 +151,37 @@ struct Enumatic {
   }
 
   /* list of all enum values as strings */
-  constexpr static std::array<std::string_view, size()> enum_value_details = enumatic::parseEnumDefinition<size()>(enumValuesAsString(EnumType{}));
+  constexpr static auto enum_value_details =
+      enumatic::parseEnumDefinition<size()>(enumValuesAsString(EnumType{}));
 
-  consteval static auto getValues() { return make_array(std::make_index_sequence<size()>()); }
+  consteval static bool has_default_indexation() {
+    for (int i = 0; i < (int) enum_value_details.size(); i++) {
+      if (enum_value_details[i].int_value != i) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  consteval static auto getValues() { 
+    std::array<EnumType, size()> values;
+    for (size_t i = 0; i < size(); i++) {
+      values[i] = static_cast<EnumType>(enum_value_details[i].int_value);
+    }
+    return values;
+  }
 
   /* To/from std::string conversion */
-  constexpr static std::string_view toString(EnumType arg) {    
-    return enum_value_details[static_cast<unsigned>(arg)];
+  constexpr static std::string_view toString(EnumType arg) {
+    if constexpr (has_default_indexation()) {
+      return enum_value_details[static_cast<size_t>(arg)].value_name;
+    } else {
+      for (auto const& value_detail : enum_value_details) {
+        if (value_detail.int_value == static_cast<int>(arg))
+          return value_detail.value_name;
+      }
+      return "";// should never get there - compile time error
+    }
   }
 
   /* returns true if conversion was successfull */
@@ -128,9 +199,9 @@ struct Enumatic {
       }      
     }
 
-    for (size_t i = 0; i < size(); i++) {
-      if (val == enum_value_details[i]) {
-        enumVal = getValues()[i];
+    for (auto const& value_detail : enum_value_details) {
+      if (val == value_detail.value_name) {
+        enumVal = static_cast<EnumType>(value_detail.int_value);
         return true;
       }
     }
@@ -138,14 +209,10 @@ struct Enumatic {
     if constexpr (allowConvertFromIndex(EnumType{})) {
       bool hasOnlyDigits = val.find_first_not_of("-0123456789") == std::string_view::npos;
       if (hasOnlyDigits) {
-        int intVal;
-        auto result = std::from_chars(val.data(), val.data() + val.size(), intVal);
-        if (result.ec == std::errc::invalid_argument) {
-          return false;
-        }
-        for (auto value : getValues()) {
-          if (static_cast<int>(value) == intVal) {
-            enumVal = value;
+        int intVal = enumatic::stoi(val);
+        for (auto const& value_detail : enum_value_details) {
+          if (value_detail.int_val == intVal) {
+            enumVal = static_cast<EnumType>(intVal);
             return true;
           }
         }
@@ -161,13 +228,6 @@ struct Enumatic {
       throwExc(" '", val, "' is not a valid '", name(), "' value. Options are:", enumValuesAsString(EnumType{}));
     }
     return enumVal;
-  }
-
- private:
-  /* Helper method to initialize array of enum values */
-  template <std::size_t... Idx>
-  constexpr static auto make_array(std::index_sequence<Idx...>) {
-    return std::array<EnumType, size()>{{static_cast<EnumType>(Idx)...}};
   }
 };
 
@@ -195,7 +255,7 @@ void wrap_enumatic(EnumParent& pymodule) {
   namespace EnumName##_wrapper_t {                                                                                 \
     EnumClass EnumType StorageType {__VA_ARGS__};                                                                  \
     consteval std::string_view typeName(EnumType) { return #EnumName; }                                            \
-    consteval std::string_view enumValuesAsString(EnumType) { return #__VA_ARGS__; }                                    \
+    consteval std::string_view enumValuesAsString(EnumType) { return #__VA_ARGS__; }                               \
     consteval size_t size(EnumType) { return enumatic::numListItems(#__VA_ARGS__); }                               \
     constexpr std::string_view to_string(EnumType arg) { return Enumatic<EnumType>::toString(arg); }               \
                                                                                                                    \
