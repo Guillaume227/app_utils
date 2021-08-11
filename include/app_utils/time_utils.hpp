@@ -48,7 +48,11 @@ namespace app_utils
 
 namespace std
 {
-
+ template<typename Duration, typename Ghost=typename app_utils::time::DurationTraits<Duration>::Type>
+  inline ostream& operator << (ostream& os, Duration const& v) {
+    return os << v.count() << app_utils::time::DurationTraits<Duration>::units();
+  }
+  
   istream& operator >>(istream& is, chrono::nanoseconds& v);
   istream& operator >>(istream& is, chrono::microseconds& v);
   istream& operator >>(istream& is, chrono::milliseconds& v);
