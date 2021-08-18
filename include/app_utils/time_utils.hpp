@@ -43,16 +43,20 @@ namespace app_utils
       checkCond(iss.eof(), "failed parsing duration", typeName<D>(), "from string '", inputStr, "'");
       return d;
     }
-  }
-}
+  }  // namespace time  
+}  // namespace app_utils
 
-namespace std
-{
- template<typename Duration, typename Ghost=typename app_utils::time::DurationTraits<Duration>::Type>
-  inline ostream& operator << (ostream& os, Duration const& v) {
+namespace std {
+
+#if defined(__GNUG__) 
+// as of GCC 10.2.1 there is still no support for output stream operator on chrono types
+// so we provide an implementation
+template <typename Duration, typename Ghost = typename app_utils::time::DurationTraits<Duration>::Type>
+  inline ostream& operator<<(ostream& os, Duration const& v) {
     return os << v.count() << app_utils::time::DurationTraits<Duration>::units();
   }
-  
+#endif
+
   istream& operator >>(istream& is, chrono::nanoseconds& v);
   istream& operator >>(istream& is, chrono::microseconds& v);
   istream& operator >>(istream& is, chrono::milliseconds& v);
