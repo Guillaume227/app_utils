@@ -5,6 +5,7 @@
 #include <string>
 #include <string_view>
 #include <sstream>
+#include <type_traits>
 
 namespace app_utils
 {  
@@ -21,6 +22,18 @@ namespace app_utils
 
   namespace stream {
     using std::ostream;
+
+
+    namespace details {
+      template <class T, class = decltype(std::declval<std::ostream>() << std::declval<T>())>
+      std::true_type has_output_stream_operator_test(T const&);
+      std::false_type has_output_stream_operator_test(...);
+    }  // namespace details
+
+    template <class T>
+    using has_output_stream_operator =
+        decltype(details::has_output_stream_operator_test(std::declval<T const&>()));
+
 
     template<typename T>
     struct StreamPrinter {
