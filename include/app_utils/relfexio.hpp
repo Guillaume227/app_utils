@@ -1,14 +1,14 @@
 #pragma once
 
-#include <app_utils/cond_check.hpp>
-#include <app_utils/string_utils.hpp>
-#include <app_utils/serial_utils.hpp>
 #include <string>
 #include <memory>
 #include <array>
 #include <typeinfo>
 #include <sstream>
 #include <cstddef> // std::byte
+
+#include <app_utils/string_utils.hpp>
+#include <app_utils/serial_utils.hpp>
 
 
 struct member_descriptor_t {
@@ -111,7 +111,7 @@ struct member_descriptor_impl_t : public member_descriptor_t {
 
 #define REFLEXIO_MEMBER_VAR_DEFINE(var_type, var_name, default_value, description) \
   struct var_name ## _descriptor_t {\
-    static void register_descriptor(ReflexioStructBase& reflexioStruct) { \
+    static void register_descriptor(ReflexioStructBase& /*reflexioStruct*/) { \
       static bool registered = (ReflexioTypeName::register_member(                                                               \
               std::unique_ptr<member_descriptor_t>(       \
                new member_descriptor_impl_t<var_type, ReflexioTypeName>(                  \
@@ -263,7 +263,7 @@ void wrap_reflexio_struct(PyModule& pymodule) {
     .def(pybind11::init<>())
     .def(pybind11::self == pybind11::self)
     .def(pybind11::self != pybind11::self)
-    .def("__str__", [](ReflexioStruct const& self) { return to_string(self);  })
+    .def("__str__", [](ReflexioStruct const& self_) { return to_string(self_);  })
     .def("get_serial_size", &ReflexioStruct::get_serial_size)
     .def("non_default_values", &ReflexioStruct::non_default_values)
     .def("has_all_default_values", &ReflexioStruct::has_all_default_values)

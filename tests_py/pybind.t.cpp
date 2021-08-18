@@ -36,7 +36,7 @@ void bind_std_array(module_& m) {
   cl.def(pybind11::init<>())
       .def(pybind11::self == pybind11::self)
       .def(pybind11::self != pybind11::self)
-      .def("__str__", [](Array const& self) { return app_utils::strutils::to_string(self); })
+      .def("__str__", [](Array const& self_) { return app_utils::strutils::to_string(self_); })
       .def("__len__", &Array::size)
       .def("__setitem__", [wrap_i](Array& v, DiffType i, const T& t) {
                             SizeType index = wrap_i(i, v.size());

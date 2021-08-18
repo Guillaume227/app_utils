@@ -9,7 +9,9 @@
   if(MSVC)
 	# https://stackoverflow.com/questions/24414124/why-does-vs-not-define-the-alternative-tokens-for-logical-operators
     add_compile_options(#"/Za" 
-					    "/permissive-" # so we can use alternative operators with msvc
+						#"/Wall"
+						"/W4"
+						"/permissive-" # so we can use alternative operators with msvc
 						"-D_CRT_SECURE_NO_WARNINGS" # remove useless std::getenv windows warning
 						)
 	
