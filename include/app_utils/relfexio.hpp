@@ -231,20 +231,14 @@ struct ReflexioStructBase {
 constexpr size_t count_member_var_declarations(std::string_view const text) {
   size_t count = 0;
 
-  std::string const using_str = "using ";
-
-  size_t num_using_statements = 0;
+  std::string_view const register_member_str = "REFLEXIO_MEMBER_VAR_DEFINE";
 
   for (size_t i = 0; i < text.size(); i++) {
-    if (text[i] == ';') {
+    if (text.substr(i, register_member_str.size()) == register_member_str) {
       count++;
-    } else if (text.substr(i, using_str.size()) == using_str) {
-      if (i == 0 or text[i - 1] == ' ' or text[i - 1] == ';') {
-        num_using_statements++;
-      }
     }
   }
-  return count - num_using_statements;
+  return count;
 }
 
 #define REFLEXIO_STRUCT_DEFINE(StructName, ...)  \
