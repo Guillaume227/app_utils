@@ -1,13 +1,13 @@
 #pragma once
 
 #include <cstddef> // std::byte
+#include <cstring> // std::memcpy
 #include <type_traits>
 
 #include <string>
 #include <vector>
 #include <array>
 
-#include <app_utils/cond_check.hpp>
 
 namespace app_utils::serial {
 
@@ -16,7 +16,7 @@ constexpr size_t serial_size(T const&) requires std::is_arithmetic_v<T> or std::
   return sizeof(T);
 }
 
-inline constexpr size_t serial_size(std::string const& str) {
+inline size_t serial_size(std::string const& str) {
   return 1 + str.size(); // 1 extra byte for holding the size
 }
 
@@ -109,7 +109,7 @@ inline size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, std::s
   return str_size + 1;
 }
 
-inline size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, std::string const& val) {  
+inline size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, std::string const& val) {
   size_t str_size = val.size();
   buffer[0] = static_cast<std::byte>(str_size);
   std::memcpy(buffer+1, val.c_str(), str_size);
@@ -121,13 +121,13 @@ inline size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, std::string co
 */
 
 template <typename T, int N>
-size_t from_bytes(std::byte const* buffer, size_t buffer_size, T (&val)[N]) requires std::is_arithmetic_v<T> {
+size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, T (&val)[N]) requires std::is_arithmetic_v<T> {
   std::memcpy(val, buffer, N);
   return 1;
 }
 
 template <typename T, int N>
-size_t to_bytes(std::byte* buffer, size_t buffer_size, T const (&val) [N]) requires std::is_arithmetic_v<T> {
+size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, T const (&val) [N]) requires std::is_arithmetic_v<T> {
   std::memcpy(buffer, val, N);
   return N;
 }
