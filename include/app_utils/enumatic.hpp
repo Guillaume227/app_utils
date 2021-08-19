@@ -238,9 +238,13 @@ class enum_;
 template <typename EnumaticT, typename EnumParent>
 void wrap_enumatic(EnumParent& pymodule) {
   auto wrappedEnum = enum_<EnumaticT>(pymodule, typeName(EnumaticT{}).data());
+  // copy string_views into strings because pybind takes in a \0 terminated char const*
+  static std::array<std::string, Enumatic<EnumaticT>::size()> string_values;
+  int i = 0;
   for (auto const& value : Enumatic<EnumaticT>::getValues()) {
-    wrappedEnum.value(Enumatic<EnumaticT>::toString(value).data(), value);
-  }
+    string_values[i] = std::string{Enumatic<EnumaticT>::toString(value)};
+    wrappedEnum.value(string_values[i++].data(), value);
+  }  
 }
 }  // namespace pybind11
 

@@ -35,6 +35,7 @@ TEST_CASE("enumatic_to_from_string", "[enumatic]") {
 
   REQUIRE(to_string(MyEnum::val1) == "val1");
   REQUIRE(to_string(MyEnum::val2) == "val2");
+  REQUIRE(to_string(MyEnum::val5) == "val5");
 }
 
 ENUMATIC_DEFINE(ShortEnum, val1, val2);
