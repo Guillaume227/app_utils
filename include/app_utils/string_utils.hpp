@@ -108,6 +108,8 @@ std::string to_string(char const (&val)[N] ) {
   return val;
 }
 
+inline std::string to_string(bool b) { return b ? "true" : "false"; }
+
 template<typename T>
 std::string contiguous_items_to_string(T const* vals, size_t num_items) {
   std::string res = "{";
