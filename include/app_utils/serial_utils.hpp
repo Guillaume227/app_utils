@@ -136,7 +136,7 @@ size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, T const (&val) [N]) r
   std::array
 */
 
-template <typename T, int N>
+template <typename T, size_t N>
 size_t from_bytes(std::byte const* buffer, size_t buffer_size, std::array<T, N>& val) {
   size_t num_bytes = 0;
   for (auto& item : val) {
@@ -145,8 +145,8 @@ size_t from_bytes(std::byte const* buffer, size_t buffer_size, std::array<T, N>&
   return num_bytes;
 }
 
-template <typename T, int N>
-size_t to_bytes(std::byte* buffer, size_t buffer_size, std::array<T, N> const& val) {
+template <typename T, size_t N>
+size_t to_bytes(std::byte* const buffer, size_t const buffer_size, std::array<T, N> const& val) {
   size_t num_bytes = 0;
   for (auto& item : val) {
     num_bytes += to_bytes(buffer + num_bytes, buffer_size - num_bytes, item);
