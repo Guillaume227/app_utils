@@ -51,47 +51,6 @@ void bind_std_array(module_& m) {
 }
 }  // namespace pybind11
 
-
-// Communication commands
-ENUMATIC_DEFINE(COMM_PACKET_ID, FW_VERSION, JUMP_TO_BOOTLOADER, ERASE_NEW_APP, WRITE_NEW_APP_DATA, GET_VALUES, SET_DUTY,
-                SET_CURRENT, SET_CURRENT_BRAKE, SET_RPM, SET_POS, SET_HANDBRAKE, SET_DETECT, SET_SERVO_POS, SET_MCCONF,
-                GET_MCCONF, GET_MCCONF_DEFAULT, SET_APPCONF, GET_APPCONF, GET_APPCONF_DEFAULT, SAMPLE_PRINT,
-                TERMINAL_CMD, PRINT, ROTOR_POSITION, EXPERIMENT_SAMPLE, DETECT_MOTOR_PARAM, DETECT_MOTOR_R_L,
-                DETECT_MOTOR_FLUX_LINKAGE, DETECT_ENCODER, DETECT_HALL_FOC, REBOOT, ALIVE,
-                GET_DECODED_PPM,   // [[deprecated]],
-                GET_DECODED_ADC,   // [[deprecated]],
-                GET_DECODED_CHUK,  // [[deprecated]],
-                FORWARD_CAN,
-                SET_CHUCK_DATA,            // [[deprecated]],
-                CUSTOM_APP_DATA,           // [[deprecated]],
-                NRF_START_PAIRING,         // [[deprecated]],
-                GPD_SET_FSW,               // [[deprecated]],
-                GPD_BUFFER_NOTIFY,         // [[deprecated]],
-                GPD_BUFFER_SIZE_LEFT,      // [[deprecated]],
-                GPD_FILL_BUFFER,           // [[deprecated]],
-                GPD_OUTPUT_SAMPLE,         // [[deprecated]],
-                GPD_SET_MODE,              // [[deprecated]],
-                GPD_FILL_BUFFER_INT8,      // [[deprecated]],
-                GPD_FILL_BUFFER_INT16,     // [[deprecated]],
-                GPD_SET_BUFFER_INT_SCALE,  // [[deprecated]],
-                GET_VALUES_SETUP, SET_MCCONF_TEMP, SET_MCCONF_TEMP_SETUP,
-                GET_VALUES_SELECTIVE,        // [[deprecated]],
-                GET_VALUES_SETUP_SELECTIVE,  // [[deprecated]],
-                EXT_NRF_PRESENT,             // [[deprecated]],
-                EXT_NRF_ESB_SET_CH_ADDR,     // [[deprecated]],
-                EXT_NRF_ESB_SEND_DATA,       // [[deprecated]],
-                EXT_NRF_ESB_RX_DATA,         // [[deprecated]],
-                EXT_NRF_SET_ENABLED,         // [[deprecated]],
-                DETECT_MOTOR_FLUX_LINKAGE_OPENLOOP, DETECT_APPLY_ALL_FOC, JUMP_TO_BOOTLOADER_ALL_CAN,
-                ERASE_NEW_APP_ALL_CAN, WRITE_NEW_APP_DATA_ALL_CAN, PING_CAN, APP_DISABLE_OUTPUT, TERMINAL_CMD_SYNC,
-                GET_IMU_DATA,        // [[deprecated]],
-                BM_CONNECT,          // [[deprecated]],
-                BM_ERASE_FLASH_ALL,  // [[deprecated]],
-                BM_WRITE_FLASH,      // [[deprecated]],
-                BM_REBOOT,           // [[deprecated]],
-                COMM_BM_DISCONNECT);
-
-
 ENUMATIC_DEFINE(MyEnum, 
 	EnumVal1, 
 	EnumVal2, 
@@ -103,6 +62,7 @@ PYBIND11_MAKE_OPAQUE(std::vector<int>);
 PYBIND11_MAKE_OPAQUE(std::vector<float>);
 PYBIND11_MAKE_OPAQUE(std::vector<double>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::string>);
+PYBIND11_MAKE_OPAQUE(std::vector<std::string_view>);
 
 
 REFLEXIO_STRUCT_DEFINE(MyStruct,
@@ -134,6 +94,5 @@ PYBIND11_MODULE(REFLEXIO_STRUCT_USE_PYBIND_MODULE, m) {
   py::wrap_reflexio_struct<MyStruct>(m);
 
   py::wrap_enumatic<MyEnum>(m);
-  py::wrap_enumatic<COMM_PACKET_ID>(m);
 }
 }  // namespace app_utils::tests
