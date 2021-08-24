@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 
-#include <app_utils/relfexio.hpp>
+#include <app_utils/reflexio.hpp>
 
 #include <app_utils/enumatic.hpp>
 #include <app_utils/cond_check.hpp>
