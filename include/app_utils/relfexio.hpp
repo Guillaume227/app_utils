@@ -1,39 +1,52 @@
 #pragma once
 
-#include <string>
-#include <memory>
+
 #include <array>
+#include <cstddef> // std::byte
+#include <utility>
+
+//#define REFLEXIO_MINIMAL_FEATURES
+
+#ifndef REFLEXIO_MINIMAL_FEATURES
+#include <string_view>
 #include <typeinfo>
 #include <sstream>
-#include <cstddef> // std::byte
-
 #include <app_utils/string_utils.hpp>
+#include <app_utils/cond_check.hpp>
+#else
+#define checkCond(...)
+#endif
 #include <app_utils/serial_utils.hpp>
 
 
 struct member_descriptor_t {
 
-  std::string const m_name;
-  std::string const m_description;
+#ifndef REFLEXIO_MINIMAL_FEATURES
+  std::string_view const m_name;
+  std::string_view const m_description;
 
-  constexpr member_descriptor_t(std::string name,                                
-                                std::string description)
-    : m_name(std::move(name))
-    , m_description(std::move(description))
+  constexpr member_descriptor_t(std::string_view name,
+                                std::string_view description)
+    : m_name(name)
+    , m_description(description)
   {}
+#else
+  constexpr member_descriptor_t(std::string_view, std::string_view) {}
+#endif
 
-  virtual ~member_descriptor_t() = default;
+  constexpr virtual ~member_descriptor_t() = default;
 
-  virtual std::type_info const& get_member_type_info() const = 0;
+#ifndef REFLEXIO_MINIMAL_FEATURES
+  std::string_view const& get_name() const { return m_name; }
+  std::string_view const& get_description() const { return m_description; }
+
   virtual std::string default_value_as_string() const = 0;
   virtual std::string value_as_string(void const* host) const = 0;
   virtual bool is_at_default(void const* host) const = 0;
   virtual bool values_differ(void const* host1, void const* host2) const = 0;
+#endif
 
   virtual size_t get_serial_size(void const* host) const = 0;
-
-  std::string const& get_name() const { return m_name; }
-  std::string const& get_description() const { return m_description; }
 
   // returns number of bytes written
   virtual size_t write_to_bytes(std::byte* buffer, size_t buffer_size, void const* host) const = 0;
@@ -50,16 +63,20 @@ template<typename MemberType, typename HostType>
 struct member_descriptor_impl_t : public member_descriptor_t {
 
   MemberType HostType::* const m_member_var_ptr;
-  MemberType const m_default_value; 
+
+  MemberType const m_default_value;
 
   template<typename ...Args>
   constexpr member_descriptor_impl_t(MemberType HostType::*member_var_ptr, 
                                      MemberType defaultValue, 
                                      Args&& ...args)
       : member_descriptor_t(std::forward<Args>(args)...)
-      , m_default_value(std::move(defaultValue))
       , m_member_var_ptr(member_var_ptr)
+      , m_default_value(std::move(defaultValue))
   {}
+
+  // explicit definition required because of gcc bug: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93413
+  constexpr ~member_descriptor_impl_t() override = default;
 
   MemberType const& get_value(void const* host) const { 
     return static_cast<HostType const*>(host)->*m_member_var_ptr; 
@@ -69,7 +86,7 @@ struct member_descriptor_impl_t : public member_descriptor_t {
     return static_cast<HostType*>(host)->*m_member_var_ptr; 
   }
 
-  std::type_info const& get_member_type_info() const override { return typeid(MemberType); }
+#ifndef REFLEXIO_MINIMAL_FEATURES
   std::string default_value_as_string() const override { 
     using namespace app_utils::strutils;
     return std::string{to_string(m_default_value)};
@@ -78,13 +95,13 @@ struct member_descriptor_impl_t : public member_descriptor_t {
     using namespace app_utils::strutils;
     return std::string{to_string(get_value(host))};
   }
-
-  bool values_differ(void const* host1, void const* host2) const override {
-    return get_value(host1) != get_value(host2);
-  }
   bool is_at_default(void const* host) const override { 
     return get_value(host) == m_default_value;
   }
+  bool values_differ(void const* host1, void const* host2) const override {
+    return get_value(host1) != get_value(host2);
+  }
+#endif
 
   // returns number of bytes written
   size_t write_to_bytes(std::byte* buffer, size_t buffer_size, void const* host) const override {
@@ -104,22 +121,10 @@ struct member_descriptor_impl_t : public member_descriptor_t {
 
 #ifdef REFLEXIO_STRUCT_USE_PYBIND_MODULE
   void wrap_in_pybind(void* pybindclass_) const override {
-    static_cast<HostType::PybindClassType*>(pybindclass_)->def_readwrite(get_name().c_str(), m_member_var_ptr);
+    static_cast<HostType::PybindClassType*>(pybindclass_)->def_readwrite(get_name().data(), m_member_var_ptr);
   }
 #endif
 };
-
-#define REFLEXIO_MEMBER_VAR_DEFINE(var_type, var_name, default_value, description) \
-  struct var_name ## _descriptor_t {\
-    static void register_descriptor(ReflexioStructBase& /*reflexioStruct*/) { \
-      static bool registered = (ReflexioTypeName::register_member(                                                               \
-              std::unique_ptr<member_descriptor_t>(       \
-               new member_descriptor_impl_t<var_type, ReflexioTypeName>(                  \
-                                        &ReflexioTypeName::var_name, default_value, #var_name, description))), \
-                                true); \
-    } \
-  };\
-  var_type var_name = (var_name##_descriptor_t ::register_descriptor(*this), var_type(default_value))
 
 template<typename CRTP, size_t NumMemberVariables>
 struct ReflexioStructBase {
@@ -128,55 +133,14 @@ struct ReflexioStructBase {
   using PybindClassType = pybind11::class_<CRTP>;
 #endif
 
- //private:
-  using member_register_t = std::array<std::unique_ptr<member_descriptor_t const>, NumMemberVariables>;  
-  inline static member_register_t s_member_register;
+protected:
+  using member_var_register_t = std::array<member_descriptor_t const*, NumMemberVariables>;
 
- //protected:
-  static void register_member(std::unique_ptr<member_descriptor_t> member_descriptor) { 
-    for (auto& slot : s_member_register) {
-      if (slot == nullptr) {
-        slot = std::move(member_descriptor);
-        break;
-      }
-    }
-  }
-
- //public:
+public:
   static constexpr size_t num_members() { return NumMemberVariables; }
 
-  static member_register_t const& get_member_descriptors() { 
-    static CRTP type; // forces population of member register once
-    return s_member_register; 
-  }
-
-  bool has_all_default_values() const {
-    for (auto& descriptor : get_member_descriptors()) {
-      if (not descriptor->is_at_default(this)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  std::vector<std::string> non_default_values() const {
-    std::vector<std::string> res;
-    for (auto& descriptor : get_member_descriptors()) {
-      if (not descriptor->is_at_default(this)) {
-        res.push_back(descriptor->get_name());
-      }
-    }
-    return res;
-  }
-
-  std::vector<std::string> differing_values(CRTP const& other) const {
-    std::vector<std::string> res;
-    for (auto& descriptor : get_member_descriptors()) {
-      if (descriptor->values_differ(this, &other)) {
-        res.push_back(descriptor->get_name());
-      }
-    }
-    return res;
+  static member_var_register_t const& get_member_descriptors() { 
+    return CRTP::s_member_var_register;    
   }
 
   bool operator==(CRTP const& other) const {
@@ -190,6 +154,36 @@ struct ReflexioStructBase {
 
   bool operator!=(CRTP const& other) const { return not(*this == other); }
 
+#ifndef REFLEXIO_MINIMAL_FEATURES
+  bool has_all_default_values() const {
+    for (auto& descriptor : get_member_descriptors()) {
+      if (not descriptor->is_at_default(this)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  std::vector<std::string_view> non_default_values() const {
+    std::vector<std::string_view> res;
+    for (auto& descriptor : get_member_descriptors()) {
+      if (not descriptor->is_at_default(this)) {
+        res.push_back(descriptor->get_name());
+      }
+    }
+    return res;
+  }
+
+  std::vector<std::string_view> differing_values(CRTP const& other) const {
+    std::vector<std::string_view> res;
+    for (auto& descriptor : get_member_descriptors()) {
+      if (descriptor->values_differ(this, &other)) {
+        res.push_back(descriptor->get_name());
+      }
+    }
+    return res;
+  }
+
   friend std::string to_string(CRTP const& instance) { 
     std::ostringstream oss;
     for (auto& descriptor : CRTP::get_member_descriptors()) {
@@ -197,6 +191,7 @@ struct ReflexioStructBase {
     }
     return oss.str();
   }
+#endif
 
   friend size_t serial_size(CRTP const& val) { return val.get_serial_size(); }
 
@@ -241,9 +236,57 @@ constexpr size_t count_member_var_declarations(std::string_view const text) {
   return count;
 }
 
-#define REFLEXIO_STRUCT_DEFINE(StructName, ...)  \
-  struct StructName : ReflexioStructBase<StructName, count_member_var_declarations(#__VA_ARGS__)> {\
-    __VA_ARGS__;                                 \
+
+#define REFLEXIO_MEMBER_VAR_DEFINE(var_type, var_name, default_value, description)                  \
+  var_type var_name = var_type(default_value);                                                      \
+  /* Making var_name ## _descr constexpr saves some space in an embedded context. */                \
+  /* However it results in a test error on std::string member variable (default value is . */       \
+  /* (default value remains empty string even when specified as something else). */                 \
+  inline static constexpr auto var_name##_descr = [] {                                              \
+    return member_descriptor_impl_t<var_type, ReflexioTypeName>{&ReflexioTypeName::var_name,        \
+                                                                default_value,                      \
+                                                                #var_name,                          \
+                                                                description};                       \
+  }();                                                                                              \
+                                                                                                    \
+  static constexpr int var_name##_id = __COUNTER__;                                                 \
+                                                                                                    \
+  template <class Dummy>                                                                            \
+  struct member_var_counter_t<var_name##_id, Dummy> {                                               \
+    static constexpr int index = member_var_counter_t<var_name##_id - 1, Dummy>::index + 1;         \
+  };                                                                                                \
+  template <class Dummy>                                                                            \
+  struct member_var_descriptor_t<member_var_counter_t<var_name##_id, int>::index, Dummy> {          \
+    static constexpr member_descriptor_t const* get_descriptor() { return &var_name##_descr; }      \
+  }
+
+#define REFLEXIO_STRUCT_DEFINE(StructName, ...)                                                     \
+  struct StructName : ReflexioStructBase<StructName, count_member_var_declarations(#__VA_ARGS__)> { \
+    template <size_t N, class dummy>                                                                \
+    struct member_var_descriptor_t {                                                                \
+      static constexpr member_descriptor_t const* get_descriptor() = delete;                        \
+    };                                                                                              \
+    template <int N, class Dummy=int>                                                               \
+    struct member_var_counter_t {                                                                   \
+      static constexpr int index = member_var_counter_t<N - 1, Dummy>::index;                       \
+    };                                                                                              \
+    template <class Dummy>                                                                          \
+    struct member_var_counter_t<-1, Dummy> {                                                        \
+      static constexpr int index = -1;                                                              \
+    };                                                                                              \
+                                                                                                    \
+    __VA_ARGS__;                                                                                    \
+    /* the function below cannot be constexpr because of the undefined call to get_descriptor() */  \
+    /* see: https://stackoverflow.com/questions/68900076/inconsistent-constexpr-compiler-behavior */\
+    /* It works on MSVC 19.29 but not on clang or gcc and it's not standard compliant */            \
+    /* That's the only limitation preventing compile time reflexion !! */                           \
+    inline static const member_var_register_t s_member_var_register =                               \
+        []<size_t... NN>(std::index_sequence<NN...>){                                               \
+      member_var_register_t out{nullptr};                                                           \
+      std::size_t i = 0;                                                                            \
+      (void(out[i++] = member_var_descriptor_t<NN, int>::get_descriptor()), ...);                   \
+      return out;                                                                                   \
+    }(std::make_index_sequence<num_members()>());                                                   \
   }
 
 #ifdef REFLEXIO_STRUCT_USE_PYBIND_MODULE
