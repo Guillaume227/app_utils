@@ -64,15 +64,20 @@ PYBIND11_MAKE_OPAQUE(std::vector<double>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::string>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::string_view>);
 
+#if defined(_MSC_VER) && _MSC_VER >= 1929
+#define CONSTEXPR_STRING_AND_VECTOR
+#endif
 
 REFLEXIO_STRUCT_DEFINE(MyStruct,
   REFLEXIO_MEMBER_VAR_DEFINE(int, var1, 12, "var1 doc");
-  REFLEXIO_MEMBER_VAR_DEFINE(std::string, var2, "var2_val", "var2 doc");
-  REFLEXIO_MEMBER_VAR_DEFINE(float, var3, 1.5f, "var3 doc");
-  REFLEXIO_MEMBER_VAR_DEFINE(MyEnum, var4, MyEnum::EnumVal2, "var4 doc");
-  REFLEXIO_MEMBER_VAR_DEFINE(bool, var5, true, "var5 doc");  
-  REFLEXIO_MEMBER_VAR_DEFINE(ArrayFloat8_t, var6, {0}, "var6 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(float, var2, 1.5f, "var2 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(MyEnum, var3, MyEnum::EnumVal2, "var3 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(bool, var4, true, "var4 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(ArrayFloat8_t, var5, {0}, "var5 doc");
+#ifdef CONSTEXPR_STRING_AND_VECTOR
+  REFLEXIO_MEMBER_VAR_DEFINE(std::string, var6, "var2_val", "var6 doc");
   REFLEXIO_MEMBER_VAR_DEFINE(std::vector<float>, var7, {}, "var7 doc");
+#endif
   );
 
 namespace py = pybind11;
@@ -83,6 +88,9 @@ PYBIND11_MODULE(REFLEXIO_STRUCT_USE_PYBIND_MODULE, m) {
   // Optional docstring
   m.doc() = "app utils tests module";
 
+#ifdef CONSTEXPR_STRING_AND_VECTOR
+  m.attr("CONSTEXPR_STRING_AND_VECTOR") = py::bool_(true);
+#endif
   py::register_exception<app_utils::Exception>(m, "PyException");
 
   py::bind_vector<std::vector<int>>(m, "VectorInt");
