@@ -15,7 +15,7 @@ static_assert(sizeof(TestEnum) == 4);
 
 REFLEXIO_STRUCT_DEFINE(MiniStruct, REFLEXIO_MEMBER_VAR_DEFINE(int, var1, 14, "var1 doc");
                        static_assert(member_var_counter_t<var1_id>::index == 0);
-                       static_assert(member_var_descriptor_t<0, int>::get_descriptor() != nullptr););
+                       static_assert(member_var_descriptor_t<0, int>::descriptor != nullptr););
 
 TEST_CASE("mini_struct", "[reflexio]") {
   
@@ -31,7 +31,7 @@ REFLEXIO_STRUCT_DEFINE(MyStruct,
   using Array8_t = std::array<float, 8>;
   REFLEXIO_MEMBER_VAR_DEFINE(Array8_t, var5, {0}, "var6 doc");
   static_assert(member_var_counter_t<var2_id>::index == 1);
-  static_assert(member_var_descriptor_t<3, int>::get_descriptor() != nullptr);
+  static_assert(member_var_descriptor_t<3, int>::descriptor != nullptr);
   );
 
 REFLEXIO_STRUCT_DEFINE(MyOtherStruct, 
@@ -51,21 +51,21 @@ static_assert(std::is_trivially_copy_constructible_v<TrivialStruct>);
 
 TEST_CASE("reflexio_declare", "[reflexio]") { 
 
-  size_t const num_members = 5;
+  size_t const expected_member_vars = 5;
 
-  REQUIRE(MyStruct::num_members() == num_members);
+  REQUIRE(MyStruct::num_registered_member_vars() == expected_member_vars);
 
   MyStruct myStruct; 
   
-  REQUIRE(MyStruct::num_members() == num_members);
+  REQUIRE(MyStruct::num_registered_member_vars() == expected_member_vars);
 
   MyStruct myStruct2;
 
-  REQUIRE(MyStruct::num_members() == num_members);
+  REQUIRE(MyStruct::num_registered_member_vars() == expected_member_vars);
 
   MyOtherStruct myOtherStruct;
 
-  REQUIRE(MyStruct::num_members() == num_members);
+  REQUIRE(MyStruct::num_registered_member_vars() == expected_member_vars);
 
   REQUIRE(myStruct == myStruct2);
   REQUIRE(myStruct.has_all_default_values());

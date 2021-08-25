@@ -63,12 +63,11 @@ template<typename MemberType, typename HostType>
 struct member_descriptor_impl_t : public member_descriptor_t {
 
   MemberType HostType::* const m_member_var_ptr;
-
   MemberType const m_default_value;
 
   template<typename ...Args>
   constexpr member_descriptor_impl_t(MemberType HostType::*member_var_ptr, 
-                                     MemberType defaultValue, 
+                                     MemberType defaultValue,
                                      Args&& ...args)
       : member_descriptor_t(std::forward<Args>(args)...)
       , m_member_var_ptr(member_var_ptr)
@@ -137,7 +136,7 @@ protected:
   using member_var_register_t = std::array<member_descriptor_t const*, NumMemberVariables>;
 
 public:
-  static constexpr size_t num_members() { return NumMemberVariables; }
+  static constexpr size_t num_registered_member_vars() { return NumMemberVariables; }
 
   static member_var_register_t const& get_member_descriptors() { 
     return CRTP::s_member_var_register;    
@@ -257,14 +256,13 @@ constexpr size_t count_member_var_declarations(std::string_view const text) {
   };                                                                                                \
   template <class Dummy>                                                                            \
   struct member_var_descriptor_t<member_var_counter_t<var_name##_id, int>::index, Dummy> {          \
-    static constexpr member_descriptor_t const* get_descriptor() { return &var_name##_descr; }      \
+    static constexpr member_descriptor_t const* descriptor = &var_name##_descr;                     \
   }
 
 #define REFLEXIO_STRUCT_DEFINE(StructName, ...)                                                     \
   struct StructName : ReflexioStructBase<StructName, count_member_var_declarations(#__VA_ARGS__)> { \
     template <size_t N, class dummy>                                                                \
     struct member_var_descriptor_t {                                                                \
-      static constexpr member_descriptor_t const* get_descriptor() = delete;                        \
     };                                                                                              \
     template <int N, class Dummy=int>                                                               \
     struct member_var_counter_t {                                                                   \
@@ -276,17 +274,14 @@ constexpr size_t count_member_var_declarations(std::string_view const text) {
     };                                                                                              \
                                                                                                     \
     __VA_ARGS__;                                                                                    \
-    /* the function below cannot be constexpr because of the undefined call to get_descriptor() */  \
-    /* see: https://stackoverflow.com/questions/68900076/inconsistent-constexpr-compiler-behavior */\
-    /* It works on MSVC 19.29 but not on clang or gcc and it's not standard compliant */            \
-    /* That's the only limitation preventing compile time reflexion !! */                           \
-    inline static const member_var_register_t s_member_var_register =                               \
+                                                                                                    \
+    inline static constexpr member_var_register_t s_member_var_register =                           \
         []<size_t... NN>(std::index_sequence<NN...>){                                               \
       member_var_register_t out{nullptr};                                                           \
       std::size_t i = 0;                                                                            \
-      (void(out[i++] = member_var_descriptor_t<NN, int>::get_descriptor()), ...);                   \
+      (void(out[i++] = member_var_descriptor_t<NN, int>::descriptor), ...);                         \
       return out;                                                                                   \
-    }(std::make_index_sequence<num_members()>());                                                   \
+    }(std::make_index_sequence<num_registered_member_vars()>());                                                   \
   }
 
 #ifdef REFLEXIO_STRUCT_USE_PYBIND_MODULE
