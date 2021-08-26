@@ -4,6 +4,7 @@ struct timeval;  // Windows-specific: forward declaration to fix compilation err
 #define strdup _strdup  // Windows-specific: https://github.com/pybind/pybind11/issues/1212
 #endif
 
+
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/stl_bind.h>
@@ -11,50 +12,24 @@ struct timeval;  // Windows-specific: forward declaration to fix compilation err
 #include <pybind11/functional.h>
 #include <pybind11/operators.h>
 
-
+#define DO_PYBIND_WRAPPING
+#include <app_utils/pybind_utils.hpp>
 #include <app_utils/reflexio.hpp>
 #include <app_utils/enumatic.hpp>
 #include <app_utils/cond_check.hpp>
 
-namespace pybind11 {
-
-template<typename Array>
-void bind_std_array(module_& m) {
-
-  using T = typename Array::value_type;
-  using SizeType = typename Array::size_type;
-  using DiffType = typename Array::difference_type;
-
-  auto wrap_i = [](DiffType i, SizeType n) -> SizeType {
-    if (i < 0) i += n;
-    if (i < 0 || (SizeType)i >= n) throw index_error();
-    return i;
-  };
-
-  static std::string const typeName = app_utils::typeName<Array>();
-  auto cl = pybind11::class_<Array>(m, typeName.c_str());
-  cl.def(pybind11::init<>())
-      .def(pybind11::self == pybind11::self)
-      .def(pybind11::self != pybind11::self)
-      .def("__str__", [](Array const& self_) { return app_utils::strutils::to_string(self_); })
-      .def("__len__", &Array::size)
-      .def("__setitem__", [wrap_i](Array& v, DiffType i, const T& t) {
-                            SizeType index = wrap_i(i, v.size());
-                            v[index] = t;
-                            }
-          )
-      .def("__getitem__", [wrap_i](Array& v, DiffType i) {
-        SizeType index = wrap_i(i, v.size());
-        return v[index];
-      });
-
-}
-}  // namespace pybind11
 
 ENUMATIC_DEFINE(MyEnum, 
-	EnumVal1, 
-	EnumVal2, 
-    EnumVal3);
+	EnumVal1 = 1, 
+	EnumVal2 , 
+    EnumVal3 [[deprecated]] , 
+    EnumVal4 [[deprecated]] = 5 );
+
+ENUMATIC_DEFINE(
+  MyOtherEnum, 
+  EnumVal1, 
+  EnumVal2, 
+  EnumVal3);
 
 using ArrayFloat8_t = std::array<float, 8>;
 PYBIND11_MAKE_OPAQUE(ArrayFloat8_t);
@@ -73,10 +48,11 @@ REFLEXIO_STRUCT_DEFINE(MyStruct,
   REFLEXIO_MEMBER_VAR_DEFINE(int, var1, 12, "var1 doc");
   REFLEXIO_MEMBER_VAR_DEFINE(float, var2, 1.5f, "var2 doc");
   REFLEXIO_MEMBER_VAR_DEFINE(MyEnum, var3, MyEnum::EnumVal2, "var3 doc");
-  REFLEXIO_MEMBER_VAR_DEFINE(bool, var4, true, "var4 doc");
-  REFLEXIO_MEMBER_VAR_DEFINE(ArrayFloat8_t, var5, {0}, "var5 doc");
-  REFLEXIO_MEMBER_VAR_DEFINE(std::string, var6, "var2_val", "var6 doc");
-  REFLEXIO_MEMBER_VAR_DEFINE(std::vector<float>, var7, {}, "var7 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(MyOtherEnum, var4, MyOtherEnum::EnumVal2, "var3 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(bool, var5, true, "var4 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(ArrayFloat8_t, var6, {0}, "var5 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(std::string, var7, "var2_val", "var6 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(std::vector<float>, var8, {}, "var7 doc");
   );
 #else
 REFLEXIO_STRUCT_DEFINE(
@@ -84,8 +60,9 @@ REFLEXIO_STRUCT_DEFINE(
   REFLEXIO_MEMBER_VAR_DEFINE(int, var1, 12, "var1 doc");
   REFLEXIO_MEMBER_VAR_DEFINE(float, var2, 1.5f, "var2 doc");
   REFLEXIO_MEMBER_VAR_DEFINE(MyEnum, var3, MyEnum::EnumVal2, "var3 doc");
-  REFLEXIO_MEMBER_VAR_DEFINE(bool, var4, true, "var4 doc");
-  REFLEXIO_MEMBER_VAR_DEFINE(ArrayFloat8_t, var5, {0}, "var5 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(MyOtherEnum, var4, MyOtherEnum::EnumVal2, "var3 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(bool, var5, true, "var4 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(ArrayFloat8_t, var6, {0}, "var5 doc");
   );
 #endif
 
@@ -107,9 +84,9 @@ PYBIND11_MODULE(REFLEXIO_STRUCT_USE_PYBIND_MODULE, m) {
   py::bind_vector<std::vector<double>>(m, "VectorDouble");
   py::bind_vector<std::vector<std::string>>(m, "VectorString");
 
-  py::bind_std_array<ArrayFloat8_t>(m);
-  py::wrap_reflexio_struct<MyStruct>(m);
+  app_utils::pybind_utils::pybind_wrap_customizer<MyEnum>::wrap_with_pybind(m);
 
-  py::wrap_enumatic<MyEnum>(m);
+  app_utils::pybind_utils::bind_std_array<ArrayFloat8_t>(m);
+  app_utils::pybind_utils::wrap_reflexio_struct<MyStruct>(m);
 }
 }  // namespace app_utils::tests

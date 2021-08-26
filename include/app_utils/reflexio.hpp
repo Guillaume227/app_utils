@@ -53,8 +53,8 @@ struct member_descriptor_t {
   // returns number of bytes read
   virtual size_t read_from_bytes(std::byte const* buffer, size_t buffer_size, void* host) const = 0;
     
- #ifdef REFLEXIO_STRUCT_USE_PYBIND_MODULE
-  virtual void wrap_in_pybind(void* pybindclass_) const = 0;
+#ifdef DO_PYBIND_WRAPPING
+  virtual void wrap_with_pybind(void* pybindclass_) const = 0;
 #endif
 };
 
@@ -63,15 +63,23 @@ template<typename MemberType, typename HostType>
 struct member_descriptor_impl_t : public member_descriptor_t {
 
   MemberType HostType::* const m_member_var_ptr;
+#ifndef REFLEXIO_MINIMAL_FEATURES
   MemberType const m_default_value;
+#endif
 
   template<typename ...Args>
   constexpr member_descriptor_impl_t(MemberType HostType::*member_var_ptr, 
+#ifndef REFLEXIO_MINIMAL_FEATURES
                                      MemberType defaultValue,
+#else
+                                     MemberType /*defaultValue*/,
+#endif
                                      Args&& ...args)
       : member_descriptor_t(std::forward<Args>(args)...)
       , m_member_var_ptr(member_var_ptr)
+#ifndef REFLEXIO_MINIMAL_FEATURES
       , m_default_value(std::move(defaultValue))
+#endif
   {}
 
   // explicit definition required because of gcc bug: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93413
@@ -86,18 +94,18 @@ struct member_descriptor_impl_t : public member_descriptor_t {
   }
 
 #ifndef REFLEXIO_MINIMAL_FEATURES
-  std::string default_value_as_string() const override { 
+  std::string default_value_as_string() const override final { 
     using namespace app_utils::strutils;
     return std::string{to_string(m_default_value)};
   }
-  std::string value_as_string(void const* host) const override {
+  std::string value_as_string(void const* host) const override final {
     using namespace app_utils::strutils;
     return std::string{to_string(get_value(host))};
   }
   bool is_at_default(void const* host) const override { 
     return get_value(host) == m_default_value;
   }
-  bool values_differ(void const* host1, void const* host2) const override {
+  bool values_differ(void const* host1, void const* host2) const override final {
     return get_value(host1) != get_value(host2);
   }
 #endif
@@ -118,9 +126,11 @@ struct member_descriptor_impl_t : public member_descriptor_t {
     return serial_size(get_value(host));
   }
 
-#ifdef REFLEXIO_STRUCT_USE_PYBIND_MODULE
-  void wrap_in_pybind(void* pybindclass_) const override {
-    static_cast<HostType::PybindClassType*>(pybindclass_)->def_readwrite(get_name().data(), m_member_var_ptr);
+#ifdef DO_PYBIND_WRAPPING
+  void wrap_with_pybind(void* pybindclass_) const override {
+    auto* py_class = static_cast<HostType::PybindClassType*>(pybindclass_);
+    py_class->def_readwrite(get_name().data(), m_member_var_ptr);
+    app_utils::pybind_utils::pybind_wrap_customizer<MemberType>::wrap_with_pybind(*py_class);
   }
 #endif
 };
@@ -128,7 +138,7 @@ struct member_descriptor_impl_t : public member_descriptor_t {
 template<typename CRTP, size_t NumMemberVariables>
 struct ReflexioStructBase {
   using ReflexioTypeName = CRTP;
-#ifdef REFLEXIO_STRUCT_USE_PYBIND_MODULE
+#ifdef DO_PYBIND_WRAPPING
   using PybindClassType = pybind11::class_<CRTP>;
 #endif
 
@@ -284,8 +294,8 @@ constexpr size_t count_member_var_declarations(std::string_view const text) {
     }(std::make_index_sequence<num_registered_member_vars()>());                                                   \
   }
 
-#ifdef REFLEXIO_STRUCT_USE_PYBIND_MODULE
-namespace pybind11 {
+#ifdef DO_PYBIND_WRAPPING
+namespace app_utils::pybind_utils {
 
 template <typename ReflexioStruct, typename PyModule>
 void wrap_reflexio_struct(PyModule& pymodule) {
@@ -302,7 +312,7 @@ void wrap_reflexio_struct(PyModule& pymodule) {
     .def("differing_values", &ReflexioStruct::differing_values);
 
   for (auto& member_descriptor : ReflexioStruct::get_member_descriptors()) {
-    member_descriptor->wrap_in_pybind(&wrappedType);
+    member_descriptor->wrap_with_pybind(&wrappedType);
   }
 }
 }  // namespace pybind11

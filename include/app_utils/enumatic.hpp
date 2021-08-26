@@ -8,6 +8,10 @@
 #define throwExc(...)
 #endif
 
+#ifdef DO_PYBIND_WRAPPING
+#include <app_utils/pybind_utils.hpp>
+#endif
+
 #include <string_view>
 #include <array>
 
@@ -64,21 +68,33 @@ constexpr int stoi(std::string_view const str) {
 
 /* list of all enum values as strings */
 template<size_t N>
-consteval std::array<enum_value_detail_t, N> parseEnumDefinition(std::string_view const enum_vals_as_str) {
+constexpr std::array<enum_value_detail_t, N> parseEnumDefinition(std::string_view const enum_vals_as_str) {
 
   std::array<enum_value_detail_t, N> value_details;
 
+  enum class TokenType {
+    name,
+    value,
+    other
+  };
+
   size_t token_index = 0;
   size_t left_index = 0;
-  size_t num_chars = 0;
-  bool is_parsing_name = true; // strip out explicit value specialization ( e.g. "val1 = 0, ...")  
+  size_t num_token_chars = 0;
+  TokenType token_type = TokenType::name;  // strip out explicit value specialization ( e.g. "val1 = 0, ...")  
 
   auto const assign_detail = [&]() {
-    auto token_str = enum_vals_as_str.substr(left_index, num_chars);
-    if (is_parsing_name) {
-      value_details[token_index].value_name = token_str;
-    } else {     
-      value_details[token_index].int_value = stoi(token_str);
+    auto token_str = enum_vals_as_str.substr(left_index, num_token_chars);
+    switch (token_type) {
+      case TokenType::name:
+        value_details[token_index].value_name = token_str;
+        break;
+      case TokenType::value:
+        value_details[token_index].int_value = stoi(token_str);
+        break;
+      case TokenType::other:
+        //fallthrough
+        break;
     }
   };
   for (size_t i = 0; i < enum_vals_as_str.size(); i++) {
@@ -86,35 +102,42 @@ consteval std::array<enum_value_detail_t, N> parseEnumDefinition(std::string_vie
     switch (char c = enum_vals_as_str[i]) {
     case ' ':
     case '\n':
+    case '\t':
     case ',':
     case '=':
-      if (num_chars > 0) {
+      // separator found
+      if (num_token_chars > 0) {
         assign_detail();        
-        num_chars = 0;
+        num_token_chars = 0;
+        if (c != ',') {
+          token_type = TokenType::other;
+        }      
       }
+
       if (c == ',') {
-        if (is_parsing_name) {
+        if (token_type != TokenType::value) {
           value_details[token_index].int_value = token_index == 0
               ? 0
               : value_details [token_index - 1].int_value + 1;
-        } else {
-          is_parsing_name = true;
         }
+        token_type = TokenType::name;
+        
         token_index++;
       } else if (c == '=') {
-        is_parsing_name = false;
+        token_type = TokenType::value;        
       }
       left_index = i + 1;
       break;
+
     default:
-      num_chars++;
+      num_token_chars++;
       break;
     }
   }
 
-  if (num_chars > 0) {
+  if (num_token_chars > 0) {
     assign_detail();
-    if (is_parsing_name) {
+    if (token_type != TokenType::value) {
       value_details[token_index].int_value = token_index == 0
           ? 0
           : value_details[token_index - 1].int_value + 1;
@@ -231,22 +254,29 @@ struct Enumatic {
   }
 };
 
-namespace pybind11 {
-template <typename Type>
-class enum_;
+#ifdef DO_PYBIND_WRAPPING
 
-template <typename EnumaticT, typename EnumParent>
-void wrap_enumatic(EnumParent& pymodule) {
-  auto wrappedEnum = enum_<EnumaticT>(pymodule, typeName(EnumaticT{}).data());
-  // copy string_views into strings because pybind takes in a \0 terminated char const*
-  static std::array<std::string, Enumatic<EnumaticT>::size()> string_values;
-  int i = 0;
-  for (auto const& value : Enumatic<EnumaticT>::getValues()) {
-    string_values[i] = std::string{Enumatic<EnumaticT>::toString(value)};
-    wrappedEnum.value(string_values[i++].data(), value);
-  }  
+namespace app_utils::pybind_utils {
+template <typename EnumaticT>
+struct pybind_wrap_customizer<EnumaticT, std::enable_if_t<enumatic::is_enumatic_type<EnumaticT>(), int>> {
+  inline static bool s_was_registered = false;
+  template <class PybindHost>
+  static void wrap_with_pybind(PybindHost& pybindHost) {
+    if (not s_was_registered) {
+      auto wrappedEnum = pybind11::enum_<EnumaticT>(pybindHost, Enumatic<EnumaticT>::name().data());
+      // copy string_views into strings because pybind takes in a \0 terminated char const*
+      static std::array<std::string, Enumatic<EnumaticT>::size()> string_values;
+      int i = 0;
+      for (auto const& value : Enumatic<EnumaticT>::getValues()) {
+        string_values[i] = std::string{Enumatic<EnumaticT>::toString(value)};
+        wrappedEnum.value(string_values[i++].data(), value);
+      }
+      s_was_registered = true;
+    }
+  }
+};
 }
-}  // namespace pybind11
+#endif
 
 /*
 * Regarding the use of ADL in the wrapper class containing the actual enum definition:
