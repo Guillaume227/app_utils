@@ -173,6 +173,26 @@ struct Enumatic {
     return enumatic::numListItems(enumValuesAsString(EnumType{} /*dummy value - only type matters here for ADL*/));
   }
 
+  consteval static int max_value() {
+    int max_val = enum_value_details[0].int_value;
+    for (int i = 1; i < (int)enum_value_details.size(); i++) {
+      if (max_val < enum_value_details[i].int_value) {
+        max_val = enum_value_details[i].int_value;
+      }
+    }
+    return max_val;
+  }
+
+  consteval static int min_value() {
+    int min_val = enum_value_details[0].int_value;
+    for (int i = 1; i < (int)enum_value_details.size(); i++) {
+      if (min_val > enum_value_details[i].int_value) {
+        min_val = enum_value_details[i].int_value;
+      }
+    }
+    return min_val;
+  }
+
   /* list of all enum values as strings */
   constexpr static auto enum_value_details =
       enumatic::parseEnumDefinition<size()>(enumValuesAsString(EnumType{}));
@@ -298,7 +318,7 @@ struct pybind_wrap_customizer<EnumaticT, std::enable_if_t<enumatic::is_enumatic_
     consteval bool allowConvertFromIndex(EnumType) { return allowFromIdx; }                                        \
                                                                                                                    \
     constexpr size_t serial_size(EnumType) {                                                                       \
-      if constexpr (size(EnumType{}) > 255) {                                                                      \
+      if constexpr (Enumatic<EnumType>::min_value() < 0 or 255 < Enumatic<EnumType>::max_value()) {                \
         return sizeof(EnumType);                                                                                   \
       } else {                                                                                                     \
         return 1;                                                                                                  \

@@ -12,6 +12,7 @@
 ENUMATIC_DEFINE(TestEnum, EnumVal1, EnumVal2);
 
 static_assert(sizeof(TestEnum) == 4);
+static_assert(serial_size(TestEnum{}) == 1);
 
 REFLEXIO_STRUCT_DEFINE(MiniStruct, REFLEXIO_MEMBER_VAR_DEFINE(int, var1, 14, "var1 doc");
                        static_assert(member_var_counter_t<var1_id>::index == 0);

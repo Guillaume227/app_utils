@@ -54,10 +54,21 @@ TEST_CASE("enumatic_to_from_string", "[enumatic]") {
   REQUIRE(to_string(MyEnum::val5) == "val5");
 }
 
-ENUMATIC_DEFINE(ShortEnum, val1, val2);
+ENUMATIC_DEFINE(ShortEnum, val1 = 0, val2);
+static_assert(Enumatic<ShortEnum>::has_default_indexation());
+
+ENUMATIC_DEFINE(ShortEnum1, val1 = 10, val2 = 255);
+static_assert(not Enumatic<ShortEnum1>::has_default_indexation());
+ENUMATIC_DEFINE(ShortEnum2, val1 = -1, val2);
+static_assert(not Enumatic<ShortEnum2>::has_default_indexation());
+
 enum class OtherEnum { val1, val2 };
 
-static_assert(Enumatic<ShortEnum>::has_default_indexation());
+static_assert(Enumatic<ShortEnum1>::min_value() == 10);
+static_assert(Enumatic<ShortEnum1>::max_value() == 255);
+
+static_assert(Enumatic<ShortEnum2>::min_value() == -1);
+static_assert(Enumatic<ShortEnum2>::max_value() == 0);
 
 TEST_CASE("enumatic_serial_size", "[enumatic]") { 
   using namespace app_utils::serial;
@@ -65,6 +76,8 @@ TEST_CASE("enumatic_serial_size", "[enumatic]") {
   REQUIRE(size(ShortEnum{}) == 2); 
   
   REQUIRE(serial_size(ShortEnum{}) == 1); 
+  REQUIRE(serial_size(ShortEnum1{}) == 1);
+  REQUIRE(serial_size(ShortEnum2{}) == 4); 
 
   REQUIRE(serial_size(OtherEnum{}) == 4);
 }
