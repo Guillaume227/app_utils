@@ -5,7 +5,13 @@
 #include <cstddef> // std::byte
 #include <utility>
 
-//#define REFLEXIO_MINIMAL_FEATURES
+
+#ifndef REFLEXIO_MINIMAL_FEATURES
+#ifdef __arm__
+#define REFLEXIO_MINIMAL_FEATURES
+#endif
+#endif
+
 
 #ifndef REFLEXIO_MINIMAL_FEATURES
 #include <string_view>
@@ -268,6 +274,10 @@ constexpr size_t count_member_var_declarations(std::string_view const text) {
   struct member_var_descriptor_t<member_var_counter_t<var_name##_id, int>::index, Dummy> {          \
     static constexpr member_descriptor_t const* descriptor = &var_name##_descr;                     \
   }
+
+// define a member variable with a 'default default'
+#define REFLEXIO_MEMBER_VAR_DEFINE_DEF(var_type, var_name, description) \
+  REFLEXIO_MEMBER_VAR_DEFINE(var_type, var_name, var_type(), description)
 
 #define REFLEXIO_STRUCT_DEFINE(StructName, ...)                                                     \
   struct StructName : ReflexioStructBase<StructName, count_member_var_declarations(#__VA_ARGS__)> { \
