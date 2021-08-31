@@ -54,7 +54,7 @@ struct member_descriptor_t {
   virtual size_t read_from_bytes(std::byte const* buffer, size_t buffer_size, void* host) const = 0;
     
 #ifdef DO_PYBIND_WRAPPING
-  virtual void wrap_with_pybind(void* pybindclass_) const = 0;
+  virtual void wrap_with_pybind(pybind11::module& pybindmodule_, void* pybindhost_) const = 0;
 #endif
 };
 
@@ -127,10 +127,10 @@ struct member_descriptor_impl_t : public member_descriptor_t {
   }
 
 #ifdef DO_PYBIND_WRAPPING
-  void wrap_with_pybind(void* pybindclass_) const override {
-    auto* py_class = static_cast<HostType::PybindClassType*>(pybindclass_);
+  void wrap_with_pybind(pybind11::module& pybindmodule_, void* pybindhost_) const override {
+    auto* py_class = static_cast<HostType::PybindClassType*>(pybindhost_);
+    app_utils::pybind_utils::pybind_wrap_customizer<MemberType>::wrap_with_pybind(pybindmodule_);
     py_class->def_readwrite(get_name().data(), m_member_var_ptr);
-    app_utils::pybind_utils::pybind_wrap_customizer<MemberType>::wrap_with_pybind(*py_class);
   }
 #endif
 };
@@ -297,22 +297,35 @@ constexpr size_t count_member_var_declarations(std::string_view const text) {
 #ifdef DO_PYBIND_WRAPPING
 namespace app_utils::pybind_utils {
 
+  namespace py = pybind11;
+
 template <typename ReflexioStruct, typename PyModule>
 void wrap_reflexio_struct(PyModule& pymodule) {
   static std::string const typeName = app_utils::typeName<ReflexioStruct>();
   auto wrappedType = typename ReflexioStruct::PybindClassType(pymodule, typeName.c_str());
-  wrappedType
-    .def(pybind11::init<>())
-    .def(pybind11::self == pybind11::self)
-    .def(pybind11::self != pybind11::self)
-    .def("__str__", [](ReflexioStruct const& self_) { return to_string(self_);  })
-    .def("get_serial_size", &ReflexioStruct::get_serial_size)
-    .def("non_default_values", &ReflexioStruct::non_default_values)
-    .def("has_all_default_values", &ReflexioStruct::has_all_default_values)
-    .def("differing_values", &ReflexioStruct::differing_values);
+  wrappedType.def(pybind11::init<>())
+      .def("__deepcopy__", [](ReflexioStruct const& self, py::dict) { return ReflexioStruct(self); })
+      .def(pybind11::self == pybind11::self)
+      .def(pybind11::self != pybind11::self)
+      .def("__str__", [](ReflexioStruct const& self_) { return to_string(self_); })
+      .def("get_serial_size", &ReflexioStruct::get_serial_size) 
+      .def("deserialize",
+           [&](ReflexioStruct& self, pybind11::bytes const& data) {
+        std::string dataStr(data);
+        return from_bytes((std::byte const*)dataStr.c_str(), (unsigned int)dataStr.size(), self);
+      })
+      .def("serialize",
+           [&](ReflexioStruct const& self) { 
+        std::string dataStr(serial_size(self), '\0');
+        to_bytes((std::byte*)dataStr.c_str(), (unsigned int)dataStr.size(), self);
+        return pybind11::bytes(dataStr);
+      })
+      .def("non_default_values", &ReflexioStruct::non_default_values)
+      .def("has_all_default_values", &ReflexioStruct::has_all_default_values)
+      .def("differing_values", &ReflexioStruct::differing_values);
 
   for (auto& member_descriptor : ReflexioStruct::get_member_descriptors()) {
-    member_descriptor->wrap_with_pybind(&wrappedType);
+    member_descriptor->wrap_with_pybind(pymodule, &wrappedType);
   }
 }
 }  // namespace pybind11
