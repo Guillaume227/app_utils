@@ -16,17 +16,18 @@ class circular_buffer_t {
 
   constexpr size_t size() const { return m_index < capacity_ ? m_index : capacity_; }
 
-  void push_back(T val) {
-    m_array[m_index % capacity_] = std::move(val);
+  constexpr T& get_next_slot() {
+    auto& next_slot = m_array[m_index % capacity_];
     ++m_index;
     if (m_index >= 2 * capacity_) {
       m_index = capacity_;
     }
+    return next_slot;
   }
 
   class iterator {
    public:
-    constexpr iterator(circular_buffer_t const& buffer, size_t state) 
+    constexpr iterator(circular_buffer_t& buffer, size_t state) 
       : m_buffer(buffer)
       , m_state(state) {}
 
@@ -36,16 +37,16 @@ class circular_buffer_t {
     }
     constexpr bool operator!=(iterator const& other) const { return m_state != other.m_state; }
     constexpr T const& operator*() const { return m_buffer.m_array[m_state % capacity_]; }
+    constexpr T& operator*() { return m_buffer.m_array[m_state % capacity_]; }
 
    private:
-    circular_buffer_t const& m_buffer;
+    circular_buffer_t& m_buffer;
     size_t m_state = 0;
   };
 
-  constexpr iterator begin() const {
-    return {*this, m_index >= capacity_ ? m_index : 0};
-  }
-  constexpr iterator end() const { 
-    return {*this, m_index >= capacity_ ? m_index + size() : m_index}; }
+  constexpr iterator begin() { return {*this, m_index >= capacity_ ? m_index : 0}; }
+  constexpr iterator end() { return {*this, m_index >= capacity_ ? m_index + size() : m_index}; }
+  constexpr iterator begin() const { return {*this, m_index >= capacity_ ? m_index : 0}; }
+  constexpr iterator end() const { return {*this, m_index >= capacity_ ? m_index + size() : m_index}; }
 };
 }  // namespace app_utils

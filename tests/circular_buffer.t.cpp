@@ -18,8 +18,8 @@ TEST_CASE("circular_buffer", "[container]") {
   }
   REQUIRE(test_vec.size() == 0);
 
-  buffer.push_back(1);
-  buffer.push_back(2);
+  buffer.get_next_slot() = 1;
+  buffer.get_next_slot() = 2;
   REQUIRE(buffer.size() == 2);
   for (auto& item : buffer) {
     test_vec.push_back(item);
@@ -29,8 +29,8 @@ TEST_CASE("circular_buffer", "[container]") {
   REQUIRE(test_vec[1] == 2);
   test_vec.clear();
 
-  buffer.push_back(3);
-  buffer.push_back(4);
+  buffer.get_next_slot() = 3;
+  buffer.get_next_slot() = 4;
 
   REQUIRE(buffer.size() == 3);
   for (auto& item : buffer) {
