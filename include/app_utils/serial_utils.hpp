@@ -8,8 +8,12 @@
 #include <vector>
 #include <array>
 
+#include <bit>
 
 namespace app_utils::serial {
+
+
+  static_assert(std::endian::native == std::endian::little);
 
 template<typename T>
 constexpr size_t serial_size(T const&) requires std::is_arithmetic_v<T> or std::is_enum_v<T> {
@@ -46,7 +50,16 @@ template<typename T>
 size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, T& val) requires std::is_arithmetic_v<T> {
   size_t num_bytes = serial_size(val);
   // TODO: endianness
-  std::memcpy(&val, buffer, num_bytes);
+  //std::memcpy(&val, buffer, num_bytes);
+
+  // for compatibility with vesc tools serialization
+  uint32_t int_val = 0;
+  for (size_t i = 0; i < num_bytes; i++) {
+    int_val |= ((uint32_t) buffer[num_bytes - i - 1]) << (8 * i);
+  }
+
+  val = static_cast<T>(int_val);
+
   return num_bytes;
 }
 
@@ -54,9 +67,19 @@ template <typename T>
 size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, T const& val) requires std::is_arithmetic_v<T> {
   size_t num_bytes = serial_size(val);
   // TODO: endianness
-  std::memcpy(buffer, &val, num_bytes);
+  //std::memcpy(buffer, &val, num_bytes);
+
+  // for compatibility with vesc tools serialization
+  for (size_t i = 0; i < num_bytes; i++) {
+    buffer[num_bytes - i - 1] = (std::byte)(val >> (8 * i));
+  }
+  
   return num_bytes;
 }
+
+size_t from_bytes(std::byte const* buffer, size_t const buffer_size, float& val);
+
+size_t to_bytes(std::byte* buffer, size_t buffer_size, float const& val);
 
 /*
   bool
@@ -77,23 +100,25 @@ inline size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, bool const& va
 */
 
 template <typename T>
-size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, T& val) requires std::is_enum_v<T> {
+size_t from_bytes(std::byte const* buffer, size_t buffer_size, T& val) requires std::is_enum_v<T> {
   constexpr size_t num_bytes = serial_size(T{});
   if constexpr (num_bytes == 1) {
     val = static_cast<T>(std::to_integer<std::underlying_type_t<T>>(buffer[0]));
   } else {
-    std::memcpy(&val, buffer, num_bytes);
+    std::underlying_type_t<T> val_int;
+    from_bytes(buffer, buffer_size, val_int);
+    val = static_cast<T>(val_int);
   }
   return num_bytes;
 }
 
 template <typename T>
-size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, T const& val) requires std::is_enum_v<T> {
+size_t to_bytes(std::byte* buffer, size_t buffer_size, T const& val) requires std::is_enum_v<T> {
   constexpr size_t num_bytes = serial_size(T{});
   if constexpr (num_bytes == 1) {
     buffer[0] = static_cast<std::byte>(val);
-  } else {    
-    std::memcpy(buffer, &val, num_bytes);
+  } else {  
+    to_bytes(buffer, buffer_size, static_cast<std::underlying_type_t<T>>(val));
   }
   return num_bytes;
 }
