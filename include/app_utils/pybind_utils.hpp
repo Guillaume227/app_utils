@@ -12,39 +12,57 @@
 
 namespace app_utils::pybind_utils {
 
-template <typename T, typename Dummy=int>
+template <typename T, typename Dummy = int>
 struct pybind_wrap_customizer {
+
   template <class PybindHost>
+  static void wrap_with_pybind(PybindHost&) requires std::is_arithmetic_v<T> or 
+                                                     std::is_same_v<T, std::string> or
+                                                     std::is_same_v<T, std::string_view> {}
+};
+
+template <typename T>
+struct pybind_wrap_customizer<std::vector<T>> {  
+  template <typename PybindHost>
   static void wrap_with_pybind(PybindHost&) {}
 };
 
-template <typename Array, typename PybindHost>
-void bind_std_array(PybindHost& m) {
-  using T = typename Array::value_type;
-  using SizeType = typename Array::size_type;
-  using DiffType = typename Array::difference_type;
+template <typename T, size_t N>
+struct pybind_wrap_customizer<std::array<T, N>> {
+  
+  using ArrayType = std::array<T, N>;
+  
+  template <typename PybindHost>
+  static void wrap_with_pybind(PybindHost& m) {  
 
-  auto wrap_i = [](DiffType i, SizeType n) -> SizeType {
-    if (i < 0) i += n;
-    if (i < 0 || (SizeType)i >= n) throw pybind11::index_error();
-    return i;
-  };
+    using SizeType = ArrayType::size_type;
+    using DiffType = ArrayType::difference_type;
 
-  static std::string const typeName = app_utils::typeName<Array>();
-  auto cl = pybind11::class_<Array>(m, typeName.c_str());
-  cl.def(pybind11::init<>())
-      .def(pybind11::self == pybind11::self)
-      .def(pybind11::self != pybind11::self)
-      .def("__str__", [](Array const& self_) { return app_utils::strutils::to_string(self_); })
-      .def("__len__", &Array::size)
-      .def("__setitem__",
-           [wrap_i](Array& v, DiffType i, const T& t) {
-             SizeType index = wrap_i(i, v.size());
-             v[index] = t;
-           })
-      .def("__getitem__", [wrap_i](Array& v, DiffType i) {
-        SizeType index = wrap_i(i, v.size());
-        return v[index];
-      });
-}
-}
+    static bool s_registered_once = [&] {
+      auto wrap_i = [](DiffType i, SizeType n) -> SizeType {
+        if (i < 0) i += n;
+        if (i < 0 || (SizeType)i >= n) throw pybind11::index_error();
+        return i;
+      };
+
+      static std::string const typeName = app_utils::typeName<ArrayType>();
+      auto cl = pybind11::class_<ArrayType>(m, typeName.c_str());
+      cl.def(pybind11::init<>())
+          .def(pybind11::self == pybind11::self)
+          .def(pybind11::self != pybind11::self)
+          .def("__str__", [](ArrayType const& self_) { return app_utils::strutils::to_string(self_); })
+          .def("__len__", &ArrayType::size)
+          .def("__setitem__",
+               [wrap_i](ArrayType& v, DiffType i, const T& t) {
+                 SizeType index = wrap_i(i, v.size());
+                 v[index] = t;
+               })
+          .def("__getitem__", [wrap_i](ArrayType& v, DiffType i) {
+            SizeType index = wrap_i(i, v.size());
+            return v[index];
+          });
+      return true;
+    }();
+  }
+};
+}  // namespace app_utils::pybind_utils

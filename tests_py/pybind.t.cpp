@@ -86,7 +86,6 @@ PYBIND11_MODULE(REFLEXIO_STRUCT_USE_PYBIND_MODULE, m) {
 
   app_utils::pybind_utils::pybind_wrap_customizer<MyEnum>::wrap_with_pybind(m);
 
-  app_utils::pybind_utils::bind_std_array<ArrayFloat8_t>(m);
   app_utils::pybind_utils::wrap_reflexio_struct<MyStruct>(m);
 }
 }  // namespace app_utils::tests

@@ -13,6 +13,8 @@ def test_reflexio():
     assert(my_struct1.get_serial_size() == my_struct2.get_serial_size())
 
     my_struct1.var6[-1] = 2
+    assert(my_struct1.var6[-1] == 2)
+
     if hasattr(app_utils_test, 'CONSTEXPR_STRING_AND_VECTOR'):
         my_struct1.var7 = "hello hello"
         my_struct1.var8 = VectorFloat([1, 2, 3])
