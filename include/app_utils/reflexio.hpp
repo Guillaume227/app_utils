@@ -24,9 +24,8 @@
 #endif
 #include <app_utils/serial_utils.hpp>
 
-
+//namespace app_utils::reflexio {
 struct member_descriptor_t {
-
 #ifndef REFLEXIO_MINIMAL_FEATURES
   std::string_view const m_name;
   std::string_view const m_description;
@@ -58,23 +57,21 @@ struct member_descriptor_t {
   virtual size_t write_to_bytes(std::byte* buffer, size_t buffer_size, void const* host) const = 0;
   // returns number of bytes read
   virtual size_t read_from_bytes(std::byte const* buffer, size_t buffer_size, void* host) const = 0;
-    
+
 #ifdef DO_PYBIND_WRAPPING
   virtual void wrap_with_pybind(pybind11::module& pybindmodule_, void* pybindhost_) const = 0;
 #endif
 };
 
-
-template<typename MemberType, typename HostType>
+template <typename MemberType, typename HostType>
 struct member_descriptor_impl_t : public member_descriptor_t {
-
-  MemberType HostType::* const m_member_var_ptr;
+  MemberType HostType::*const m_member_var_ptr;
 #ifndef REFLEXIO_MINIMAL_FEATURES
   MemberType const m_default_value;
 #endif
 
-  template<typename ...Args>
-  constexpr member_descriptor_impl_t(MemberType HostType::*member_var_ptr, 
+  template <typename... Args>
+  constexpr member_descriptor_impl_t(MemberType HostType::*member_var_ptr,
 #ifndef REFLEXIO_MINIMAL_FEATURES
                                      MemberType defaultValue,
 #else
@@ -100,7 +97,7 @@ struct member_descriptor_impl_t : public member_descriptor_t {
   }
 
 #ifndef REFLEXIO_MINIMAL_FEATURES
-  std::string default_value_as_string() const override final { 
+  std::string default_value_as_string() const override final {
     using namespace app_utils::strutils;
     return std::string{to_string(m_default_value)};
   }
@@ -126,9 +123,9 @@ struct member_descriptor_impl_t : public member_descriptor_t {
     using namespace app_utils::serial;
     return from_bytes(buffer, buffer_size, get_mutable_value(host));
   }
-  
-  size_t get_serial_size(void const* host) const override { 
-    using namespace app_utils::serial; 
+
+  size_t get_serial_size(void const* host) const override {
+    using namespace app_utils::serial;
     return serial_size(get_value(host));
   }
 
@@ -141,17 +138,18 @@ struct member_descriptor_impl_t : public member_descriptor_t {
 #endif
 };
 
-template<typename CRTP, size_t NumMemberVariables>
+template <typename CRTP, size_t NumMemberVariables>
 struct ReflexioStructBase {
   using ReflexioTypeName = CRTP;
 #ifdef DO_PYBIND_WRAPPING
   using PybindClassType = pybind11::class_<CRTP>;
 #endif
 
-protected:
+ protected:
   using member_var_register_t = std::array<member_descriptor_t const*, NumMemberVariables>;
 
-public:
+ public:
+  constexpr static size_t NumMemberVars = NumMemberVariables;
   static constexpr size_t num_registered_member_vars() { return NumMemberVariables; }
 
   static member_var_register_t const& get_member_descriptors() { 
@@ -206,14 +204,12 @@ public:
         out << descriptor->get_name() << ": " 
             << descriptor->value_as_string(this) << " vs "
             << descriptor->value_as_string(&other) << '\n';
-        
       }
     }
     return out.str();
   }
 
-
-  friend std::string to_string(CRTP const& instance) { 
+  friend std::string to_string(CRTP const& instance) {
     std::ostringstream oss;
     for (auto& descriptor : CRTP::get_member_descriptors()) {
       oss << descriptor->get_name() << ": " << descriptor->value_as_string(&instance) << "\n";
@@ -224,7 +220,7 @@ public:
 
   friend size_t serial_size(CRTP const& val) { return val.get_serial_size(); }
 
-  size_t get_serial_size() const { 
+  size_t get_serial_size() const {
     size_t res = 0;
     for (auto& descriptor : CRTP::get_member_descriptors()) {
       res += descriptor->get_serial_size(this);
@@ -265,6 +261,10 @@ constexpr size_t count_member_var_declarations(std::string_view const text) {
   return count;
 }
 
+template <typename T>
+using is_reflexio_struct = std::is_base_of<ReflexioStructBase<T, T::NumMemberVars>, T>;
+
+//}  // namespace app_utils::reflexio
 
 #define REFLEXIO_MEMBER_VAR_DEFINE(var_type, var_name, default_value, description)                  \
   var_type var_name = var_type(default_value);                                                      \
@@ -321,37 +321,48 @@ constexpr size_t count_member_var_declarations(std::string_view const text) {
 #ifdef DO_PYBIND_WRAPPING
 namespace app_utils::pybind_utils {
 
-  namespace py = pybind11;
+namespace py = pybind11;
 
-template <typename ReflexioStruct, typename PyModule>
-void wrap_reflexio_struct(PyModule& pymodule) {
-  static std::string const typeName = app_utils::typeName<ReflexioStruct>();
-  auto wrappedType = typename ReflexioStruct::PybindClassType(pymodule, typeName.c_str());
-  wrappedType.def(pybind11::init<>())
-      .def("__deepcopy__", [](ReflexioStruct const& self, py::dict) { return ReflexioStruct(self); })
-      .def(pybind11::self == pybind11::self)
-      .def(pybind11::self != pybind11::self)
-      .def("__str__", [](ReflexioStruct const& self_) { return to_string(self_); })
-      .def("get_serial_size", &ReflexioStruct::get_serial_size) 
-      .def("deserialize",
-           [&](ReflexioStruct& self, pybind11::bytes const& data) {
-        std::string dataStr(data);
-        return from_bytes((std::byte const*)dataStr.c_str(), (unsigned int)dataStr.size(), self);
-      })
-      .def("serialize",
-           [&](ReflexioStruct const& self) { 
-        std::string dataStr(serial_size(self), '\0');
-        to_bytes((std::byte*)dataStr.c_str(), (unsigned int)dataStr.size(), self);
-        return pybind11::bytes(dataStr);
-      })
-      .def("non_default_values", &ReflexioStruct::non_default_values)
-      .def("has_all_default_values", &ReflexioStruct::has_all_default_values)
-      .def("differing_members", &ReflexioStruct::differing_members)
-      .def("differences", &ReflexioStruct::differences);
+template <typename ReflexioStruct>
+struct pybind_wrap_customizer<ReflexioStruct,
+                              std::enable_if_t<is_reflexio_struct<ReflexioStruct>::value, int>> {
+  inline static bool s_registered_once = false;
 
-  for (auto& member_descriptor : ReflexioStruct::get_member_descriptors()) {
-    member_descriptor->wrap_with_pybind(pymodule, &wrappedType);
+  template <typename PybindHost>
+  static void wrap_with_pybind(PybindHost& pybindHost) {
+
+    if (not s_registered_once) {
+      s_registered_once = true;
+    
+      static std::string const typeName = app_utils::typeName<ReflexioStruct>();
+      auto wrappedType = typename ReflexioStruct::PybindClassType(pybindHost, typeName.c_str());
+      wrappedType.def(pybind11::init<>())
+          .def("__deepcopy__", [](ReflexioStruct const& self, py::dict) { return ReflexioStruct(self); })
+          .def(pybind11::self == pybind11::self)
+          .def(pybind11::self != pybind11::self)
+          .def("__str__", [](ReflexioStruct const& self_) { return to_string(self_); })
+          .def("get_serial_size", &ReflexioStruct::get_serial_size)
+          .def("deserialize",
+               [&](ReflexioStruct& self, pybind11::bytes const& data) {
+                 std::string dataStr(data);
+                 return from_bytes((std::byte const*)dataStr.c_str(), (unsigned int)dataStr.size(), self);
+               })
+          .def("serialize",
+               [&](ReflexioStruct const& self) {
+                 std::string dataStr(serial_size(self), '\0');
+                 to_bytes((std::byte*)dataStr.c_str(), (unsigned int)dataStr.size(), self);
+                 return pybind11::bytes(dataStr);
+               })
+          .def("non_default_values", &ReflexioStruct::non_default_values)
+          .def("has_all_default_values", &ReflexioStruct::has_all_default_values)
+          .def("differing_members", &ReflexioStruct::differing_members)
+          .def("differences", &ReflexioStruct::differences);
+
+      for (auto& member_descriptor : ReflexioStruct::get_member_descriptors()) {
+        member_descriptor->wrap_with_pybind(pybindHost, &wrappedType);
+      }
+    }
   }
-}
-}  // namespace pybind11
+};
+}  // namespace app_utils::pybind_utils
 #endif
