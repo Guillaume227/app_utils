@@ -189,7 +189,7 @@ public:
     return res;
   }
 
-  std::vector<std::string_view> differing_values(CRTP const& other) const {
+  std::vector<std::string_view> differing_members(CRTP const& other) const {
     std::vector<std::string_view> res;
     for (auto& descriptor : get_member_descriptors()) {
       if (descriptor->values_differ(this, &other)) {
@@ -198,6 +198,20 @@ public:
     }
     return res;
   }
+
+  std::string differences(CRTP const& other) const {
+    std::ostringstream out;
+    for (auto& descriptor : get_member_descriptors()) {
+      if (descriptor->values_differ(this, &other)) {
+        out << descriptor->get_name() << ": " 
+            << descriptor->value_as_string(this) << " vs "
+            << descriptor->value_as_string(&other) << '\n';
+        
+      }
+    }
+    return out.str();
+  }
+
 
   friend std::string to_string(CRTP const& instance) { 
     std::ostringstream oss;
@@ -224,7 +238,7 @@ public:
     for (auto& descriptor : CRTP::get_member_descriptors()) {
       res += descriptor->write_to_bytes(buffer + res, buffer_size - res, &instance);
     }
-    checkCond(buffer_size >= res, "buffer is not big enough");
+    checkCond(buffer_size >= res, "buffer is not big enough", buffer_size, '<', res);
     return res;
   }
   // return number of bytes read
@@ -233,7 +247,7 @@ public:
     for (auto& descriptor : CRTP::get_member_descriptors()) {
       res += descriptor->read_from_bytes(buffer + res, buffer_size - res, &instance);
     }
-    checkCond(buffer_size >= res, "buffer is not big enough");
+    checkCond(buffer_size >= res, "buffer is not big enough", buffer_size, '<', res);
     return res;
   }
 };
@@ -332,7 +346,8 @@ void wrap_reflexio_struct(PyModule& pymodule) {
       })
       .def("non_default_values", &ReflexioStruct::non_default_values)
       .def("has_all_default_values", &ReflexioStruct::has_all_default_values)
-      .def("differing_values", &ReflexioStruct::differing_values);
+      .def("differing_members", &ReflexioStruct::differing_members)
+      .def("differences", &ReflexioStruct::differences);
 
   for (auto& member_descriptor : ReflexioStruct::get_member_descriptors()) {
     member_descriptor->wrap_with_pybind(pymodule, &wrappedType);
