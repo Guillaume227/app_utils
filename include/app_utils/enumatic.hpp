@@ -278,7 +278,7 @@ struct Enumatic {
 
 namespace app_utils::pybind_utils {
 template <typename EnumaticT>
-struct pybind_wrap_customizer<EnumaticT, std::enable_if_t<enumatic::is_enumatic_type<EnumaticT>(), int>> {
+struct pybind_wrapper<EnumaticT, std::enable_if_t<enumatic::is_enumatic_type<EnumaticT>(), int>> {
   inline static bool s_was_registered = false;
   template <class PybindHost>
   static void wrap_with_pybind(PybindHost& pybindHost) {

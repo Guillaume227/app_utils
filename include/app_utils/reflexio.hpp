@@ -132,7 +132,7 @@ struct member_descriptor_impl_t : public member_descriptor_t {
 #ifdef DO_PYBIND_WRAPPING
   void wrap_with_pybind(pybind11::module& pybindmodule_, void* pybindhost_) const override {
     auto* py_class = static_cast<HostType::PybindClassType*>(pybindhost_);
-    app_utils::pybind_utils::pybind_wrap_customizer<MemberType>::wrap_with_pybind(pybindmodule_);
+    app_utils::pybind_utils::pybind_wrapper<MemberType>::wrap_with_pybind(pybindmodule_);
     py_class->def_readwrite(get_name().data(), m_member_var_ptr);
   }
 #endif
@@ -324,7 +324,7 @@ namespace app_utils::pybind_utils {
 namespace py = pybind11;
 
 template <typename ReflexioStruct>
-struct pybind_wrap_customizer<ReflexioStruct,
+struct pybind_wrapper<ReflexioStruct,
                               std::enable_if_t<is_reflexio_struct<ReflexioStruct>::value, int>> {
   inline static bool s_registered_once = false;
 

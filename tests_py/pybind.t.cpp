@@ -84,8 +84,8 @@ PYBIND11_MODULE(REFLEXIO_STRUCT_USE_PYBIND_MODULE, m) {
   py::bind_vector<std::vector<double>>(m, "VectorDouble");
   py::bind_vector<std::vector<std::string>>(m, "VectorString");
 
-  app_utils::pybind_utils::pybind_wrap_customizer<MyEnum>::wrap_with_pybind(m);
+  app_utils::pybind_utils::pybind_wrapper<MyEnum>::wrap_with_pybind(m);
 
-  app_utils::pybind_utils::pybind_wrap_customizer<MyStruct>::wrap_with_pybind(m);
+  app_utils::pybind_utils::pybind_wrapper<MyStruct>::wrap_with_pybind(m);
 }
 }  // namespace app_utils::tests

@@ -13,7 +13,7 @@
 namespace app_utils::pybind_utils {
 
 template <typename T, typename Dummy = int>
-struct pybind_wrap_customizer {
+struct pybind_wrapper {
 
   template <class PybindHost>
   static void wrap_with_pybind(PybindHost&) requires std::is_arithmetic_v<T> or 
@@ -22,13 +22,13 @@ struct pybind_wrap_customizer {
 };
 
 template <typename T>
-struct pybind_wrap_customizer<std::vector<T>> {  
+struct pybind_wrapper<std::vector<T>> {  
   template <typename PybindHost>
   static void wrap_with_pybind(PybindHost&) {}
 };
 
 template <typename T, size_t N>
-struct pybind_wrap_customizer<std::array<T, N>> {
+struct pybind_wrapper<std::array<T, N>> {
   
   using ArrayType = std::array<T, N>;
   
