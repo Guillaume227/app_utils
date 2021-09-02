@@ -32,13 +32,16 @@ struct pybind_wrap_customizer<std::array<T, N>> {
   
   using ArrayType = std::array<T, N>;
   
+  inline static bool s_registered_once = false;
+
   template <typename PybindHost>
   static void wrap_with_pybind(PybindHost& m) {  
 
     using SizeType = ArrayType::size_type;
     using DiffType = ArrayType::difference_type;
 
-    static bool s_registered_once = [&] {
+    if(not s_registered_once) {
+      s_registered_once = true;
       auto wrap_i = [](DiffType i, SizeType n) -> SizeType {
         if (i < 0) i += n;
         if (i < 0 || (SizeType)i >= n) throw pybind11::index_error();
@@ -61,8 +64,7 @@ struct pybind_wrap_customizer<std::array<T, N>> {
             SizeType index = wrap_i(i, v.size());
             return v[index];
           });
-      return true;
-    }();
+    }
   }
 };
 }  // namespace app_utils::pybind_utils
