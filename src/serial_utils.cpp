@@ -8,7 +8,7 @@ size_t from_bytes(std::byte const* buffer, size_t const buffer_size, float& val)
   from_bytes(buffer, buffer_size, res);
   int e = (res >> 23) & 0xFF;
   uint32_t sig_i = res & 0x7FFFFF;
-  bool neg = res & (1 << 31);
+  bool neg = res & (1u << 31);
 
   float sig = 0.0;
   if (e != 0 || sig_i != 0) {
@@ -37,7 +37,7 @@ size_t to_bytes(std::byte* buffer, size_t buffer_size, float const& val) {
 
   uint32_t res = ((e & 0xFF) << 23) | (sig_i & 0x7FFFFF);
   if (sig < 0) {
-    res |= 1 << 31;
+    res |= 1u << 31;
   }
 
   return to_bytes(buffer, buffer_size, res);

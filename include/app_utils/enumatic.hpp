@@ -175,7 +175,7 @@ struct Enumatic {
 
   consteval static int max_value() {
     int max_val = enum_value_details[0].int_value;
-    for (int i = 1; i < (int)enum_value_details.size(); i++) {
+    for (size_t i = 1; i < enum_value_details.size(); i++) {
       if (max_val < enum_value_details[i].int_value) {
         max_val = enum_value_details[i].int_value;
       }
@@ -185,7 +185,7 @@ struct Enumatic {
 
   consteval static int min_value() {
     int min_val = enum_value_details[0].int_value;
-    for (int i = 1; i < (int)enum_value_details.size(); i++) {
+    for (size_t i = 1; i < enum_value_details.size(); i++) {
       if (min_val > enum_value_details[i].int_value) {
         min_val = enum_value_details[i].int_value;
       }
@@ -198,8 +198,8 @@ struct Enumatic {
       enumatic::parseEnumDefinition<size()>(enumValuesAsString(EnumType{}));
 
   consteval static bool has_default_indexation() {
-    for (int i = 0; i < (int) enum_value_details.size(); i++) {
-      if (enum_value_details[i].int_value != i) {
+    for (size_t i = 0; i < enum_value_details.size(); i++) {
+      if (enum_value_details[i].int_value != static_cast<int>(i)) {
         return false;
       }
     }

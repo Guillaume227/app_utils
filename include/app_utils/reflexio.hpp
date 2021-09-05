@@ -315,7 +315,7 @@ using is_reflexio_struct = std::is_base_of<ReflexioStructBase<T, T::NumMemberVar
       std::size_t i = 0;                                                                            \
       (void(out[i++] = member_var_descriptor_t<NN, int>::descriptor), ...);                         \
       return out;                                                                                   \
-    }(std::make_index_sequence<num_registered_member_vars()>());                                                   \
+    }(std::make_index_sequence<num_registered_member_vars()>());                                    \
   }
 
 #ifdef DO_PYBIND_WRAPPING

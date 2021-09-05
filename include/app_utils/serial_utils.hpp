@@ -145,13 +145,13 @@ inline size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, std::string co
   C-style array
 */
 
-template <typename T, int N>
+template <typename T, size_t N>
 size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, T (&val)[N]) requires std::is_arithmetic_v<T> {
   std::memcpy(val, buffer, N);
   return 1;
 }
 
-template <typename T, int N>
+template <typename T, size_t N>
 size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, T const (&val) [N]) requires std::is_arithmetic_v<T> {
   std::memcpy(buffer, val, N);
   return N;
