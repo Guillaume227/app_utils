@@ -11,6 +11,7 @@
     add_compile_options(#"/Za" 
 						#"/Wall"
 						"/W4"
+						"/WX" # treat warnings as errors						
 						"/permissive-" # so we can use alternative operators with msvc
 						"-D_CRT_SECURE_NO_WARNINGS" # remove useless std::getenv windows warning
 						)
