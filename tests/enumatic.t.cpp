@@ -20,6 +20,36 @@ TEST_CASE("parse_enum", "[enumatic]") {
   REQUIRE(enum_details[3].int_value == 3);
 }
 
+TEST_CASE("enumatic_static_cast", "[enumatic]") {
+ 
+  REQUIRE(static_cast<int>(MyEnum::valneg) == -1);
+  REQUIRE(static_cast<int>(MyEnum::val1) == 1);
+  REQUIRE(static_cast<int>(MyEnum::val2) == 2);
+  REQUIRE(static_cast<int>(MyEnum::val3) == 3);
+  REQUIRE(static_cast<int>(MyEnum::val4) == -3);
+  REQUIRE(static_cast<int>(MyEnum::val5) == -2);
+}
+
+TEST_CASE("enumatic::get_values", "[enumatic]") {
+  auto const vals_array = Enumatic<MyEnum>::get_values();
+
+  REQUIRE(vals_array[0] == MyEnum::valneg);
+  REQUIRE(vals_array[1] == MyEnum::val1);
+  REQUIRE(vals_array[2] == MyEnum::val2);
+  REQUIRE(vals_array[3] == MyEnum::val3);
+  REQUIRE(vals_array[4] == MyEnum::val4);
+  REQUIRE(vals_array[5] == MyEnum::val5);
+}
+
+TEST_CASE("enumatic::get_index", "[enumatic]") {
+  REQUIRE(0 == Enumatic<MyEnum>::get_index(MyEnum::valneg));
+  REQUIRE(1 == Enumatic<MyEnum>::get_index(MyEnum::val1));
+  REQUIRE(2 == Enumatic<MyEnum>::get_index(MyEnum::val2));
+  REQUIRE(3 == Enumatic<MyEnum>::get_index(MyEnum::val3));
+  REQUIRE(4 == Enumatic<MyEnum>::get_index(MyEnum::val4));
+  REQUIRE(5 == Enumatic<MyEnum>::get_index(MyEnum::val5));
+}
+
 TEST_CASE("enumatic_size", "[enumatic]") {
   REQUIRE(Enumatic<MyEnum>::size() == 6);
 }
@@ -37,17 +67,17 @@ static_assert(not Enumatic<MyEnum>::has_default_indexation());
 
 TEST_CASE("enumatic_to_from_string", "[enumatic]") { 
 
-  auto val1 = Enumatic<MyEnum>::fromString("val1");
+  auto val1 = Enumatic<MyEnum>::from_string("val1");
   REQUIRE(val1 == MyEnum::val1); 
 
   // check with prefix
-  auto val2 = Enumatic<MyEnum>::fromString("MyEnum::val2");
+  auto val2 = Enumatic<MyEnum>::from_string("MyEnum::val2");
   REQUIRE(val2 == MyEnum::val2);
 
-  val2 = Enumatic<MyEnum>::fromString("MyEnum.val2");
+  val2 = Enumatic<MyEnum>::from_string("MyEnum.val2");
   REQUIRE(val2 == MyEnum::val2);
 
-  REQUIRE_THROWS(Enumatic<MyEnum>::fromString("val33") );
+  REQUIRE_THROWS(Enumatic<MyEnum>::from_string("val33") );
 
   REQUIRE(to_string(MyEnum::val1) == "val1");
   REQUIRE(to_string(MyEnum::val2) == "val2");
@@ -81,3 +111,4 @@ TEST_CASE("enumatic_serial_size", "[enumatic]") {
 
   REQUIRE(serial_size(OtherEnum{}) == 4);
 }
+

@@ -28,7 +28,7 @@ namespace guille {
     }
 
     constexpr static auto getEnumValues() {
-      return Enumator<EnumT>::getValues();
+      return Enumator<EnumT>::get_values();
     }
 
     constexpr size_t size() const {
@@ -125,7 +125,7 @@ namespace guille {
     auto vals = gqs::strutils::split(separator, str);
 
     for (auto const& valStr : vals) {
-      bitset |= Enumator<EnumT>::fromString(valStr);
+      bitset |= Enumator<EnumT>::from_string(valStr);
     }
     return is;
   }
@@ -133,7 +133,7 @@ namespace guille {
   template<typename EnumT>
   std::ostream& operator<<(std::ostream& os, EnumBitset<EnumT> const& bitset) {
     bool firstValue = true;
-    for (auto const& val : Enumator<EnumT>::getValues()) {
+    for (auto const& val : Enumator<EnumT>::get_values()) {
       if (bitSet & val) {
         if (not firstValue) {
           os << '|';

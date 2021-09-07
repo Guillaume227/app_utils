@@ -20,7 +20,7 @@ namespace enumatic {
 template <typename T>
 using isEnum = typename std::enable_if<std::is_enum<T>::value>::type;
 
-constexpr size_t numListItems(std::string_view const valStr) {
+constexpr size_t num_comma_separated_items(std::string_view const valStr) {
   size_t num_comas = 0;
   size_t i = 0;
   for (; i < valStr.size(); i++) {
@@ -148,7 +148,7 @@ constexpr std::array<enum_value_detail_t, N> parseEnumDefinition(std::string_vie
 }
 
 template <typename EnumClass>
-constexpr bool allowConvertFromIndex(EnumClass) {
+constexpr bool allow_conversion_from_underlying(EnumClass) {
   return false;
 }
 
@@ -167,10 +167,10 @@ constexpr bool is_enumatic_type() noexcept {
 template <typename EnumType>
 struct Enumatic {
   Enumatic() = delete; /* prevents instantiation */
-  constexpr static std::string_view name() { return typeName(EnumType{} /*dummy value - only type matters here for ADL*/); }
+  constexpr static std::string_view name() { return type_name(EnumType{} /*dummy value - only type matters here for ADL*/); }
 
   consteval static size_t size() {
-    return enumatic::numListItems(enumValuesAsString(EnumType{} /*dummy value - only type matters here for ADL*/));
+    return enumatic::num_comma_separated_items(enum_values_as_string(EnumType{} /*dummy value - only type matters here for ADL*/));
   }
 
   consteval static int max_value() {
@@ -195,7 +195,7 @@ struct Enumatic {
 
   /* list of all enum values as strings */
   constexpr static auto enum_value_details =
-      enumatic::parseEnumDefinition<size()>(enumValuesAsString(EnumType{}));
+      enumatic::parseEnumDefinition<size()>(enum_values_as_string(EnumType{}));
 
   consteval static bool has_default_indexation() {
     for (size_t i = 0; i < enum_value_details.size(); i++) {
@@ -206,7 +206,21 @@ struct Enumatic {
     return true;
   }
 
-  consteval static auto getValues() { 
+  
+  constexpr static size_t get_index(EnumType val) {
+    if constexpr (has_default_indexation()) {
+      return static_cast<size_t>(val);
+    } else {
+      for (size_t i = 0; i < enum_value_details.size(); i++) {
+        if (enum_value_details[i].int_value == static_cast<int>(val)) {
+          return i;
+        }
+      }
+      // should never get there
+      return 0;
+    }
+  }
+  consteval static auto get_values() { 
     std::array<EnumType, size()> values;
     for (size_t i = 0; i < size(); i++) {
       values[i] = static_cast<EnumType>(enum_value_details[i].int_value);
@@ -215,7 +229,7 @@ struct Enumatic {
   }
 
   /* To/from std::string conversion */
-  constexpr static std::string_view toString(EnumType arg) {
+  constexpr static std::string_view to_string(EnumType arg) {
     if constexpr (has_default_indexation()) {
       return enum_value_details[static_cast<size_t>(arg)].value_name;
     } else {
@@ -228,7 +242,7 @@ struct Enumatic {
   }
 
   /* returns true if conversion was successfull */
-  constexpr static bool fromString(std::string_view val, EnumType& enumVal) {
+  constexpr static bool from_string(std::string_view val, EnumType& enumVal) {
     
     if (val.empty()) {
       return false;
@@ -249,7 +263,7 @@ struct Enumatic {
       }
     }
 
-    if constexpr (allowConvertFromIndex(EnumType{})) {
+    if constexpr (allow_conversion_from_underlying(EnumType{})) {
       bool hasOnlyDigits = val.find_first_not_of("-0123456789") == std::string_view::npos;
       if (hasOnlyDigits) {
         int intVal = enumatic::stoi(val);
@@ -265,10 +279,10 @@ struct Enumatic {
   }
 
   /* Attempt at converting from std::string avlue - throws on failure */
-  constexpr static EnumType fromString(std::string_view const val) {
+  constexpr static EnumType from_string(std::string_view const val) {
     EnumType enumVal;    
-    if (not fromString(val, enumVal)) {
-      throwExc(" '", val, "' is not a valid '", name(), "' value. Options are:", enumValuesAsString(EnumType{}));
+    if (not from_string(val, enumVal)) {
+      throwExc(" '", val, "' is not a valid '", name(), "' value. Options are:", enum_values_as_string(EnumType{}));
     }
     return enumVal;
   }
@@ -287,8 +301,8 @@ struct pybind_wrapper<EnumaticT, std::enable_if_t<enumatic::is_enumatic_type<Enu
       // copy string_views into strings because pybind takes in a \0 terminated char const*
       static std::array<std::string, Enumatic<EnumaticT>::size()> string_values;
       int i = 0;
-      for (auto const& value : Enumatic<EnumaticT>::getValues()) {
-        string_values[i] = std::string{Enumatic<EnumaticT>::toString(value)};
+      for (auto const& value : Enumatic<EnumaticT>::get_values()) {
+        string_values[i] = std::string{Enumatic<EnumaticT>::to_string(value)};
         wrappedEnum.value(string_values[i++].data(), value);
       }
       s_was_registered = true;
@@ -308,14 +322,14 @@ struct pybind_wrapper<EnumaticT, std::enable_if_t<enumatic::is_enumatic_type<Enu
 #define ENUMATIC_DEFINE_IMPL(EnumClass, StorageType, EnumName, allowFromIdx, ...)                                  \
   namespace EnumName##_wrapper_t {                                                                                 \
     EnumClass EnumType StorageType {__VA_ARGS__};                                                                  \
-    consteval std::string_view typeName(EnumType) { return #EnumName; }                                            \
-    consteval std::string_view enumValuesAsString(EnumType) { return #__VA_ARGS__; }                               \
-    consteval size_t size(EnumType) { return enumatic::numListItems(#__VA_ARGS__); }                               \
-    constexpr std::string_view to_string(EnumType arg) { return Enumatic<EnumType>::toString(arg); }               \
+    consteval std::string_view type_name(EnumType) { return #EnumName; }                                            \
+    consteval std::string_view enum_values_as_string(EnumType) { return #__VA_ARGS__; }                               \
+    consteval size_t size(EnumType) { return enumatic::num_comma_separated_items(#__VA_ARGS__); }                               \
+    constexpr std::string_view to_string(EnumType arg) { return Enumatic<EnumType>::to_string(arg); }               \
                                                                                                                    \
     constexpr bool is_enumatic_type(EnumType*) noexcept { return true; }                                           \
                                                                                                                    \
-    consteval bool allowConvertFromIndex(EnumType) { return allowFromIdx; }                                        \
+    consteval bool allow_conversion_from_underlying(EnumType) { return allowFromIdx; }                                        \
                                                                                                                    \
     constexpr size_t serial_size(EnumType) {                                                                       \
       if constexpr (Enumatic<EnumType>::min_value() < 0 or 255 < Enumatic<EnumType>::max_value()) {                \
