@@ -8,7 +8,7 @@ ENUMATIC_DEFINE(MyEnum, valneg = -1, val1 = 1, val2 = 2, val3, val4 = -3, val5,)
 
 
 TEST_CASE("parse_enum", "[enumatic]") { 
-  auto enum_details = enumatic::parseEnumDefinition<4>("valneg [[deprecated]]=  -1, val1 = 1, val2 [[deprecated]], val3  , "); 
+  auto enum_details = enumatic::details::parse_enum_definition<4>("valneg [[deprecated]]=  -1, val1 = 1, val2 [[deprecated]], val3  , "); 
   REQUIRE(enum_details[0].value_name == "valneg");
   REQUIRE(enum_details[1].value_name == "val1");
   REQUIRE(enum_details[2].value_name == "val2");

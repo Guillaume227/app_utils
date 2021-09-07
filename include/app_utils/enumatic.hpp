@@ -20,6 +20,7 @@ namespace enumatic {
 template <typename T>
 using isEnum = typename std::enable_if<std::is_enum<T>::value>::type;
 
+namespace details {
 constexpr size_t num_comma_separated_items(std::string_view const valStr) {
   size_t num_comas = 0;
   size_t i = 0;
@@ -67,21 +68,16 @@ constexpr int stoi(std::string_view const str) {
 }
 
 /* list of all enum values as strings */
-template<size_t N>
-constexpr std::array<enum_value_detail_t, N> parseEnumDefinition(std::string_view const enum_vals_as_str) {
-
+template <size_t N>
+constexpr std::array<enum_value_detail_t, N> parse_enum_definition(std::string_view const enum_vals_as_str) {
   std::array<enum_value_detail_t, N> value_details;
 
-  enum class TokenType {
-    name,
-    value,
-    other
-  };
+  enum class TokenType { name, value, other };
 
   size_t token_index = 0;
   size_t left_index = 0;
   size_t num_token_chars = 0;
-  TokenType token_type = TokenType::name;  // strip out explicit value specialization ( e.g. "val1 = 0, ...")  
+  TokenType token_type = TokenType::name;  // strip out explicit value specialization ( e.g. "val1 = 0, ...")
 
   auto const assign_detail = [&]() {
     auto token_str = enum_vals_as_str.substr(left_index, num_token_chars);
@@ -93,59 +89,55 @@ constexpr std::array<enum_value_detail_t, N> parseEnumDefinition(std::string_vie
         value_details[token_index].int_value = stoi(token_str);
         break;
       case TokenType::other:
-        //fallthrough
+        // fallthrough
         break;
     }
   };
   for (size_t i = 0; i < enum_vals_as_str.size(); i++) {
-
     switch (char c = enum_vals_as_str[i]) {
-    case ' ':
-    case '\n':
-    case '\t':
-    case ',':
-    case '=':
-      // separator found
-      if (num_token_chars > 0) {
-        assign_detail();        
-        num_token_chars = 0;
-        if (c != ',') {
-          token_type = TokenType::other;
-        }      
-      }
-
-      if (c == ',') {
-        if (token_type != TokenType::value) {
-          value_details[token_index].int_value = token_index == 0
-              ? 0
-              : value_details [token_index - 1].int_value + 1;
+      case ' ':
+      case '\n':
+      case '\t':
+      case ',':
+      case '=':
+        // separator found
+        if (num_token_chars > 0) {
+          assign_detail();
+          num_token_chars = 0;
+          if (c != ',') {
+            token_type = TokenType::other;
+          }
         }
-        token_type = TokenType::name;
-        
-        token_index++;
-      } else if (c == '=') {
-        token_type = TokenType::value;        
-      }
-      left_index = i + 1;
-      break;
 
-    default:
-      num_token_chars++;
-      break;
+        if (c == ',') {
+          if (token_type != TokenType::value) {
+            value_details[token_index].int_value = token_index == 0 ? 0 : value_details[token_index - 1].int_value + 1;
+          }
+          token_type = TokenType::name;
+
+          token_index++;
+        } else if (c == '=') {
+          token_type = TokenType::value;
+        }
+        left_index = i + 1;
+        break;
+
+      default:
+        num_token_chars++;
+        break;
     }
   }
 
   if (num_token_chars > 0) {
     assign_detail();
     if (token_type != TokenType::value) {
-      value_details[token_index].int_value = token_index == 0
-          ? 0
-          : value_details[token_index - 1].int_value + 1;
-    } 
+      value_details[token_index].int_value = token_index == 0 ? 0 : value_details[token_index - 1].int_value + 1;
+    }
   }
 
   return value_details;
 }
+}  // namespace details
 
 template <typename EnumClass>
 constexpr bool allow_conversion_from_underlying(EnumClass) {
@@ -170,7 +162,8 @@ struct Enumatic {
   constexpr static std::string_view name() { return type_name(EnumType{} /*dummy value - only type matters here for ADL*/); }
 
   consteval static size_t size() {
-    return enumatic::num_comma_separated_items(enum_values_as_string(EnumType{} /*dummy value - only type matters here for ADL*/));
+    return enumatic::details::num_comma_separated_items(
+        enum_values_as_string(EnumType{} /*dummy value - only type matters here for ADL*/));
   }
 
   consteval static int max_value() {
@@ -195,7 +188,7 @@ struct Enumatic {
 
   /* list of all enum values as strings */
   constexpr static auto enum_value_details =
-      enumatic::parseEnumDefinition<size()>(enum_values_as_string(EnumType{}));
+      enumatic::details::parse_enum_definition<size()>(enum_values_as_string(EnumType{}));
 
   consteval static bool has_default_indexation() {
     for (size_t i = 0; i < enum_value_details.size(); i++) {
@@ -270,7 +263,7 @@ struct Enumatic {
     if constexpr (allow_conversion_from_underlying(EnumType{})) {
       bool hasOnlyDigits = val.find_first_not_of("-0123456789") == std::string_view::npos;
       if (hasOnlyDigits) {
-        int intVal = enumatic::stoi(val);
+        int intVal = enumatic::details::stoi(val);
         for (auto const& value_detail : enum_value_details) {
           if (value_detail.int_val == intVal) {
             enumVal = static_cast<EnumType>(intVal);
@@ -328,7 +321,7 @@ struct pybind_wrapper<EnumaticT, std::enable_if_t<enumatic::is_enumatic_type<Enu
     EnumClass EnumType StorageType {__VA_ARGS__};                                                                  \
     consteval std::string_view type_name(EnumType) { return #EnumName; }                                            \
     consteval std::string_view enum_values_as_string(EnumType) { return #__VA_ARGS__; }                               \
-    consteval size_t size(EnumType) { return enumatic::num_comma_separated_items(#__VA_ARGS__); }                               \
+    consteval size_t size(EnumType) { return enumatic::details::num_comma_separated_items(#__VA_ARGS__); }                               \
     constexpr std::string_view to_string(EnumType arg) { return Enumatic<EnumType>::to_string(arg); }               \
                                                                                                                    \
     constexpr bool is_enumatic_type(EnumType*) noexcept { return true; }                                           \
