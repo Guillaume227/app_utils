@@ -21,13 +21,21 @@ TEST_CASE("parse_enum", "[enumatic]") {
 }
 
 TEST_CASE("enumatic_static_cast", "[enumatic]") {
- 
   REQUIRE(static_cast<int>(MyEnum::valneg) == -1);
   REQUIRE(static_cast<int>(MyEnum::val1) == 1);
   REQUIRE(static_cast<int>(MyEnum::val2) == 2);
   REQUIRE(static_cast<int>(MyEnum::val3) == 3);
   REQUIRE(static_cast<int>(MyEnum::val4) == -3);
   REQUIRE(static_cast<int>(MyEnum::val5) == -2);
+}
+
+TEST_CASE("enumatic::get_underlying_value", "[enumatic]") {
+  REQUIRE(Enumatic<MyEnum>::get_underlying_value(MyEnum::valneg) == -1);
+  REQUIRE(Enumatic<MyEnum>::get_underlying_value(MyEnum::val1) == 1);
+  REQUIRE(Enumatic<MyEnum>::get_underlying_value(MyEnum::val2) == 2);
+  REQUIRE(Enumatic<MyEnum>::get_underlying_value(MyEnum::val3) == 3);
+  REQUIRE(Enumatic<MyEnum>::get_underlying_value(MyEnum::val4) == -3);
+  REQUIRE(Enumatic<MyEnum>::get_underlying_value(MyEnum::val5) == -2);
 }
 
 TEST_CASE("enumatic::get_values", "[enumatic]") {

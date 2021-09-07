@@ -206,6 +206,9 @@ struct Enumatic {
     return true;
   }
 
+  constexpr static std::underlying_type_t<EnumType> get_underlying_value(EnumType val) { 
+    return static_cast<std::underlying_type_t<EnumType>>(val);
+  }
   
   constexpr static size_t get_index(EnumType val) {
     if constexpr (has_default_indexation()) {
@@ -220,6 +223,7 @@ struct Enumatic {
       return 0;
     }
   }
+
   consteval static auto get_values() { 
     std::array<EnumType, size()> values;
     for (size_t i = 0; i < size(); i++) {
