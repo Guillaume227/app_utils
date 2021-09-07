@@ -324,7 +324,7 @@ struct pybind_wrapper<EnumaticT, std::enable_if_t<enumatic::is_enumatic_type<Enu
         return 1;                                                                                                  \
       }                                                                                                            \
     }                                                                                                              \
-  };                                                                                                               \
+  }                                                                                                                \
                                                                                                                    \
   using EnumName = EnumName##_wrapper_t::EnumType
 

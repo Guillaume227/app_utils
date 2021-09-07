@@ -307,7 +307,7 @@ using is_reflexio_struct = std::is_base_of<ReflexioStructBase<T, T::NumMemberVar
       static constexpr int index = -1;                                                              \
     };                                                                                              \
                                                                                                     \
-    __VA_ARGS__;                                                                                    \
+    __VA_ARGS__                                                                                     \
                                                                                                     \
     inline static constexpr member_var_register_t s_member_var_register =                           \
         []<size_t... NN>(std::index_sequence<NN...>){                                               \
