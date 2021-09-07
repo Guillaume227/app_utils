@@ -56,7 +56,7 @@ constexpr int stoi(std::string_view const str) {
       has_negative_sign = true;
     } else {
       if (not is_digit(c)) {
-        compile_time_error("not a digit");
+        compile_time_error("explicit enum value must have only digits (and a sign)");
       }
       value = value * 10 + (c - '0');
     }
