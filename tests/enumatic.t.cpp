@@ -50,12 +50,12 @@ TEST_CASE("enumatic::get_values", "[enumatic]") {
 }
 
 TEST_CASE("enumatic::get_index", "[enumatic]") {
-  REQUIRE(0 == Enumatic<MyEnum>::get_index(MyEnum::valneg));
-  REQUIRE(1 == Enumatic<MyEnum>::get_index(MyEnum::val1));
-  REQUIRE(2 == Enumatic<MyEnum>::get_index(MyEnum::val2));
-  REQUIRE(3 == Enumatic<MyEnum>::get_index(MyEnum::val3));
-  REQUIRE(4 == Enumatic<MyEnum>::get_index(MyEnum::val4));
-  REQUIRE(5 == Enumatic<MyEnum>::get_index(MyEnum::val5));
+  REQUIRE(0 == get_index(MyEnum::valneg));
+  REQUIRE(1 == get_index(MyEnum::val1));
+  REQUIRE(2 == get_index(MyEnum::val2));
+  REQUIRE(3 == get_index(MyEnum::val3));
+  REQUIRE(4 == get_index(MyEnum::val4));
+  REQUIRE(5 == get_index(MyEnum::val5));
 }
 
 TEST_CASE("enumatic_size", "[enumatic]") {
