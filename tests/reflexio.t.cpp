@@ -15,7 +15,7 @@ static_assert(sizeof(TestEnum) == 4);
 static_assert(serial_size(TestEnum{}) == 1);
 
 REFLEXIO_STRUCT_DEFINE(MiniStruct, REFLEXIO_MEMBER_VAR_DEFINE(int, var1, 14, "var1 doc");
-                       static_assert(member_var_counter_t<var1_id>::index == 0);
+                       static_assert(member_var_counter_t<__var1_id>::index == 0);
                        static_assert(member_var_descriptor_t<0, int>::descriptor != nullptr););
 
 TEST_CASE("mini_struct", "[reflexio]") {
@@ -31,7 +31,7 @@ REFLEXIO_STRUCT_DEFINE(MyStruct,
   REFLEXIO_MEMBER_VAR_DEFINE(bool, var4, true, "var5 doc");
   using Array8_t = std::array<float, 8>;
   REFLEXIO_MEMBER_VAR_DEFINE(Array8_t, var5, {0}, "var6 doc");
-  static_assert(member_var_counter_t<var2_id>::index == 1);
+  static_assert(member_var_counter_t<__var2_id>::index == 1);
   static_assert(member_var_descriptor_t<3, int>::descriptor != nullptr);
   );
 

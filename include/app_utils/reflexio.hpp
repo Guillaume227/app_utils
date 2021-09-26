@@ -271,22 +271,22 @@ using is_reflexio_struct = std::is_base_of<ReflexioStructBase<T, T::NumMemberVar
   /* Making var_name ## _descr constexpr saves some space in an embedded context. */                \
   /* However it results in a test error on std::string member variable (default value is . */       \
   /* (default value remains empty string even when specified as something else). */                 \
-  inline static constexpr auto var_name##_descr = [] {                                              \
+  inline static constexpr auto __##var_name##_descr = [] {                                          \
     return member_descriptor_impl_t<var_type, ReflexioTypeName>{&ReflexioTypeName::var_name,        \
                                                                 default_value,                      \
                                                                 #var_name,                          \
                                                                 description};                       \
   }();                                                                                              \
                                                                                                     \
-  static constexpr int var_name##_id = __COUNTER__;                                                 \
+  static constexpr int __##var_name##_id = __COUNTER__;                                             \
                                                                                                     \
   template <class Dummy>                                                                            \
-  struct member_var_counter_t<var_name##_id, Dummy> {                                               \
-    static constexpr int index = member_var_counter_t<var_name##_id - 1, Dummy>::index + 1;         \
+  struct member_var_counter_t<__##var_name##_id, Dummy> {                                           \
+    static constexpr int index = member_var_counter_t<__##var_name##_id - 1, Dummy>::index + 1;     \
   };                                                                                                \
   template <class Dummy>                                                                            \
-  struct member_var_descriptor_t<member_var_counter_t<var_name##_id, int>::index, Dummy> {          \
-    static constexpr member_descriptor_t const* descriptor = &var_name##_descr;                     \
+  struct member_var_descriptor_t<member_var_counter_t<__##var_name##_id, int>::index, Dummy> {      \
+    static constexpr member_descriptor_t const* descriptor = &__##var_name##_descr;                 \
   }
 
 // define a member variable with a 'default default'
