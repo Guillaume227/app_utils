@@ -84,6 +84,8 @@ PYBIND11_MODULE(REFLEXIO_STRUCT_USE_PYBIND_MODULE, m) {
   py::bind_vector<std::vector<double>>(m, "VectorDouble");
   py::bind_vector<std::vector<std::string>>(m, "VectorString");
 
+  // explicit registration of MyEnum on the module.
+  // note that MyOtherEnum is implicitly registered through MyStruct as it's the type of a member variable.
   app_utils::pybind_utils::pybind_wrapper<MyEnum>::wrap_with_pybind(m);
 
   app_utils::pybind_utils::pybind_wrapper<MyStruct>::wrap_with_pybind(m);
