@@ -245,7 +245,7 @@ struct ReflexioStructBase {
       res += descriptor->read_from_bytes(buffer + res, buffer_size - res, &instance);
     }
     checkCond(buffer_size >= res, "buffer is not big enough", buffer_size, '<', res);
-    return buffer_size >= res ? res : 0;
+    return res; //TODO: revisit, saw mismatch between buffer size (383) and read byte (386) buffer_size >= res ? res : 0;
   }
 };
 
