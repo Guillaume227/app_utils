@@ -132,8 +132,9 @@ struct member_descriptor_impl_t : public member_descriptor_t {
 #ifdef DO_PYBIND_WRAPPING
   void wrap_with_pybind(pybind11::module& pybindmodule_, void* pybindhost_) const override {
     auto* py_class = static_cast<HostType::PybindClassType*>(pybindhost_);
-    app_utils::pybind_utils::pybind_wrapper<MemberType>::wrap_with_pybind(pybindmodule_);
-    py_class->def_readwrite(get_name().data(), m_member_var_ptr);
+    using namespace app_utils::pybind_utils;
+    pybind_wrapper<MemberType>::wrap_with_pybind(pybindmodule_);
+    py_class->def_readwrite(get_name().data(), m_member_var_ptr, pybind_wrapper_traits<MemberType>::def_readwrite_rvp);
   }
 #endif
 };

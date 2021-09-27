@@ -11,16 +11,40 @@ def test_reflexio():
     print(my_struct1.var4)
     assert(my_struct1 == my_struct2)
     assert(my_struct1.get_serial_size() == my_struct2.get_serial_size())
-
+   
+    # pointer semantics check for array
     my_struct1.var6[-1] = 2
-    assert(my_struct1.var6[-1] == 2)
+    assert(my_struct1.var6[-1] == 2), "in-place update did not work"
+
+    # value semantics check for arithmetic types
+    previous_value = my_struct1.var1
+    new_value = previous_value * 2
+    my_struct1.var1 = new_value
+    assert(previous_value != new_value), f"expected value semantics but {previous_value} == {new_value}"
+    assert(previous_value != my_struct1.var1), f"expected value semantics but {previous_value} == {my_struct1.var1}"
+
+    # value semantics check for wrapped float type
+    previous_value = my_struct1.var7
+    new_value = previous_value / 2
+    my_struct1.var7 = new_value
+    assert(previous_value != new_value), f"expected value semantics but {previous_value} == {new_value}"
+    assert(previous_value != my_struct1.var7), f"expected value semantics but {previous_value} == {my_struct1.var7}"
+
+    # pointer semantics check for wrapped float type with different return value policy
+    previous_value = my_struct1.var8
+    new_value = previous_value / 2
+    my_struct1.var8 = new_value
+    assert(previous_value == new_value), f"expected reference semantics but {previous_value} != {new_value}"
+    assert(previous_value == my_struct1.var8), f"expected reference semantics but {previous_value} != {my_struct1.var8}"
+
+
 
     if hasattr(app_utils_test, 'CONSTEXPR_STRING_AND_VECTOR'):
-        my_struct1.var7 = "hello hello"
-        my_struct1.var8 = VectorFloat([1, 2, 3])
+        my_struct1.var_string = "hello hello"
+        my_struct1.var_vect = VectorFloat([1, 2, 3])
         assert(my_struct1.get_serial_size() == my_struct2.get_serial_size() 
                + 3 * 4 # Vector of floats
-               + len(my_struct1.var7) - len(my_struct2.var7)) # difference in string size
+               + len(my_struct1.var_string) - len(my_struct2.var_string)) # difference in string size
 
     print(my_struct1)
     assert(my_struct1 != my_struct2)

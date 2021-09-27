@@ -15,6 +15,7 @@ struct timeval;  // Windows-specific: forward declaration to fix compilation err
 #define DO_PYBIND_WRAPPING
 #include <app_utils/pybind_utils.hpp>
 #include <app_utils/reflexio.hpp>
+#include <app_utils/serial_utils.hpp>
 #include <app_utils/enumatic.hpp>
 #include <app_utils/cond_check.hpp>
 
@@ -39,33 +40,125 @@ PYBIND11_MAKE_OPAQUE(std::vector<double>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::string>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::string_view>);
 
+template <typename Tag>
+struct CustomFloat {
+  using underlying_type = float;
+
+  float m_arg;
+  constexpr CustomFloat(float arg = 0.) : m_arg(arg) {}
+
+  // operator float() { return m_arg; }
+
+  constexpr bool operator==(CustomFloat const& other) const { return m_arg == other.m_arg; }
+  constexpr bool operator!=(CustomFloat const& other) const { return m_arg != other.m_arg; }
+
+  CustomFloat operator/(float f) const { return m_arg / f; }
+  CustomFloat operator*(float f) const { return m_arg * f; }
+  CustomFloat& operator/=(float f) { m_arg /= f;  return *this;}
+  CustomFloat& operator*=(float f) { m_arg *= f;  return *this;}
+
+  CustomFloat operator+(CustomFloat const& f) const { return m_arg + f.m_arg; }
+  CustomFloat operator-(CustomFloat const& f) const { return m_arg - f.m_arg; }
+  CustomFloat& operator+=(CustomFloat const& f) { m_arg += f.m_arg; return *this; }
+  CustomFloat& operator-=(CustomFloat const& f) { m_arg -= f.m_arg; return *this; }
+
+  CustomFloat operator-() const { return -m_arg; }
+
+  friend std::string to_string(CustomFloat const& f) {
+    std::ostringstream oss;
+    oss << f.m_arg << " " << app_utils::typeName<Tag>();
+    return oss.str();
+  }
+
+  friend constexpr size_t serial_size(CustomFloat const& val) { 
+    return app_utils::serial::serial_size(val.m_arg); 
+  }
+
+  friend constexpr size_t from_bytes(std::byte const* buffer, size_t buffer_size, CustomFloat& val) {
+    return app_utils::serial::from_bytes(buffer, buffer_size, val.m_arg);
+  }
+
+  friend constexpr size_t to_bytes(std::byte* buffer, size_t buffer_size, CustomFloat const& val) {
+    return app_utils::serial::to_bytes(buffer, buffer_size, val.m_arg);
+  }
+ };
+
+
 #if defined(_MSC_VER) && _MSC_VER >= 1929
 #define CONSTEXPR_STRING_AND_VECTOR
 #endif
+
+struct bla {};
+struct foo {};
 
 #ifdef CONSTEXPR_STRING_AND_VECTOR
 REFLEXIO_STRUCT_DEFINE(MyStruct,
   REFLEXIO_MEMBER_VAR_DEFINE(int, var1, 12, "var1 doc");
   REFLEXIO_MEMBER_VAR_DEFINE(float, var2, 1.5f, "var2 doc");
   REFLEXIO_MEMBER_VAR_DEFINE(MyEnum, var3, MyEnum::EnumVal2, "var3 doc");
-  REFLEXIO_MEMBER_VAR_DEFINE(MyOtherEnum, var4, MyOtherEnum::EnumVal2, "var3 doc");
-  REFLEXIO_MEMBER_VAR_DEFINE(bool, var5, true, "var4 doc");
-  REFLEXIO_MEMBER_VAR_DEFINE(ArrayFloat8_t, var6, {0}, "var5 doc");
-  REFLEXIO_MEMBER_VAR_DEFINE(std::string, var7, "var2_val", "var6 doc");
-  REFLEXIO_MEMBER_VAR_DEFINE(std::vector<float>, var8, {}, "var7 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(MyOtherEnum, var4, MyOtherEnum::EnumVal2, "var4 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(bool, var5, true, "var5 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(ArrayFloat8_t, var6, {0}, "var6 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(CustomFloat<bla>, var7, 22.2f, "var7 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(CustomFloat<foo>, var8, 11.1f, "var8 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(std::string, var_string, "var_string_val", "var string doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(std::vector<float>, var_vect, {}, "var vect doc");
   );
 #else
 REFLEXIO_STRUCT_DEFINE(
   MyStruct,
   REFLEXIO_MEMBER_VAR_DEFINE(int, var1, 12, "var1 doc");
-  REFLEXIO_MEMBER_VAR_DEFINE(float, var2, 1.5f, "var2 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(CustomFloat<bla>, var2, 1.5f, "var2 doc");
   REFLEXIO_MEMBER_VAR_DEFINE(MyEnum, var3, MyEnum::EnumVal2, "var3 doc");
-  REFLEXIO_MEMBER_VAR_DEFINE(MyOtherEnum, var4, MyOtherEnum::EnumVal2, "var3 doc");
-  REFLEXIO_MEMBER_VAR_DEFINE(bool, var5, true, "var4 doc");
-  REFLEXIO_MEMBER_VAR_DEFINE(ArrayFloat8_t, var6, {0}, "var5 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(MyOtherEnum, var4, MyOtherEnum::EnumVal2, "var4 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(bool, var5, true, "var5 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(ArrayFloat8_t, var6, {0}, "var6 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(CustomFloat<bla>, var7, 22.2f, "var7 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(CustomFloat<foo>, var8, 11.1f, "var8 doc");
   );
 #endif
 
+namespace app_utils::pybind_utils {
+
+template <>
+struct pybind_wrapper_traits<CustomFloat<bla>, int> {
+  constexpr static inline pybind11::return_value_policy def_readwrite_rvp =
+      pybind11::return_value_policy::copy;
+};
+
+template <typename Tag>
+struct pybind_wrapper<CustomFloat<Tag>, int> {
+  
+  inline static bool s_was_registered = false;
+
+  template <class PybindHost>
+  static void wrap_with_pybind(PybindHost& pybindHost) {
+    if (not s_was_registered) {
+      s_was_registered = true;
+      static std::string const class_name = app_utils::typeName<CustomFloat<Tag>>();
+      py::class_<CustomFloat<Tag>>(pybindHost, class_name.c_str())
+        .def(py::init<>())
+        .def(py::init<float>())
+        .def("__copy__", [](CustomFloat<Tag> const& self_) { return CustomFloat<Tag>(self_); })
+        .def("__deepcopy__", [](CustomFloat<Tag> const& self_) { return CustomFloat<Tag>(self_); })
+        .def("__str__", [](CustomFloat<Tag> const& self_) { return to_string(self_); })
+        //.def("__repr__", [](CustomFloat<Tag> const& self_) { return to_string(self_); })
+        .def(py::self == py::self)
+        .def(py::self != py::self)
+        .def(py::self *= float())
+        .def(py::self /= float())
+        .def(py::self * float())
+        .def(py::self / float())        
+        .def(py::self + py::self)
+        .def(py::self += py::self)
+        .def(py::self - py::self)
+        .def(py::self -= py::self)
+        .def(-py::self);
+    }
+  }
+};
+
+}  // namespace app_utils::pybind_utils
 namespace py = pybind11;
 
 namespace app_utils::tests {

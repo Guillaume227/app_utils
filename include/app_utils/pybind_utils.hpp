@@ -13,7 +13,15 @@
 namespace app_utils::pybind_utils {
 
 template <typename T, typename Dummy = int>
+struct pybind_wrapper_traits {
+  constexpr static inline pybind11::return_value_policy def_readwrite_rvp =
+      pybind11::return_value_policy::reference_internal; // that value is pybind default
+};
+
+template <typename T, typename Dummy = int>
 struct pybind_wrapper {
+
+  constexpr static inline auto return_value_policy = pybind11::return_value_policy::automatic;
 
   template <class PybindHost>
   static void wrap_with_pybind(PybindHost&) requires std::is_arithmetic_v<T> or 
@@ -23,15 +31,18 @@ struct pybind_wrapper {
 
 template <typename T>
 struct pybind_wrapper<std::vector<T>> {  
+
   template <typename PybindHost>
-  static void wrap_with_pybind(PybindHost&) {}
+  static void wrap_with_pybind(PybindHost&) {
+    // Do nothing, vectors are wrapped separately from pybind11 primitives
+  }
 };
 
 template <typename T, size_t N>
 struct pybind_wrapper<std::array<T, N>> {
   
   using ArrayType = std::array<T, N>;
-  
+
   inline static bool s_registered_once = false;
 
   template <typename PybindHost>
