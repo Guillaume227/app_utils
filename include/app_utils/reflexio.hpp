@@ -42,16 +42,16 @@ struct member_descriptor_t {
   constexpr virtual ~member_descriptor_t() = default;
 
 #ifndef REFLEXIO_MINIMAL_FEATURES
-  std::string_view const& get_name() const { return m_name; }
-  std::string_view const& get_description() const { return m_description; }
+  constexpr std::string_view const& get_name() const { return m_name; }
+  constexpr std::string_view const& get_description() const { return m_description; }
 
   virtual std::string default_value_as_string() const = 0;
   virtual std::string value_as_string(void const* host) const = 0;
-  virtual bool is_at_default(void const* host) const = 0;
-  virtual bool values_differ(void const* host1, void const* host2) const = 0;
-#endif
+  constexpr virtual bool is_at_default(void const* host) const = 0;
 
-  virtual size_t get_serial_size(void const* host) const = 0;
+  constexpr virtual bool values_differ(void const* host1, void const* host2) const = 0;
+#endif
+  constexpr virtual size_t get_serial_size(void const* host) const = 0;
 
   // returns number of bytes written
   virtual size_t write_to_bytes(std::byte* buffer, size_t buffer_size, void const* host) const = 0;
@@ -88,7 +88,7 @@ struct member_descriptor_impl_t : public member_descriptor_t {
   // explicit definition required because of gcc bug: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93413
   constexpr ~member_descriptor_impl_t() override = default;
 
-  MemberType const& get_value(void const* host) const { 
+  constexpr MemberType const& get_value(void const* host) const { 
     return static_cast<HostType const*>(host)->*m_member_var_ptr; 
   }
 
@@ -105,10 +105,10 @@ struct member_descriptor_impl_t : public member_descriptor_t {
     using namespace app_utils::strutils;
     return std::string{to_string(get_value(host))};
   }
-  bool is_at_default(void const* host) const override { 
+  constexpr bool is_at_default(void const* host) const override { 
     return get_value(host) == m_default_value;
   }
-  bool values_differ(void const* host1, void const* host2) const override final {
+  constexpr bool values_differ(void const* host1, void const* host2) const override final {
     return get_value(host1) != get_value(host2);
   }
 #endif
@@ -124,7 +124,7 @@ struct member_descriptor_impl_t : public member_descriptor_t {
     return from_bytes(buffer, buffer_size, get_mutable_value(host));
   }
 
-  size_t get_serial_size(void const* host) const override {
+  constexpr size_t get_serial_size(void const* host) const override {
     using namespace app_utils::serial;
     return serial_size(get_value(host));
   }
@@ -150,14 +150,14 @@ struct ReflexioStructBase {
   using member_var_register_t = std::array<member_descriptor_t const*, NumMemberVariables>;
 
  public:
-  constexpr static size_t NumMemberVars = NumMemberVariables;
+  static constexpr size_t NumMemberVars = NumMemberVariables;
   static constexpr size_t num_registered_member_vars() { return NumMemberVariables; }
 
-  static member_var_register_t const& get_member_descriptors() { 
+  constexpr static member_var_register_t const& get_member_descriptors() {
     return CRTP::s_member_var_register;    
   }
 
-  bool operator==(CRTP const& other) const {
+  constexpr bool operator==(CRTP const& other) const {
     for (auto& descriptor : get_member_descriptors()) {
       if (descriptor->values_differ(this, &other)) {
         return false;
@@ -166,10 +166,10 @@ struct ReflexioStructBase {
     return true;
   }
 
-  bool operator!=(CRTP const& other) const { return not(*this == other); }
+  constexpr bool operator!=(CRTP const& other) const { return not(*this == other); }
 
 #ifndef REFLEXIO_MINIMAL_FEATURES
-  bool has_all_default_values() const {
+  constexpr bool has_all_default_values() const {
     for (auto& descriptor : get_member_descriptors()) {
       if (not descriptor->is_at_default(this)) {
         return false;
@@ -219,9 +219,9 @@ struct ReflexioStructBase {
   }
 #endif
 
-  friend size_t serial_size(CRTP const& val) { return val.get_serial_size(); }
+  constexpr friend size_t serial_size(CRTP const& val) { return val.get_serial_size(); }
 
-  size_t get_serial_size() const {
+  constexpr size_t get_serial_size() const {
     size_t res = 0;
     for (auto& descriptor : CRTP::get_member_descriptors()) {
       res += descriptor->get_serial_size(this);
@@ -307,7 +307,7 @@ using is_reflexio_struct = std::is_base_of<ReflexioStructBase<T, T::NumMemberVar
     struct member_var_counter_t<-1, Dummy> {                                                        \
       static constexpr int index = -1;                                                              \
     };                                                                                              \
-                                                                                                    \
+    constexpr StructName() = default;                                                               \
     __VA_ARGS__                                                                                     \
                                                                                                     \
     inline static constexpr member_var_register_t s_member_var_register =                           \
@@ -326,7 +326,7 @@ namespace py = pybind11;
 
 template <typename ReflexioStruct>
 struct pybind_wrapper<ReflexioStruct,
-                              std::enable_if_t<is_reflexio_struct<ReflexioStruct>::value, int>> {
+                      std::enable_if_t<is_reflexio_struct<ReflexioStruct>::value, int>> {
   inline static bool s_registered_once = false;
 
   template <typename PybindHost>

@@ -19,6 +19,7 @@ struct timeval;  // Windows-specific: forward declaration to fix compilation err
 #include <app_utils/enumatic.hpp>
 #include <app_utils/cond_check.hpp>
 
+#include "../tests/reflexio.t.hpp"
 
 ENUMATIC_DEFINE(MyEnum, 
 	EnumVal1 = 1, 
@@ -176,11 +177,14 @@ PYBIND11_MODULE(REFLEXIO_STRUCT_USE_PYBIND_MODULE, m) {
   py::bind_vector<std::vector<float>>(m, "VectorFloat");
   py::bind_vector<std::vector<double>>(m, "VectorDouble");
   py::bind_vector<std::vector<std::string>>(m, "VectorString");
+  py::bind_vector<std::vector<std::string_view>>(m, "VectorStringView");
 
   // explicit registration of MyEnum on the module.
   // note that MyOtherEnum is implicitly registered through MyStruct as it's the type of a member variable.
   app_utils::pybind_utils::pybind_wrapper<MyEnum>::wrap_with_pybind(m);
 
   app_utils::pybind_utils::pybind_wrapper<MyStruct>::wrap_with_pybind(m);
+
+  app_utils::pybind_utils::pybind_wrapper<NestedStruct>::wrap_with_pybind(m);
 }
 }  // namespace app_utils::tests
