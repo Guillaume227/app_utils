@@ -129,4 +129,4 @@ TEST_CASE("reflexio_string_and_vector", "[reflexio]") {
 
   REQUIRE(sendStruct == receiveStruct);
 }
-#endif CONSTEXPR_STRING_AND_VECTOR
+#endif // CONSTEXPR_STRING_AND_VECTOR
