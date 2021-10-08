@@ -73,4 +73,29 @@ def test_reflexio_nested():
     assert(list(nested_struct1.var2.differing_members(nested_struct2.var2)) == ['var1'])
 
 
+def test_reflexio_as_dict():
 
+    my_struct1 = MyStruct()
+    dico = my_struct1.as_dict()
+    for item in dico:
+        print(item, dico[item])
+
+    var6_val = 222
+    dico['var6'][2] = var6_val
+    dico['var_string'] = dico['var_string'] + '_suffix'
+    assert(my_struct1.var6[2] == var6_val), 'vector should have pointer semantics'
+    assert(my_struct1.var_string != 'var_string_val_suffix'), "python strings have value semantics"
+    
+    
+    new_var2_val = 111
+    assert(getattr(my_struct1, 'var2') != new_var2_val)
+    assert(my_struct1['var2'] != new_var2_val)
+    
+    my_struct1['var2'] = new_var2_val
+    assert(getattr(my_struct1, 'var2') == new_var2_val)
+    assert(my_struct1['var2'] == new_var2_val)
+    assert(my_struct1.var2 == new_var2_val)
+
+    print('labels:')
+    for label in my_struct1:
+        print(label)
