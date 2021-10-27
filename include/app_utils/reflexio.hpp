@@ -67,8 +67,8 @@ struct member_descriptor_t {
 
 #ifdef DO_PYBIND_WRAPPING
   virtual void wrap_with_pybind(pybind11::module& pybindmodule_, void* pybindhost_) const = 0;
-  virtual pybind11::object get_py_value(void const* host) const;
-  virtual void set_py_value(void* host, pybind11::object const&) const;
+  virtual pybind11::object get_py_value(void const* host) const = 0;
+  virtual void set_py_value(void* host, pybind11::object const&) const = 0;
 #endif
 };
 
@@ -153,11 +153,11 @@ struct member_descriptor_impl_t : public member_descriptor_t {
     py_class->def_readwrite(get_name().data(), m_member_var_ptr, pybind_wrapper_traits<MemberType>::def_readwrite_rvp);
   }
 
-  pybind11::object get_py_value(void const* host) const override { 
+  pybind11::object get_py_value(void const* host) const final { 
     return pybind11::cast(&get_value(host));
   }
 
-  void set_py_value(void* host, pybind11::object const& obj) const override {
+  void set_py_value(void* host, pybind11::object const& obj) const final {
       get_mutable_value(host) = obj.cast<MemberType>();
   }
 #endif
