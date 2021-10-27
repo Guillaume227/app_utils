@@ -111,6 +111,15 @@ TEST_CASE("reflexio_composite", "[reflexio]") {
   REQUIRE(myStructCopy != myStruct);
 }
 
+TEST_CASE("reflexio_iterator", "[reflexio]") {
+  std::ostringstream oss;
+  MiniStruct miniStruct;
+  for (auto& label : miniStruct) {
+    oss << label << ";";
+  }
+  REQUIRE(oss.str() == "var1;");
+}
+
 #ifdef CONSTEXPR_STRING_AND_VECTOR
 REFLEXIO_STRUCT_DEFINE(StructWithStringAndVector, 
   REFLEXIO_MEMBER_VAR_DEFINE(int, var1, 12, "var1 doc");
