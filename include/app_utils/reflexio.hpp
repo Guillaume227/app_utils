@@ -67,6 +67,8 @@ struct member_descriptor_t {
 
 #ifdef DO_PYBIND_WRAPPING
   virtual void wrap_with_pybind(pybind11::module& pybindmodule_, void* pybindhost_) const = 0;
+  virtual pybind11::object get_py_value(void const* host) const;
+  virtual void set_py_value(void* host, pybind11::object const&) const;
 #endif
 };
 
@@ -150,7 +152,47 @@ struct member_descriptor_impl_t : public member_descriptor_t {
     pybind_wrapper<MemberType>::wrap_with_pybind(pybindmodule_);
     py_class->def_readwrite(get_name().data(), m_member_var_ptr, pybind_wrapper_traits<MemberType>::def_readwrite_rvp);
   }
+
+  pybind11::object get_py_value(void const* host) const override { 
+    return pybind11::cast(&get_value(host));
+  }
+
+  void set_py_value(void* host, pybind11::object const& obj) const override {
+      get_mutable_value(host) = obj.cast<MemberType>();
+  }
 #endif
+};
+
+
+template <typename ReflexioStruct>
+class ReflexioIterator {
+  using iterator_category = std::forward_iterator_tag;
+  using difference_type = std::ptrdiff_t;
+  using value_type = std::string_view const;
+  using pointer = value_type*;    // or also value_type*
+  using reference = value_type&;  // or also value_type&
+
+  size_t m_idx;
+
+ public:
+  ReflexioIterator(size_t idx = 0) : m_idx(idx) {}
+
+  reference operator*() const { return ReflexioStruct::get_member_descriptors()[m_idx]->get_name(); }
+  pointer operator->() { return &ReflexioStruct::get_member_descriptors()[m_idx]->get_name(); }
+
+  ReflexioIterator& operator++() {
+    m_idx++;
+    return *this;
+  }
+
+  ReflexioIterator operator++(int) {
+    ReflexioIterator tmp = *this;
+    ++(*this);
+    return tmp;
+  }
+
+  friend bool operator==(ReflexioIterator const& a, ReflexioIterator const& b) { return a.m_idx == b.m_idx; };
+  friend bool operator!=(ReflexioIterator const& a, ReflexioIterator const& b) { return a.m_idx != b.m_idx; };
 };
 
 template <typename CRTP, size_t NumMemberVariables>
@@ -186,6 +228,11 @@ struct ReflexioStructBase {
     return not(self == other); }
 
 #ifndef REFLEXIO_MINIMAL_FEATURES
+
+  using Iterator = ReflexioIterator<CRTP>;
+  Iterator begin() const { return Iterator(0); }
+  Iterator end  () const { return Iterator(NumMemberVars); }
+
   [[nodiscard]]
   constexpr bool has_all_default_values() const {
     for (auto& descriptor : get_member_descriptors()) {
@@ -259,7 +306,7 @@ struct ReflexioStructBase {
     for (auto& descriptor : CRTP::get_member_descriptors()) {
       res += descriptor->write_to_bytes(buffer + res, buffer_size - res, &instance);
     }
-    checkCond(buffer_size >= res, "buffer is not big enough", buffer_size, '<', res);
+    checkCond(buffer_size >= res, "output buffer is not big enough to fit object", buffer_size, '<', res);
     return res;
   }
   // return number of bytes read
@@ -268,7 +315,8 @@ struct ReflexioStructBase {
     for (auto& descriptor : CRTP::get_member_descriptors()) {
       res += descriptor->read_from_bytes(buffer + res, buffer_size - res, &instance);
     }
-    checkCond(buffer_size >= res, "buffer is not big enough", buffer_size, '<', res);
+    checkCond(buffer_size >= res, "input buffer has less data than required:", buffer_size, '<', res, 
+      ". Look for inconsistent serialization/deserialization of", app_utils::typeName<CRTP>());
     return res; //TODO: revisit, saw mismatch between buffer size (383) and read byte (386) buffer_size >= res ? res : 0;
   }
 };
@@ -366,6 +414,36 @@ struct pybind_wrapper<ReflexioStruct,
           .def(pybind11::self == pybind11::self)
           .def(pybind11::self != pybind11::self)
           .def("__str__", [](ReflexioStruct const& self_) { return to_string(self_); })
+          .def("as_dict",
+               [](ReflexioStruct const& self_) {
+                 py::dict dico;
+                 for (auto member_descriptor : ReflexioStruct::get_member_descriptors()) {                   
+                   dico[member_descriptor->get_name().data()] = member_descriptor->get_py_value(&self_);
+                 }
+                 return dico;
+               })
+          .def("__len__", [](ReflexioStruct const&) { return ReflexioStruct::get_member_descriptors().size(); })
+          .def("__iter__",
+               [](ReflexioStruct const& self_) { return py::make_iterator(self_.begin(), self_.end()); },
+               py::keep_alive<0, 1>())
+          .def("__getitem__", [](ReflexioStruct const& self_, std::string_view name) { 
+                  for (auto member_descriptor : ReflexioStruct::get_member_descriptors()) {
+                   if (name == member_descriptor->get_name()) {
+                     return member_descriptor->get_py_value(&self_);
+                   }
+                 }
+                 throw py::key_error("key '" + std::string{name} + "' does not exist");                    
+          })
+          .def("__setitem__",
+               [](ReflexioStruct& self_, std::string_view name, py::object const& value) {
+                 for (auto member_descriptor : ReflexioStruct::get_member_descriptors()) {
+                   if (name == member_descriptor->get_name()) {
+                     member_descriptor->set_py_value(&self_, value);
+                     return;
+                   }
+                 }
+                 throw py::key_error("key '" + std::string{name} + "' does not exist");
+               })
           .def("get_serial_size", &ReflexioStruct::get_serial_size)
           .def("deserialize",
                [&](ReflexioStruct& self, pybind11::bytes const& data) {
@@ -383,7 +461,7 @@ struct pybind_wrapper<ReflexioStruct,
           .def("differing_members", &ReflexioStruct::differing_members)
           .def("differences", &ReflexioStruct::differences);
 
-      for (auto& member_descriptor : ReflexioStruct::get_member_descriptors()) {
+      for (auto member_descriptor : ReflexioStruct::get_member_descriptors()) {
         member_descriptor->wrap_with_pybind(pybindHost, &wrappedType);
       }
     }
