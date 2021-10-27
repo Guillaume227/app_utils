@@ -84,7 +84,19 @@ TEST_CASE("reflexio_serialize", "[reflexio]") {
   REQUIRE(sendStruct == receiveStruct);
 }
 
+/*
+ should this work once c++20 is fully implemented?
+TEST_CASE("reflexio_constexpr", "[reflexio]") {
+    constexpr NestedStruct myStruct_const;
+    static_assert(myStruct_const.has_all_default_values());
+    static_assert(myStruct_const.non_default_values().empty());
+    constexpr std::string repr = to_string(myStruct_const);
+    static_assert(not repr.empty());
+}
+*/
+
 TEST_CASE("reflexio_composite", "[reflexio]") {
+
   NestedStruct myStruct;
   REQUIRE(myStruct.has_all_default_values());
   myStruct.var1.var1 = 2;
