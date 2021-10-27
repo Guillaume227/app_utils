@@ -4,16 +4,12 @@ project(app_utils
  VERSION 0.1
  DESCRIPTION "collection of c++ utilities" LANGUAGES CXX)
 
-
  # Only do these if this is the main project, and not if it is included through add_subdirectory
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
-
   include(cmake/main_project_utils.cmake)
   include(cmake/cpp_utils.cmake)
   include(cmake/git_utils.cmake)
-  
 endif()
-
 
 file(GLOB_RECURSE HEADER_FILES ${PROJECT_SOURCE_DIR}/include/*.hpp)
 file(GLOB_RECURSE SOURCE_FILES ${PROJECT_SOURCE_DIR}/src/*.cpp)
@@ -35,8 +31,6 @@ if((CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME OR MODERN_CMAKE_BUILD_TESTING)
   add_subdirectory(tests)
   add_subdirectory(tests_py)
 endif()
-
-
 
 if (UNIX)
 	set(CPP_WARN -fsingle-precision-constant

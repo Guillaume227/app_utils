@@ -6,11 +6,13 @@ cmake_minimum_required(VERSION 3.15)
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 ]]
 
-
-
 # Let's nicely support folders in IDEs
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
+# this line helps hide annoying automatically generated CTest targets
+# that clutter IDEs like Clion
+# see: https://gitlab.kitware.com/cmake/cmake/-/issues/21730
+set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
 
 # Testing only available if this is the main app
 # Note this needs to be done in the main CMakeLists
@@ -25,6 +27,5 @@ if(Doxygen_FOUND)
 else()
   message(STATUS "Doxygen not found, not building docs")
 endif()
-
 
 include(FetchContent)
