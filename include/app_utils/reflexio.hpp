@@ -9,6 +9,9 @@
 #ifndef REFLEXIO_MINIMAL_FEATURES
 #ifdef __arm__
 #define REFLEXIO_MINIMAL_FEATURES
+#ifndef REFLEXIO_WITH_COMPARISON_OPERATORS
+#define REFLEXIO_NO_COMPARISON_OPERATORS
+#endif
 #endif
 #endif
 
@@ -53,7 +56,9 @@ struct member_descriptor_t {
   constexpr virtual std::string value_as_string(void const* host) const = 0;
   [[nodiscard]]
   constexpr virtual bool is_at_default(void const* host) const = 0;
+#endif
 
+#ifndef REFLEXIO_NO_COMPARISON_OPERATORS
   [[nodiscard]]
   constexpr virtual bool values_differ(void const* host1, void const* host2) const = 0;
 #endif
@@ -122,12 +127,13 @@ struct member_descriptor_impl_t : public member_descriptor_t {
   constexpr bool is_at_default(void const* host) const final {
     return get_value(host) == m_default_value;
   }
+#endif
+#ifndef REFLEXIO_NO_COMPARISON_OPERATORS
   [[nodiscard]]
   constexpr bool values_differ(void const* host1, void const* host2) const final {
     return get_value(host1) != get_value(host2);
   }
 #endif
-
   // returns number of bytes written
   constexpr size_t write_to_bytes(std::byte* buffer, size_t buffer_size, void const* host) const final {
     using namespace app_utils::serial;
