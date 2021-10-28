@@ -155,6 +155,8 @@ struct pybind_wrapper<CustomFloat<Tag>, int> {
         .def(py::self - py::self)
         .def(py::self -= py::self)
         .def(-py::self);
+
+        py::implicitly_convertible<float, CustomFloat<Tag>>();
     }
   }
 };

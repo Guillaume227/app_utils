@@ -37,8 +37,6 @@ def test_reflexio():
     assert(previous_value == new_value), f"expected reference semantics but {previous_value} != {new_value}"
     assert(previous_value == my_struct1.var8), f"expected reference semantics but {previous_value} != {my_struct1.var8}"
 
-
-
     if hasattr(app_utils_test, 'CONSTEXPR_STRING_AND_VECTOR'):
         my_struct1.var_string = "hello hello"
         my_struct1.var_vect = VectorFloat([1, 2, 3])
@@ -82,15 +80,17 @@ def test_reflexio_as_dict():
 
     var6_val = 222
     dico['var6'][2] = var6_val
-    dico['var_string'] = dico['var_string'] + '_suffix'
     assert(my_struct1.var6[2] == var6_val), 'vector should have pointer semantics'
-    assert(my_struct1.var_string != 'var_string_val_suffix'), "python strings have value semantics"
-    
-    
-    new_var2_val = 111
+
+    if hasattr(app_utils_test, 'CONSTEXPR_STRING_AND_VECTOR'):
+        # strings not supported on linux yet due to imperfect c++20 gcc compliance
+        dico['var_string'] = dico['var_string'] + '_suffix'
+        assert(my_struct1.var_string != 'var_string_val_suffix'), "python strings have value semantics"
+
+    new_var2_val = 111.
     assert(getattr(my_struct1, 'var2') != new_var2_val)
     assert(my_struct1['var2'] != new_var2_val)
-    
+
     my_struct1['var2'] = new_var2_val
     assert(getattr(my_struct1, 'var2') == new_var2_val)
     assert(my_struct1['var2'] == new_var2_val)
