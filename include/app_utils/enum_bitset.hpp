@@ -5,10 +5,9 @@
 #include <bitset>
 
 
-
-namespace guille {
+namespace app_utils {
   /*
-  * Array that can be indexed on enum values
+  * Array that can be indexed / labeled on enum values
   */
 
   template<typename EnumT>
@@ -87,7 +86,7 @@ namespace guille {
     }
 
     constexpr bool operator&(EnumT e) const {
-      return m_bitset.test(static_Cast<unsigned long>(e));
+      return m_bitset.test(static_cast<unsigned long>(e));
     }
 
     constexpr bool test(EnumT e) const {
