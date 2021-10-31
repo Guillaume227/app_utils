@@ -1,9 +1,11 @@
 #pragma once
 
 #include <cstdio>
+#include <cstddef>
 #include <iostream>
 #include <string>
 #include <string_view>
+#include <span>
 #include <sstream>
 #include <type_traits>
 
@@ -49,6 +51,13 @@ namespace app_utils
       }
     };
 
+    template<>
+    struct StreamPrinter<std::byte> {
+      static ostream& toStream(ostream& os, std::byte const& param) {
+        return os << std::hex << static_cast<uint8_t>(param);
+      }
+    };
+
     template <>
     struct StreamPrinter<uint8_t const*> {
       static ostream& toStream(ostream& os, uint8_t const* const& param) { 
@@ -60,6 +69,16 @@ namespace app_utils
       static ostream& toStream(ostream& os, std::basic_string_view<uint8_t, U> const& param) {
         for (size_t i = 0; i < param.size(); i++) {
           os << std::hex << *(param.data() + i);
+        }
+        return os;
+      }
+    };
+
+    template <typename T>
+    struct StreamPrinter<std::span<T>> {
+      static ostream& toStream(ostream& os, std::span<T> const& param) {
+        for (size_t i = 0; i < param.size(); i++) {
+          StreamPrinter<std::decay_t<T>>::toStream(os, *(param.data() + i));
         }
         return os;
       }
