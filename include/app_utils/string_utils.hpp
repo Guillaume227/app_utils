@@ -99,7 +99,11 @@ std::string to_string(T val) {
 
 inline std::string to_string(std::string val) {
   return val;
- }
+}
+
+inline std::string to_string(std::string_view val) {
+  return std::string{val};
+}
 
 template <size_t N>
 std::string to_string(char const (&val)[N] ) {

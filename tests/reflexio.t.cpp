@@ -124,7 +124,7 @@ TEST_CASE("reflexio_iterator", "[reflexio]") {
 REFLEXIO_STRUCT_DEFINE(StructWithStringAndVector, 
   REFLEXIO_MEMBER_VAR_DEFINE(int, var1, 12, "var1 doc");
   REFLEXIO_MEMBER_VAR_DEFINE(std::string, var6, "var2_val", "var2 doc");
-  REFLEXIO_MEMBER_VAR_DEFINE(std::vector<float>, var7, {}, "var7 doc"););
+  REFLEXIO_MEMBER_VAR_DEFINE(std::vector<float>, var7, {10.f}, "var7 doc"););
 
 
 TEST_CASE("reflexio_string_and_vector", "[reflexio]") {
@@ -134,7 +134,10 @@ TEST_CASE("reflexio_string_and_vector", "[reflexio]") {
   sendStruct.var6 = "new_val";
   sendStruct.var7 = {1.f, 2.f, 3.f};
 
+  REQUIRE(StructWithStringAndVector::get_member_descriptors()[0]->default_value_as_string() == "12");
   REQUIRE(StructWithStringAndVector::get_member_descriptors()[1]->default_value_as_string() == "var2_val");
+  // transient constexpr allocation: see comment in reflexio.hpp around reflexio_traits::DefaultType specialization
+  //REQUIRE(StructWithStringAndVector::get_member_descriptors()[2]->default_value_as_string() == "{10.f}");
 
   StructWithStringAndVector receiveStruct;
   REQUIRE(sendStruct != receiveStruct);

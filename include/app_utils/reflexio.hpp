@@ -77,17 +77,35 @@ struct member_descriptor_t {
 #endif
 };
 
+#ifndef REFLEXIO_MINIMAL_FEATURES
+/*
+  DefaultType: work around constexpr transient allocation for std::string.
+  See reply there: https://stackoverflow.com/a/69590837/4249338
+  Something similar should be done for e.g. std::vector.
+*/
+template<typename T>
+struct reflexio_traits {
+  using DefaultType = T;
+};
+
+template <>
+struct reflexio_traits<std::string> {
+  using DefaultType = std::string_view;
+};
+
+#endif
+
 template <typename MemberType, typename HostType>
 struct member_descriptor_impl_t : public member_descriptor_t {
   MemberType HostType::*const m_member_var_ptr;
 #ifndef REFLEXIO_MINIMAL_FEATURES
-  MemberType const m_default_value;
+  reflexio_traits<MemberType>::DefaultType const m_default_value;
 #endif
 
   template <typename... Args>
   constexpr member_descriptor_impl_t(MemberType HostType::*member_var_ptr,
 #ifndef REFLEXIO_MINIMAL_FEATURES
-                                     MemberType defaultValue,
+                                     reflexio_traits<MemberType>::DefaultType defaultValue,
 #else
                                      MemberType /*defaultValue*/,
 #endif
@@ -347,9 +365,7 @@ using is_reflexio_struct = std::is_base_of<ReflexioStructBase<T, T::NumMemberVar
 
 #define REFLEXIO_MEMBER_VAR_DEFINE(var_type, var_name, default_value, description)                  \
   var_type var_name = var_type(default_value);                                                      \
-  /* Making var_name ## _descr constexpr saves some space in an embedded context. */                \
-  /* However it results in a test error on std::string member variable (default value is . */       \
-  /* (default value remains empty string even when specified as something else). */                 \
+                                                                                                    \
   inline static constexpr auto __##var_name##_descr = [] {                                          \
     return member_descriptor_impl_t<var_type, ReflexioTypeName>{&ReflexioTypeName::var_name,        \
                                                                 default_value,                      \
