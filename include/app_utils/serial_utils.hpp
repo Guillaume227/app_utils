@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 #include <array>
-
+#include <span>
 #include <bit>
 
 namespace app_utils::serial {
@@ -47,6 +47,11 @@ constexpr size_t serial_size(std::vector<T> const& val) {
 */
 
 template<typename T>
+size_t from_bytes(std::span<std::byte const> bytes, T& val) {
+  return from_bytes(bytes.data(), bytes.size(), val);
+}
+
+template<typename T>
 size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, T& val) requires std::is_arithmetic_v<T> {
   size_t num_bytes = serial_size(val);
   // TODO: endianness
@@ -61,6 +66,11 @@ size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, T& val) requi
   val = static_cast<T>(int_val);
 
   return num_bytes;
+}
+
+template <typename T>
+size_t to_bytes(std::span<std::byte> bytes, T const& val) {
+  return to_bytes(bytes.data(), bytes.size(), val);
 }
 
 template <typename T>
