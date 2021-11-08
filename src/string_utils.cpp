@@ -97,57 +97,40 @@ size_t split(std::string_view const str,
 
 std::vector<std::string_view> split(char const delim, 
                                     std::string_view const str, 
-                                    bool const doStrip, 
-                                    bool const discardEmpty,
+                                    bool const stripWhiteSpace,
                                     int const nSplits) {
   if (str.empty()) return {};
 
-  if (nSplits == 0) return {doStrip ? strip(str) : str};
+  if (nSplits == 0) return {stripWhiteSpace ? strip(str) : str};
 
   std::vector<std::string_view> res;
-  std::stringstream ss(std::string{str});
-  std::string item;
-  for (int splitCount = 0; nSplits < 0 or splitCount < nSplits; splitCount++) {
-    if (not std::getline(ss, item, delim)) {
+
+  size_t token_start_index = 0;
+  size_t i = 0;
+  for (; i < str.size(); i++) {
+    char c = str[i];
+    if(c == delim or (c == ' ' and stripWhiteSpace)) {
+      if(i > token_start_index) {
+        res.push_back(str.substr(token_start_index, i-token_start_index));
+      }
+      token_start_index = i + 1;
+    }
+
+    if(nSplits > 0 and (int)res.size() >= nSplits) {
       break;
     }
-
-    if (doStrip) {
-      item = strip(item);
-      if (item.empty() and delim == ' ') {
-        continue;
-      }
-    }
-
-    if (not item.empty() or not discardEmpty) {
-      res.push_back(std::move(item));
-    }
   }
 
-  // If the stream is not fully consumed, push the rest into response
-  if (std::getline(ss, item)) {
-    if (doStrip) {
-      item = strip(item);
-    }
-    res.push_back(std::move(item));
-  } else {
-    // otherwise we need to inspect the last element and push back an empty string
-    if (str.back() == delim and not discardEmpty) {
-      res.emplace_back("");
-    }
+  if (token_start_index < str.size()) {
+    res.push_back(str.substr(token_start_index));
   }
+
   return res;
 }
 
-std::vector<std::string_view> splitNoEmpty(char const delim, std::string_view str) {
-  return split(delim, str, true, true, -1);
-}
 
-std::vector<std::string_view> split(char const delim, 
-  std::string_view const str, 
-  bool const doStrip, 
-  int const nSplits) {
-  return split(delim, str, doStrip, /*discardEmpty*/ false, nSplits);
+std::vector<std::string_view> splitNoEmpty(char const delim, std::string_view str) {
+  return split(delim, str, /*strip whitespace*/true, -1);
 }
 
 // that version takes a multi-char delimiter

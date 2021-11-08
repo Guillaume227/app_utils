@@ -45,14 +45,16 @@ inline std::ostream& right_justify(std::ostream& os, unsigned width, std::string
   return os << std::left << std::setw(width) << str;
 }
 
-size_t split(std::string_view const str, char const delim, std::string_view& outBuffer, size_t maxNumTokens);
+size_t split(std::string_view str,
+             char delim,
+             std::string_view& outBuffer,
+             size_t maxNumTokens);
 
 
 std::vector<std::string_view> split(
   char delim, 
   std::string_view str, 
-  bool doStrip = true, 
-  bool discardEmpty = true,
+  bool stripWhiteSpace = true,
   int nSplits = -1);
 
 std::vector<std::string_view> splitNoEmpty(char delim, std::string_view str);
