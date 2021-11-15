@@ -237,6 +237,7 @@ struct ReflexioStructBase {
     return CRTP::s_member_var_register;    
   }
 
+#ifndef REFLEXIO_NO_COMPARISON_OPERATORS
   [[nodiscard]]
   friend constexpr bool operator==(CRTP const& self, CRTP const& other) {
     for (auto& descriptor : self.get_member_descriptors()) {
@@ -250,6 +251,7 @@ struct ReflexioStructBase {
   [[nodiscard]]
   friend constexpr bool operator!=(CRTP const& self, CRTP const& other) {
     return not(self == other); }
+#endif
 
 #ifndef REFLEXIO_MINIMAL_FEATURES
 
