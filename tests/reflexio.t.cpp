@@ -17,8 +17,10 @@ REFLEXIO_STRUCT_DEFINE(MyStruct,
   REFLEXIO_MEMBER_VAR_DEFINE(float, var2, 1.5f, "var3 doc");
   REFLEXIO_MEMBER_VAR_DEFINE(TestEnum, var3, TestEnum::EnumVal2, "var4 doc");
   REFLEXIO_MEMBER_VAR_DEFINE(bool, var4, true, "var5 doc");
+  int normal_member = 10; // a non registered member
   using Array8_t = std::array<float, 8>;
   REFLEXIO_MEMBER_VAR_DEFINE(Array8_t, var5, {0}, "var6 doc");
+  Array8_t normal_var;
   static_assert(member_var_counter_t<__var2_id>::index == 1);
   static_assert(member_var_descriptor_t<3, int>::descriptor != nullptr);
   );
@@ -41,8 +43,9 @@ TEST_CASE("reflexio_declare", "[reflexio]") {
   MyOtherStruct myOtherStruct;
 
   REQUIRE(MyStruct::num_registered_member_vars() == expected_member_vars);
-
+  myStruct.normal_member = 11;
   REQUIRE(myStruct == myStruct2);
+  REQUIRE(myStruct.normal_member != myStruct2.normal_member);
   REQUIRE(myStruct.has_all_default_values());
   myStruct.var5[2] = 12;
   REQUIRE(not myStruct.has_all_default_values());
