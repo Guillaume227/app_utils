@@ -217,9 +217,10 @@ struct Enumatic {
     }
   }
 
-  consteval static auto get_values() { 
-    std::array<EnumType, size()> values;
-    for (size_t i = 0; i < size(); i++) {
+  consteval static std::array<EnumType, size()> get_values() {
+    constexpr size_t num_values = size();
+    std::array<EnumType, num_values> values;
+    for (size_t i = 0; i < num_values; i++) {
       values[i] = static_cast<EnumType>(enum_value_details[i].int_value);
     }
     return values;
@@ -298,7 +299,7 @@ struct pybind_wrapper<EnumaticT, std::enable_if_t<enumatic::is_enumatic_type<Enu
       // copy string_views into strings because pybind takes in a \0 terminated char const*
       static std::array<std::string, Enumatic<EnumaticT>::size()> string_values;
       int i = 0;
-      for (auto const& value : Enumatic<EnumaticT>::get_values()) {
+      for (auto const& value: Enumatic<EnumaticT>::get_values()) {
         string_values[i] = std::string{Enumatic<EnumaticT>::to_string(value)};
         wrappedEnum.value(string_values[i++].data(), value);
       }
