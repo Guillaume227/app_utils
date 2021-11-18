@@ -32,7 +32,9 @@ namespace app_utils
       resolution_t const m_printThreshold;
       TimePoint m_start_time;
 
-      explicit BlockTimer(std::string description, bool printStart = false, resolution_t printThreshold = resolution_t(0));
+      explicit BlockTimer(std::string description,
+                          bool printStart = false,
+                          resolution_t printThreshold = resolution_t(0));
 
       resolution_t stopTime();
       resolution_t timeSinceStart() const
