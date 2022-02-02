@@ -60,7 +60,7 @@ size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, T& val) requi
   // for compatibility with vesc tools serialization
   uint32_t int_val = 0;
   for (size_t i = 0; i < num_bytes; i++) {
-    int_val |= ((uint32_t) buffer[num_bytes - i - 1]) << (8 * i);
+    int_val |= static_cast<uint32_t>(buffer[num_bytes - i - 1]) << (8 * i);
   }
 
   val = static_cast<T>(int_val);
@@ -81,13 +81,13 @@ size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, T const& val) require
 
   // for compatibility with vesc tools serialization
   for (size_t i = 0; i < num_bytes; i++) {
-    buffer[num_bytes - i - 1] = (std::byte)(val >> (8 * i));
+    buffer[num_bytes - i - 1] = static_cast<std::byte>(val >> (8 * i));
   }
   
   return num_bytes;
 }
 
-size_t from_bytes(std::byte const* buffer, size_t const buffer_size, float& val);
+size_t from_bytes(std::byte const* buffer, size_t buffer_size, float& val);
 
 size_t to_bytes(std::byte* buffer, size_t buffer_size, float const& val);
 
