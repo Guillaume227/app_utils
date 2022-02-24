@@ -31,7 +31,7 @@ class circular_buffer_t {
       : m_buffer(buffer)
       , m_state(state) {}
 
-    constexpr iterator operator++() {
+    constexpr iterator& operator++() {
       ++m_state;      
       return *this;
     }
@@ -44,9 +44,27 @@ class circular_buffer_t {
     size_t m_state = 0;
   };
 
+  class const_iterator {
+  public:
+    constexpr const_iterator(circular_buffer_t const& buffer, size_t state)
+            : m_buffer(buffer)
+            , m_state(state) {}
+
+    constexpr const_iterator& operator++() {
+      ++m_state;
+      return *this;
+    }
+    constexpr bool operator!=(const_iterator const& other) const { return m_state != other.m_state; }
+    constexpr T const& operator*() const { return m_buffer.m_array[m_state % capacity_]; }
+
+  private:
+    circular_buffer_t const& m_buffer;
+    size_t m_state = 0;
+  };
+
   constexpr iterator begin() { return {*this, m_index >= capacity_ ? m_index : 0}; }
   constexpr iterator end() { return {*this, m_index >= capacity_ ? m_index + size() : m_index}; }
-  constexpr iterator begin() const { return {*this, m_index >= capacity_ ? m_index : 0}; }
-  constexpr iterator end() const { return {*this, m_index >= capacity_ ? m_index + size() : m_index}; }
+  constexpr const_iterator begin() const { return {*this, m_index >= capacity_ ? m_index : 0}; }
+  constexpr const_iterator end() const { return {*this, m_index >= capacity_ ? m_index + size() : m_index}; }
 };
 }  // namespace app_utils
