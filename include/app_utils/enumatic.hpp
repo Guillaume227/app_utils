@@ -343,8 +343,9 @@ struct pybind_wrapper<EnumaticT, std::enable_if_t<enumatic::is_enumatic_type<Enu
                                                                                                                    \
   using EnumName = EnumName##_wrapper_t::EnumType
 
-#define ENUM_CLASS_DEFINE(EnumName, fromIdx, ...) ENUMATIC_DEFINE_IMPL(enum class, , EnumName, fromIdx, __VA_ARGS__)
-#define ENUM_DEFINE(EnumName, ...) ENUMATIC_DEFINE_IMPL(enum, , EnumName, false, __VA_ARGS__)
+#define ENUM_CLASS_DEFINE(EnumName, allowFromIdx, ...) ENUMATIC_DEFINE_IMPL(enum class, , EnumName, allowFromIdx, __VA_ARGS__)
+#define ENUM_DEFINE(EnumName, ...) ENUMATIC_DEFINE_IMPL(enum, , EnumName, /*allowFromIdx*/false, __VA_ARGS__)
 
-#define ENUMATIC_DEFINE(EnumName, ...) ENUM_CLASS_DEFINE(EnumName, false, __VA_ARGS__)
+#define ENUMATIC_DEFINE(EnumName, ...) ENUM_CLASS_DEFINE(EnumName, /*allowFromIdx*/ false, __VA_ARGS__)
+#define ENUMATIC_DEFINE_WITH_STORAGE_TYPE(EnumName, StorageType, ...) ENUMATIC_DEFINE_IMPL(enum class, : StorageType, EnumName, /*allowFromIdx*/ false, __VA_ARGS__)
 #define ENUMATIC_DEFINE_idx(EnumName, ...) ENUM_CLASS_DEFINE(EnumName, true, __VA_ARGS__)
