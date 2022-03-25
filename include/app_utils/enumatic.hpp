@@ -239,7 +239,7 @@ struct Enumatic {
     }
   }
 
-  /* returns true if conversion was successfull */
+  /* returns true if conversion was successful */
   constexpr static bool from_string(std::string_view val, EnumType& enumVal) {
     
     if (val.empty()) {
@@ -295,15 +295,16 @@ struct pybind_wrapper<EnumaticT, std::enable_if_t<enumatic::is_enumatic_type<Enu
   template <class PybindHost>
   static void wrap_with_pybind(PybindHost& pybindHost) {
     if (not s_was_registered) {
-      auto wrappedEnum = pybind11::enum_<EnumaticT>(pybindHost, Enumatic<EnumaticT>::name().data());
+      s_was_registered = true;
+      static std::string const enum_name {Enumatic<EnumaticT>::name()};
+      pybind11::enum_<EnumaticT> wrappedEnum(pybindHost, enum_name.c_str());
       // copy string_views into strings because pybind takes in a \0 terminated char const*
       static std::array<std::string, Enumatic<EnumaticT>::size()> string_values;
       int i = 0;
-      for (auto const& value: Enumatic<EnumaticT>::get_values()) {
+      for (auto value: Enumatic<EnumaticT>::get_values()) {
         string_values[i] = std::string{Enumatic<EnumaticT>::to_string(value)};
-        wrappedEnum.value(string_values[i++].data(), value);
+        wrappedEnum.value(string_values[i++].c_str(), value);
       }
-      s_was_registered = true;
     }
   }
 };
