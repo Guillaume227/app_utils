@@ -214,4 +214,23 @@ size_t to_bytes(std::byte* buffer, size_t buffer_size, std::vector<T> const& val
   }
   return num_bytes;
 }
+
+
+template<typename ...Args>
+size_t to_bytes(std::span<std::byte> buffer, Args const& ... args ) {
+  using namespace app_utils::serial;
+  std::byte * const buffer_ptr = buffer.data();
+  size_t read_bytes = 0;
+  ((read_bytes += to_bytes(buffer_ptr + read_bytes, buffer.size() - read_bytes, args)), ...);
+  return read_bytes;
+}
+
+template<typename ...Args>
+size_t from_bytes(std::span<std::byte> const buffer, Args& ... args) {
+  using namespace app_utils::serial;
+  std::byte const* const buffer_ptr = buffer.data();
+  size_t read_bytes = 0;
+  ((read_bytes += from_bytes(buffer_ptr + read_bytes, buffer.size() - read_bytes, args)), ...);
+  return read_bytes;
+}
 }  // namespace app_utils::serial
