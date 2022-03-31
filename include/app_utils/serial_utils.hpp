@@ -215,7 +215,6 @@ size_t to_bytes(std::byte* buffer, size_t buffer_size, std::vector<T> const& val
   return num_bytes;
 }
 
-
 template<typename ...Args>
 size_t to_bytes(std::span<std::byte> buffer, Args const& ... args ) {
   using namespace app_utils::serial;
@@ -233,4 +232,13 @@ size_t from_bytes(std::span<std::byte> const buffer, Args& ... args) {
   ((read_bytes += from_bytes(buffer_ptr + read_bytes, buffer.size() - read_bytes, args)), ...);
   return read_bytes;
 }
+
+template<typename ...Args>
+std::vector<std::byte> make_serial(Args&&... args) {
+  size_t const num_bytes = (serial_size(args) + ... );
+  std::vector<std::byte> message(num_bytes);
+  app_utils::serial::to_bytes(message, std::forward<Args>(args)...);
+  return message;
+}
+
 }  // namespace app_utils::serial
