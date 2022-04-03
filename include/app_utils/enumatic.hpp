@@ -325,8 +325,8 @@ struct pybind_wrapper<EnumaticT, std::enable_if_t<enumatic::is_enumatic_type<Enu
     consteval std::string_view enum_values_as_string(EnumType) { return #__VA_ARGS__; }                            \
     consteval size_t size(EnumType) { return enumatic::details::num_comma_separated_items(#__VA_ARGS__); }         \
     constexpr std::string_view to_string(EnumType arg) { return Enumatic<EnumType>::to_string(arg); }              \
-    constexpr void from_string(std::string_view valStr, EnumType& arg) {                                           \
-      Enumatic<EnumType>::from_string(valStr, arg);                                                                \
+    constexpr bool from_string(std::string_view valStr, EnumType& arg) {                                           \
+      return Enumatic<EnumType>::from_string(valStr, arg);                                                                \
     }                                                                                                              \
     constexpr size_t get_index(EnumType arg) { return Enumatic<EnumType>::get_index(arg); }                        \
     constexpr bool is_enumatic_type(EnumType*) noexcept { return true; }                                           \

@@ -27,8 +27,10 @@ struct Exception : public std::runtime_error {
 [[noreturn]] void handleUncaughtException() noexcept;
 }  // namespace app_utils
 
-#define throwExc(...) \
-  throw app_utils::Exception(app_utils::Exception::formatStackInfo(__FILE__, __LINE__, __FUNCTION__) __VA_OPT__(,) __VA_ARGS__)
+#define throwWithTrace(ExceptionT, ...) \
+  throw ExceptionT(app_utils::Exception::formatStackInfo(__FILE__, __LINE__, __FUNCTION__) __VA_OPT__(,) __VA_ARGS__)
+
+#define throwExc(...) throwWithTrace(app_utils::Exception, __VA_ARGS__)
 
 #define rethrowExc(app_utilsException, ...)                                                              \
   throw app_utils::Exception(                                                                            \
