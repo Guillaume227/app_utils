@@ -33,8 +33,7 @@ if((CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME OR MODERN_CMAKE_BUILD_TESTING)
 endif()
 
 if (UNIX)
-	set(CPP_WARN -fsingle-precision-constant
-				 -Wdouble-promotion
+	set(CPP_WARN -Wdouble-promotion
 				 -Wall
 				 -Wextra
 				 -Wundef

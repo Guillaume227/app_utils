@@ -25,7 +25,7 @@ if (MSVC)
 endif ()
 
 if (UNIX)
-    set(CPP_WARN -fsingle-precision-constant
+    set(CPP_WARN
             -Wdouble-promotion
             -Wall
             -Wextra

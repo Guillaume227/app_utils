@@ -30,7 +30,7 @@ size_t to_bytes(std::byte* buffer, size_t buffer_size, float const& val) {
   float sig_abs = fabsf(sig);
   uint32_t sig_i = 0;
 
-  if (sig_abs >= 0.5) {
+  if (sig_abs >= 0.5f) {
     sig_i = (uint32_t)((sig_abs - 0.5f) * 2.0f * 8388608.0f);
     e += 126;
   }
