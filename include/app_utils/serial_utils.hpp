@@ -234,11 +234,18 @@ size_t from_bytes(std::span<std::byte> const buffer, Args& ... args) {
 }
 
 template<typename ...Args>
-std::vector<std::byte> make_serial(Args&&... args) {
+std::vector<std::byte> make_buffer(Args&&... args) {
   size_t const num_bytes = (serial_size(args) + ... );
-  std::vector<std::byte> message(num_bytes);
-  app_utils::serial::to_bytes(message, std::forward<Args>(args)...);
-  return message;
+  std::vector<std::byte> buffer(num_bytes);
+  app_utils::serial::to_bytes(buffer, std::forward<Args>(args)...);
+  return buffer;
+}
+
+template<typename ...Args>
+size_t fill_buffer(std::vector<std::byte>& buffer, Args&&... args) {
+  size_t const num_bytes = (serial_size(args) + ... );
+  buffer.resize(num_bytes);
+  return app_utils::serial::to_bytes(&buffer.front(), std::forward<Args>(args)...);
 }
 
 }  // namespace app_utils::serial
