@@ -69,11 +69,6 @@ size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, T& val) requi
 }
 
 template <typename T>
-size_t to_bytes(std::span<std::byte> bytes, T const& val) {
-  return to_bytes(bytes.data(), bytes.size(), val);
-}
-
-template <typename T>
 size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, T const& val) requires std::is_arithmetic_v<T> {
   size_t num_bytes = serial_size(val);
   // TODO: endianness
@@ -95,12 +90,12 @@ size_t to_bytes(std::byte* buffer, size_t buffer_size, float const& val);
   bool
 */
 
-inline size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, bool& val) {
+constexpr size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, bool& val) {
   val = std::to_integer<uint8_t>(buffer[0]) != 0;
   return 1;
 }
 
-inline size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, bool const& val) {
+constexpr size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, bool const& val) {
   buffer[0] = static_cast<std::byte>(val);
   return 1;
 }
@@ -110,7 +105,7 @@ inline size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, bool const& va
 */
 
 template <typename T>
-size_t from_bytes(std::byte const* buffer, size_t buffer_size, T& val) requires std::is_enum_v<T> {
+constexpr size_t from_bytes(std::byte const* buffer, size_t buffer_size, T& val) requires std::is_enum_v<T> {
   constexpr size_t num_bytes = serial_size(T{});
   if constexpr (num_bytes == 1) {
     val = static_cast<T>(std::to_integer<std::underlying_type_t<T>>(buffer[0]));
@@ -123,7 +118,7 @@ size_t from_bytes(std::byte const* buffer, size_t buffer_size, T& val) requires 
 }
 
 template <typename T>
-size_t to_bytes(std::byte* buffer, size_t buffer_size, T const& val) requires std::is_enum_v<T> {
+constexpr size_t to_bytes(std::byte* buffer, size_t buffer_size, T const& val) requires std::is_enum_v<T> {
   constexpr size_t num_bytes = serial_size(T{});
   if constexpr (num_bytes == 1) {
     buffer[0] = static_cast<std::byte>(val);
@@ -156,13 +151,13 @@ inline size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, std::string co
 */
 
 template <typename T, size_t N>
-size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, T (&val)[N]) requires std::is_arithmetic_v<T> {
+constexpr size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, T (&val)[N]) requires std::is_arithmetic_v<T> {
   std::memcpy(val, buffer, N);
   return 1;
 }
 
 template <typename T, size_t N>
-size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, T const (&val) [N]) requires std::is_arithmetic_v<T> {
+constexpr size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, T const (&val) [N]) requires std::is_arithmetic_v<T> {
   std::memcpy(buffer, val, N);
   return N;
 }
@@ -172,7 +167,7 @@ size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, T const (&val) [N]) r
 */
 
 template <typename T, size_t N>
-size_t from_bytes(std::byte const* buffer, size_t buffer_size, std::array<T, N>& val) {
+constexpr size_t from_bytes(std::byte const* buffer, size_t buffer_size, std::array<T, N>& val) {
   size_t num_bytes = 0;
   for (auto& item : val) {
     num_bytes += from_bytes(buffer + num_bytes, buffer_size - num_bytes, item);
@@ -181,7 +176,7 @@ size_t from_bytes(std::byte const* buffer, size_t buffer_size, std::array<T, N>&
 }
 
 template <typename T, size_t N>
-size_t to_bytes(std::byte* const buffer, size_t const buffer_size, std::array<T, N> const& val) {
+constexpr size_t to_bytes(std::byte* const buffer, size_t const buffer_size, std::array<T, N> const& val) {
   size_t num_bytes = 0;
   for (auto& item : val) {
     num_bytes += to_bytes(buffer + num_bytes, buffer_size - num_bytes, item);
@@ -216,8 +211,7 @@ size_t to_bytes(std::byte* buffer, size_t buffer_size, std::vector<T> const& val
 }
 
 template<typename ...Args>
-size_t to_bytes(std::span<std::byte> buffer, Args const& ... args ) {
-  using namespace app_utils::serial;
+constexpr size_t to_bytes(std::span<std::byte> buffer, Args const& ... args) {
   std::byte * const buffer_ptr = buffer.data();
   size_t read_bytes = 0;
   ((read_bytes += to_bytes(buffer_ptr + read_bytes, buffer.size() - read_bytes, args)), ...);
@@ -226,7 +220,6 @@ size_t to_bytes(std::span<std::byte> buffer, Args const& ... args ) {
 
 template<typename ...Args>
 size_t from_bytes(std::span<std::byte> const buffer, Args& ... args) {
-  using namespace app_utils::serial;
   std::byte const* const buffer_ptr = buffer.data();
   size_t read_bytes = 0;
   ((read_bytes += from_bytes(buffer_ptr + read_bytes, buffer.size() - read_bytes, args)), ...);
@@ -237,15 +230,16 @@ template<typename ...Args>
 std::vector<std::byte> make_buffer(Args&&... args) {
   size_t const num_bytes = (serial_size(args) + ... );
   std::vector<std::byte> buffer(num_bytes);
-  app_utils::serial::to_bytes(buffer, std::forward<Args>(args)...);
+  to_bytes(buffer, std::forward<Args>(args)...);
   return buffer;
 }
 
 template<typename ...Args>
-size_t fill_buffer(std::vector<std::byte>& buffer, Args&&... args) {
+constexpr size_t fill_buffer(std::vector<std::byte>& buffer, Args&&... args) {
+  using namespace app_utils::serial;
   size_t const num_bytes = (serial_size(args) + ... );
   buffer.resize(num_bytes);
-  return app_utils::serial::to_bytes(&buffer.front(), std::forward<Args>(args)...);
+  return to_bytes(buffer, std::forward<Args>(args)...);
 }
 
 }  // namespace app_utils::serial

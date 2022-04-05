@@ -335,6 +335,10 @@ struct ReflexioStructBase {
     checkCond(buffer_size >= res, "output buffer is not big enough to fit object", buffer_size, '<', res);
     return res;
   }
+  friend size_t to_bytes(std::span<std::byte> buffer, CRTP& instance) {
+    return to_bytes(buffer.data(), buffer.size(), instance);
+  }
+
   // return number of bytes read
   friend size_t from_bytes(std::byte const* buffer, size_t buffer_size, CRTP& instance) {
     size_t res = 0;
@@ -344,6 +348,9 @@ struct ReflexioStructBase {
     checkCond(buffer_size >= res, "input buffer has less data than required:", buffer_size, '<', res, 
       ". Look for inconsistent serialization/deserialization of", app_utils::typeName<CRTP>());
     return res; //TODO: revisit, saw mismatch between buffer size (383) and read byte (386) buffer_size >= res ? res : 0;
+  }
+  friend size_t from_bytes(std::span<std::byte const> buffer, CRTP& instance) {
+    return from_bytes(buffer.data(), buffer.size(), instance);
   }
 };
 

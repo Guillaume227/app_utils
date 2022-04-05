@@ -120,3 +120,12 @@ TEST_CASE("enumatic_serial_size", "[enumatic]") {
   REQUIRE(serial_size(OtherEnum{}) == 4);
 }
 
+TEST_CASE("enumatic_to_buffer", "[enumatic]") {
+  auto buffer0 = app_utils::serial::make_buffer(MyEnum::val1);
+  auto buffer = app_utils::serial::make_buffer(MyEnum::val1, MyEnum::val3, MyEnum::val2);
+  MyEnum val1 = MyEnum::val4, val2 = MyEnum::val4, val3 = MyEnum::val4;
+  app_utils::serial::from_bytes(buffer, val1, val2, val3);
+  REQUIRE(val1 == MyEnum::val1);
+  REQUIRE(val2 == MyEnum::val3);
+  REQUIRE(val3 == MyEnum::val2);
+}
