@@ -8,6 +8,11 @@
 namespace app_utils::serial {
 
 template<typename ...Args>
+constexpr size_t serial_size(Args const& ... args) {
+  return (serial_size(args) + ... );
+}
+
+template<typename ...Args>
 constexpr size_t to_bytes(std::span<std::byte> buffer, Args const& ... args) {
   std::byte * const buffer_ptr = buffer.data();
   size_t read_bytes = 0;
@@ -25,7 +30,7 @@ size_t from_bytes(std::span<std::byte> const buffer, Args& ... args) {
 
 template<typename ...Args>
 std::vector<std::byte> make_buffer(Args&&... args) {
-  size_t const num_bytes = (serial_size(args) + ... );
+  size_t const num_bytes = serial_size(std::forward<Args>(args)...);
   std::vector<std::byte> buffer(num_bytes);
   to_bytes(buffer, std::forward<Args>(args)...);
   return buffer;
@@ -34,7 +39,7 @@ std::vector<std::byte> make_buffer(Args&&... args) {
 template<typename ...Args>
 constexpr size_t fill_buffer(std::vector<std::byte>& buffer, Args&&... args) {
   using namespace app_utils::serial;
-  size_t const num_bytes = (serial_size(args) + ... );
+  size_t const num_bytes = serial_size(std::forward<Args>(args)...);
   buffer.resize(num_bytes);
   return to_bytes(buffer, std::forward<Args>(args)...);
 }
