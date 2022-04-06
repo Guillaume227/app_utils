@@ -229,14 +229,16 @@ struct Enumatic {
   /* To/from std::string conversion */
   constexpr static std::string_view to_string(EnumType arg) {
     if constexpr (has_default_indexation()) {
-      return enum_value_details[static_cast<size_t>(arg)].value_name;
+      if(static_cast<size_t>(arg) < size())      {
+        return enum_value_details[static_cast<size_t>(arg)].value_name;
+      }
     } else {
       for (auto const& value_detail : enum_value_details) {
         if (value_detail.int_value == static_cast<int>(arg))
           return value_detail.value_name;
       }
-      return "";// should never get there - compile time error
     }
+    return "<INVALID ENUM VALUE>"; // error
   }
 
   /* returns true if conversion was successful */
