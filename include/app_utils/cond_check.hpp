@@ -44,3 +44,11 @@ struct Exception : public std::runtime_error {
       throwExc(__VA_ARGS__);      \
     }                             \
   } while (false)
+
+// Checks two values compare equal using operator==
+#define checkCompareEqual(val1, val2)      \
+  do {                              \
+    if (not(val1 == val2)) {        \
+      throwExc(val1, "!=", val2);   \
+    }                               \
+  } while (false)
