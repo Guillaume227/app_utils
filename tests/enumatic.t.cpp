@@ -3,6 +3,7 @@
 
 #include <app_utils/enumatic.hpp>
 #include <app_utils/serial_utils.hpp>
+#include <app_utils/serial_buffer.hpp>
 
 ENUMATIC_DEFINE(MyEnum, valneg = -1, val1 = 1, val2 = 2, val3, val4 = -3, val5,);
 

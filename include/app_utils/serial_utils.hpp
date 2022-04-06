@@ -52,7 +52,8 @@ size_t from_bytes(std::span<std::byte const> bytes, T& val) {
 }
 
 template<typename T>
-size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, T& val) requires std::is_arithmetic_v<T> {
+requires std::is_arithmetic_v<T>
+size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, T& val) {
   size_t num_bytes = serial_size(val);
   // TODO: endianness
   //std::memcpy(&val, buffer, num_bytes);
@@ -69,7 +70,8 @@ size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, T& val) requi
 }
 
 template <typename T>
-size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, T const& val) requires std::is_arithmetic_v<T> {
+requires std::is_arithmetic_v<T>
+size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, T const& val) {
   size_t num_bytes = serial_size(val);
   // TODO: endianness
   //std::memcpy(buffer, &val, num_bytes);
@@ -209,37 +211,4 @@ size_t to_bytes(std::byte* buffer, size_t buffer_size, std::vector<T> const& val
   }
   return num_bytes;
 }
-
-template<typename ...Args>
-constexpr size_t to_bytes(std::span<std::byte> buffer, Args const& ... args) {
-  std::byte * const buffer_ptr = buffer.data();
-  size_t read_bytes = 0;
-  ((read_bytes += to_bytes(buffer_ptr + read_bytes, buffer.size() - read_bytes, args)), ...);
-  return read_bytes;
-}
-
-template<typename ...Args>
-size_t from_bytes(std::span<std::byte> const buffer, Args& ... args) {
-  std::byte const* const buffer_ptr = buffer.data();
-  size_t read_bytes = 0;
-  ((read_bytes += from_bytes(buffer_ptr + read_bytes, buffer.size() - read_bytes, args)), ...);
-  return read_bytes;
-}
-
-template<typename ...Args>
-std::vector<std::byte> make_buffer(Args&&... args) {
-  size_t const num_bytes = (serial_size(args) + ... );
-  std::vector<std::byte> buffer(num_bytes);
-  to_bytes(buffer, std::forward<Args>(args)...);
-  return buffer;
-}
-
-template<typename ...Args>
-constexpr size_t fill_buffer(std::vector<std::byte>& buffer, Args&&... args) {
-  using namespace app_utils::serial;
-  size_t const num_bytes = (serial_size(args) + ... );
-  buffer.resize(num_bytes);
-  return to_bytes(buffer, std::forward<Args>(args)...);
-}
-
 }  // namespace app_utils::serial
