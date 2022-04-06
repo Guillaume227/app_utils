@@ -327,7 +327,7 @@ struct ReflexioStructBase {
   }
 
   // return number of written bytes
-  friend size_t to_bytes(std::byte* buffer, size_t buffer_size, CRTP const& instance) {
+  friend size_t to_bytes(std::byte* buffer, size_t const buffer_size, CRTP const& instance) {
     size_t res = 0;
     for (auto& descriptor : CRTP::get_member_descriptors()) {
       res += descriptor->write_to_bytes(buffer + res, buffer_size - res, &instance);
@@ -340,7 +340,7 @@ struct ReflexioStructBase {
   }
 
   // return number of bytes read
-  friend size_t from_bytes(std::byte const* buffer, size_t buffer_size, CRTP& instance) {
+  friend size_t from_bytes(std::byte const* buffer, size_t const buffer_size, CRTP& instance) {
     size_t res = 0;
     for (auto& descriptor : CRTP::get_member_descriptors()) {
       res += descriptor->read_from_bytes(buffer + res, buffer_size - res, &instance);
