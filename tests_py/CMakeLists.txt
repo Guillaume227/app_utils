@@ -58,7 +58,7 @@ else()
 endif()
 
 
-add_test (NAME python-tests
+add_test (NAME app_utils-pybind-tests
   COMMAND ${PYTHON_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR} -s --verbose --capture=no
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
 )
