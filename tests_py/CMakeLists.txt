@@ -23,40 +23,19 @@ target_link_libraries(app_utils_test_pybind PRIVATE app_utils)
 target_include_directories(app_utils_test_pybind PRIVATE tests)
 
 # makes the shared library name nice
-set_target_properties(app_utils_test_pybind PROPERTIES OUTPUT_NAME ${PYTHON_MODULE_NAME})
+set_target_properties(app_utils_test_pybind PROPERTIES OUTPUT_NAME
+        ${PYTHON_MODULE_NAME})
 
+set(PYTHON_PACKAGE_DIR ${CMAKE_CURRENT_LIST_DIR})
 
-# ensures the produced shared library ends up in the project tree
-# so it's convenient to fire up a python interpreter and iterate over the local python scripts
+# ensures the produced shared library ends up in the project root
+# so it's convenient to fire up a python interpreter and
+# iterate over the local python scripts
+set_target_properties(app_utils_test_pybind PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${PYTHON_PACKAGE_DIR})
 
-set(APP_UTILS_PYTHON_DIR ${CMAKE_CURRENT_LIST_DIR})
-
-if(WIN32)
-  set_target_properties(app_utils_test_pybind PROPERTIES SUFFIX ".pyd")
-
-  set_target_properties(app_utils_test_pybind PROPERTIES
-		   RUNTIME_OUTPUT_DIRECTORY ${APP_UTILS_PYTHON_DIR})
-
-  set_target_properties(app_utils_test_pybind PROPERTIES
-		   RUNTIME_OUTPUT_DIRECTORY_DEBUG ${APP_UTILS_PYTHON_DIR})
-
-  set_target_properties(app_utils_test_pybind PROPERTIES
-		   RUNTIME_OUTPUT_DIRECTORY_RELEASE ${APP_UTILS_PYTHON_DIR})
-
-else()
-  set_target_properties(app_utils_test_pybind PROPERTIES SUFFIX ".so")
-
-  set_target_properties(app_utils_test_pybind PROPERTIES
-		   LIBRARY_OUTPUT_DIRECTORY ${APP_UTILS_PYTHON_DIR})
-
-  set_target_properties(app_utils_test_pybind PROPERTIES
-		   LIBRARY_OUTPUT_DIRECTORY_DEBUG ${APP_UTILS_PYTHON_DIR})
-
-  set_target_properties(app_utils_test_pybind PROPERTIES
-		   LIBRARY_OUTPUT_DIRECTORY_RELEASE ${APP_UTILS_PYTHON_DIR})
-
-endif()
-
+set_target_properties(app_utils_test_pybind PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY ${PYTHON_PACKAGE_DIR})
 
 add_test (NAME app_utils-pybind-tests
   COMMAND ${PYTHON_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR} -s --verbose --capture=no
