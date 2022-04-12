@@ -13,9 +13,7 @@ if(NOT pybind11_POPULATED)
 endif()
 
 
-pybind11_add_module(app_utils_test_pybind SHARED	
-	pybind.t.cpp
-)
+pybind11_add_module(app_utils_test_pybind pybind.t.cpp)
 
 set(PYTHON_MODULE_NAME app_utils_test)
 target_compile_definitions(app_utils_test_pybind PRIVATE REFLEXIO_STRUCT_USE_PYBIND_MODULE=${PYTHON_MODULE_NAME})
@@ -41,3 +39,6 @@ add_test (NAME app_utils-pybind-tests
   COMMAND ${PYTHON_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR} -s --verbose --capture=no
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
 )
+
+set_tests_properties(app_utils-pybind-tests
+        PROPERTIES DEPENDS app_utils_test_pybind)

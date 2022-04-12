@@ -1,5 +1,5 @@
-from . import app_utils_test
-from .app_utils_test import *
+from app_utils_test import *
+import app_utils_test
 
 
 def test_reflexio():
