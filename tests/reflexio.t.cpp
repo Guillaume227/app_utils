@@ -12,7 +12,7 @@ TEST_CASE("mini_struct", "[reflexio]") {
   REQUIRE(miniStruct.has_all_default_values());
 }
 
-REFLEXIO_STRUCT_DEFINE(MyStruct,   
+REFLEXIO_STRUCT_DEFINE(MyStruct,
   REFLEXIO_MEMBER_VAR_DEFINE(int, var1, 12, "var1 doc");
   REFLEXIO_MEMBER_VAR_DEFINE(float, var2, 1.5f, "var3 doc");
   REFLEXIO_MEMBER_VAR_DEFINE(TestEnum, var3, TestEnum::EnumVal2, "var4 doc");
@@ -25,6 +25,8 @@ REFLEXIO_STRUCT_DEFINE(MyStruct,
   static_assert(member_var_descriptor_t<3, int>::descriptor != nullptr);
   );
 
+static_assert(std::is_standard_layout<MyStruct>());
+static_assert(std::is_trivially_copyable<MyStruct>());
 
 TEST_CASE("reflexio_declare", "[reflexio]") { 
 

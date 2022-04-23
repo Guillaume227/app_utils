@@ -99,3 +99,17 @@ def test_reflexio_as_dict():
     print('labels:')
     for label in my_struct1:
         print(label)
+
+
+def test_numpy():
+    from app_utils_test import SimpleStruct, MyEnum, get_simple_struct_array
+    import numpy as np
+    assert(SimpleStruct.dtype == np.dtype([('var1', '<i4'), ('var3', '<i4')]))
+    a = np.array([(12, MyEnum.EnumVal1), (3, MyEnum.EnumVal2)], dtype=SimpleStruct.dtype)
+    assert((a['var1'] == [12, 3]).all())
+    assert((a['var3'] == [int(MyEnum.EnumVal1), int(MyEnum.EnumVal2)]).all())
+
+    arr = get_simple_struct_array(5)
+    print(arr)
+    assert((arr['var1'] == [0, 1, 2, 3, 4]).all())
+    assert(arr.dtype == SimpleStruct.dtype)

@@ -3,7 +3,7 @@
 #include <app_utils/pybind_utils.hpp>
 #include <app_utils/enumatic.hpp>
 
-namespace app_utils::pybind_utils {
+namespace app_utils::pybind {
 template <typename EnumaticT>
 struct pybind_wrapper<EnumaticT, std::enable_if_t<enumatic::is_enumatic_type<EnumaticT>(), int>> {
   inline static bool s_was_registered = false;

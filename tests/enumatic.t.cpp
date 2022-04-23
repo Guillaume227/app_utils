@@ -7,6 +7,8 @@
 
 ENUMATIC_DEFINE(MyEnum, valneg = -1, val1 = 1, val2 = 2, val3, val4 = -3, val5,);
 
+static_assert(std::is_standard_layout<MyEnum>());
+static_assert(std::is_enum<MyEnum>());
 
 TEST_CASE("parse_enum", "[enumatic]") { 
   auto enum_details = enumatic::details::parse_enum_definition<4>("valneg [[deprecated]]=  -1, val1 = 1, val2 [[deprecated]], val3  , "); 

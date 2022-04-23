@@ -12,6 +12,7 @@ struct timeval;  // Windows-specific: forward declaration to fix compilation err
 #include <pybind11/functional.h>
 #include <pybind11/operators.h>
 
+#include <app_utils/pybind_utils.hpp>
 #include <app_utils/enumatic.pybind.hpp>
 #include <app_utils/reflexio.pybind.hpp>
 #include <app_utils/serial_utils.hpp>
@@ -117,7 +118,17 @@ REFLEXIO_STRUCT_DEFINE(
   );
 #endif
 
-namespace app_utils::pybind_utils {
+
+REFLEXIO_STRUCT_DEFINE(
+  SimpleStruct,
+  REFLEXIO_MEMBER_VAR_DEFINE(int, var1, 12, "var1 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(MyEnum, var3, MyEnum::EnumVal2, "var3 doc");
+);
+
+static_assert(std::is_standard_layout<SimpleStruct>());
+static_assert(std::is_trivially_copyable<SimpleStruct>());
+
+namespace app_utils::pybind {
 
 template <>
 struct pybind_wrapper_traits<CustomFloat<bla>, int> {
@@ -159,11 +170,11 @@ struct pybind_wrapper<CustomFloat<Tag>, int> {
   }
 };
 
-}  // namespace app_utils::pybind_utils
+}  // namespace app_utils::pybind
 namespace py = pybind11;
 
 namespace app_utils::tests {
-  
+
 PYBIND11_MODULE(REFLEXIO_STRUCT_USE_PYBIND_MODULE, m) {
   // Optional docstring
   m.doc() = "app utils tests module";
@@ -179,12 +190,25 @@ PYBIND11_MODULE(REFLEXIO_STRUCT_USE_PYBIND_MODULE, m) {
   py::bind_vector<std::vector<std::string>>(m, "VectorString");
   py::bind_vector<std::vector<std::string_view>>(m, "VectorStringView");
 
+  using app_utils::pybind::pybind_wrapper;
   // explicit registration of MyEnum on the module.
   // note that MyOtherEnum is implicitly registered through MyStruct as it's the type of a member variable.
-  app_utils::pybind_utils::pybind_wrapper<MyEnum>::wrap_with_pybind(m);
+  pybind_wrapper<MyEnum>::wrap_with_pybind(m);
+  pybind_wrapper<MyStruct>::wrap_with_pybind(m);
+  pybind_wrapper<NestedStruct>::wrap_with_pybind(m);
+  pybind_wrapper<SimpleStruct>::wrap_with_pybind(m);
 
-  app_utils::pybind_utils::pybind_wrapper<MyStruct>::wrap_with_pybind(m);
+  m.def("get_simple_struct_array", [](size_t n){
+    auto arr = app_utils::pybind::mkarray_via_buffer<SimpleStruct>(n);
 
-  app_utils::pybind_utils::pybind_wrapper<NestedStruct>::wrap_with_pybind(m);
+    auto req = arr.request();
+    auto *ptr = static_cast<SimpleStruct *>(req.ptr);
+    for (size_t i = 0; i < n; i++) {
+      auto& struct_ptr = ptr[i];
+      struct_ptr.var1 = (int)i;
+      struct_ptr.var3 = static_cast<MyEnum>(i % Enumatic<MyEnum>::size());
+    }
+    return arr;
+  });
 }
 }  // namespace app_utils::tests

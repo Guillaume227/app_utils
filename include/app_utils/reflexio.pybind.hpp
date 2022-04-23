@@ -3,10 +3,10 @@
 #ifndef DO_PYBIND_WRAPPING
 #define DO_PYBIND_WRAPPING
 #endif
-
+#include <pybind11/numpy.h>
 #include "reflexio.hpp"
 
-namespace app_utils::pybind_utils {
+namespace app_utils::pybind {
 
 namespace py = pybind11;
 
@@ -78,7 +78,20 @@ struct pybind_wrapper<ReflexioStruct,
       for (auto member_descriptor : ReflexioStruct::get_member_descriptors()) {
         member_descriptor->wrap_with_pybind(pybindHost, &wrappedType);
       }
+
+      // Numpy compatibility
+
+      if constexpr(std::is_standard_layout<ReflexioStruct>()) {
+        std::vector<::pybind11::detail::field_descriptor> field_descriptors;
+        for (auto member_descriptor : ReflexioStruct::get_member_descriptors()) {
+          bool added = member_descriptor->add_pybind_descriptor(field_descriptors);
+          checkCond(added, "should never hit that line unless all member variables can be registered");
+        }
+        ::pybind11::detail::npy_format_descriptor<ReflexioStruct>::register_dtype(field_descriptors);
+        wrappedType.def_property_readonly_static("dtype",
+                               [](py::object /*self*/){ return ::pybind11::detail::npy_format_descriptor<ReflexioStruct>::dtype(); });
+      }
     }
   }
 };
-}  // namespace app_utils::pybind_utils
+}  // namespace app_utils::pybind
