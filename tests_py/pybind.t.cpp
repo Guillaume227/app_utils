@@ -12,11 +12,9 @@ struct timeval;  // Windows-specific: forward declaration to fix compilation err
 #include <pybind11/functional.h>
 #include <pybind11/operators.h>
 
-#define DO_PYBIND_WRAPPING
-#include <app_utils/pybind_utils.hpp>
-#include <app_utils/reflexio.hpp>
+#include <app_utils/enumatic.pybind.hpp>
+#include <app_utils/reflexio.pybind.hpp>
 #include <app_utils/serial_utils.hpp>
-#include <app_utils/enumatic.hpp>
 #include <app_utils/cond_check.hpp>
 
 #include "../tests/reflexio.t.hpp"
