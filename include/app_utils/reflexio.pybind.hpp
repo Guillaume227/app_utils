@@ -24,6 +24,9 @@ struct pybind_wrapper<ReflexioStruct,
       static std::string const typeName = app_utils::typeName<ReflexioStruct>();
       auto wrappedType = typename ReflexioStruct::PybindClassType(pybindHost, typeName.c_str());
       wrappedType.def(pybind11::init<>())
+          .def_property_readonly_static("__doc__", [](py::object /*self*/){
+            return ReflexioStruct::get_docstring();
+          })
           .def("__deepcopy__", [](ReflexioStruct const& self, py::dict) { return ReflexioStruct(self); })
           .def(pybind11::self == pybind11::self)
           .def(pybind11::self != pybind11::self)

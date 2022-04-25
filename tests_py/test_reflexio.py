@@ -101,6 +101,12 @@ def test_reflexio_as_dict():
         print(label)
 
 
+def test_doc_string():
+    """auto-generated docstring"""
+    from app_utils_test import SimpleStruct
+    assert(SimpleStruct.__doc__ == "var1: var1 doc\nvar3: var3 doc\n")
+
+
 def test_numpy():
     from app_utils_test import SimpleStruct, MyEnum, get_simple_struct_array
     import numpy as np

@@ -327,6 +327,18 @@ struct ReflexioStructBase {
     }
     return oss.str();
   }
+
+  static constexpr std::string const& get_docstring() {
+    static std::string const docstring = [] {
+      std::ostringstream oss;
+      for (auto& descriptor: CRTP::get_member_descriptors()) {
+        oss << descriptor->get_name() << ": " << descriptor->get_description() << "\n";
+      }
+      return oss.str();
+    }();
+    return docstring;
+  }
+
 #endif
 
   [[nodiscard]]
