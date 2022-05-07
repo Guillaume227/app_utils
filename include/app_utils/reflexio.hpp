@@ -74,7 +74,7 @@ struct member_descriptor_t {
   virtual void wrap_with_pybind(::pybind11::module& pybindmodule_, void* pybindhost_) const = 0;
   virtual ::pybind11::object get_py_value(void const* host) const = 0;
   virtual void set_py_value(void* host, pybind11::object const&) const = 0;
-  virtual bool add_pybind_descriptor(std::vector<::pybind11::detail::field_descriptor>&) const = 0;
+  virtual bool add_numpy_descriptor(std::vector<::pybind11::detail::field_descriptor>&) const = 0;
 #endif
 };
 
@@ -186,7 +186,7 @@ struct member_descriptor_impl_t : public member_descriptor_t {
       get_mutable_value(host) = obj.cast<MemberType>();
   }
 
-  bool add_pybind_descriptor(std::vector<::pybind11::detail::field_descriptor>& vect) const final {
+  bool add_numpy_descriptor(std::vector<::pybind11::detail::field_descriptor>& vect) const final {
     if constexpr(std::is_standard_layout<MemberType>()) {
       vect.emplace_back(m_name.data(),
                         ((::pybind11::ssize_t) &reinterpret_cast<char const volatile&>((((HostType*) 0)->*

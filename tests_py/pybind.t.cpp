@@ -5,14 +5,7 @@ struct timeval;  // Windows-specific: forward declaration to fix compilation err
 #endif
 
 
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-#include <pybind11/stl_bind.h>
-#include <pybind11/cast.h>
-#include <pybind11/functional.h>
-#include <pybind11/operators.h>
-
-#include <app_utils/pybind_utils.hpp>
+#include "CustomFloat.pybind.hpp"
 #include <app_utils/enumatic.pybind.hpp>
 #include <app_utils/reflexio.pybind.hpp>
 #include <app_utils/serial_utils.hpp>
@@ -40,56 +33,21 @@ PYBIND11_MAKE_OPAQUE(std::vector<double>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::string>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::string_view>);
 
-template <typename Tag>
-struct CustomFloat {
-  using underlying_type = float;
-
-  float m_arg;
-  constexpr CustomFloat(float arg = 0.) : m_arg(arg) {}
-
-  // operator float() { return m_arg; }
-
-  constexpr bool operator==(CustomFloat const& other) const { return m_arg == other.m_arg; }
-  constexpr bool operator!=(CustomFloat const& other) const { return m_arg != other.m_arg; }
-
-  CustomFloat operator/(float f) const { return m_arg / f; }
-  CustomFloat operator*(float f) const { return m_arg * f; }
-  CustomFloat& operator/=(float f) { m_arg /= f;  return *this;}
-  CustomFloat& operator*=(float f) { m_arg *= f;  return *this;}
-
-  CustomFloat operator+(CustomFloat const& f) const { return m_arg + f.m_arg; }
-  CustomFloat operator-(CustomFloat const& f) const { return m_arg - f.m_arg; }
-  CustomFloat& operator+=(CustomFloat const& f) { m_arg += f.m_arg; return *this; }
-  CustomFloat& operator-=(CustomFloat const& f) { m_arg -= f.m_arg; return *this; }
-
-  CustomFloat operator-() const { return -m_arg; }
-
-  friend std::string to_string(CustomFloat const& f) {
-    std::ostringstream oss;
-    oss << f.m_arg << " " << app_utils::typeName<Tag>();
-    return oss.str();
-  }
-
-  friend constexpr size_t serial_size(CustomFloat const& val) { 
-    return app_utils::serial::serial_size(val.m_arg); 
-  }
-
-  friend constexpr size_t from_bytes(std::byte const* buffer, size_t buffer_size, CustomFloat& val) {
-    return app_utils::serial::from_bytes(buffer, buffer_size, val.m_arg);
-  }
-
-  friend constexpr size_t to_bytes(std::byte* buffer, size_t buffer_size, CustomFloat const& val) {
-    return app_utils::serial::to_bytes(buffer, buffer_size, val.m_arg);
-  }
- };
-
-
 #if defined(_MSC_VER) && _MSC_VER >= 1929
 #define CONSTEXPR_STRING_AND_VECTOR
 #endif
 
-struct bla {};
-struct foo {};
+// test different return value policies for those CustomFloat tags
+struct bla {}; // inherits default CustomFlag copy policy
+struct foo {}; // overrides default below
+
+namespace app_utils::pybind {
+template<>
+struct pybind_wrapper_traits<CustomFloat<foo>, int> {
+  constexpr static inline pybind11::return_value_policy def_readwrite_rvp =
+          pybind11::return_value_policy::reference;
+};
+} // namespace app_utils::pybind
 
 #ifdef CONSTEXPR_STRING_AND_VECTOR
 REFLEXIO_STRUCT_DEFINE(MyStruct,
@@ -128,49 +86,6 @@ REFLEXIO_STRUCT_DEFINE(
 static_assert(std::is_standard_layout<SimpleStruct>());
 static_assert(std::is_trivially_copyable<SimpleStruct>());
 
-namespace app_utils::pybind {
-
-template <>
-struct pybind_wrapper_traits<CustomFloat<bla>, int> {
-  constexpr static inline pybind11::return_value_policy def_readwrite_rvp =
-      pybind11::return_value_policy::copy;
-};
-
-template <typename Tag>
-struct pybind_wrapper<CustomFloat<Tag>, int> {
-  
-  inline static bool s_was_registered = false;
-
-  template <class PybindHost>
-  static void wrap_with_pybind(PybindHost& pybindHost) {
-    if (not s_was_registered) {
-      s_was_registered = true;
-      static std::string const class_name = app_utils::typeName<CustomFloat<Tag>>();
-      py::class_<CustomFloat<Tag>>(pybindHost, class_name.c_str())
-        .def(py::init<>())
-        .def(py::init<float>())
-        .def("__copy__", [](CustomFloat<Tag> const& self_) { return CustomFloat<Tag>(self_); })
-        .def("__deepcopy__", [](CustomFloat<Tag> const& self_) { return CustomFloat<Tag>(self_); })
-        .def("__str__", [](CustomFloat<Tag> const& self_) { return to_string(self_); })
-        //.def("__repr__", [](CustomFloat<Tag> const& self_) { return to_string(self_); })
-        .def(py::self == py::self)
-        .def(py::self != py::self)
-        .def(py::self *= float())
-        .def(py::self /= float())
-        .def(py::self * float())
-        .def(py::self / float())        
-        .def(py::self + py::self)
-        .def(py::self += py::self)
-        .def(py::self - py::self)
-        .def(py::self -= py::self)
-        .def(-py::self);
-
-        py::implicitly_convertible<float, CustomFloat<Tag>>();
-    }
-  }
-};
-
-}  // namespace app_utils::pybind
 namespace py = pybind11;
 
 namespace app_utils::tests {
