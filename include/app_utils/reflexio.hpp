@@ -100,17 +100,18 @@ template <typename MemberType, typename HostType>
 struct member_descriptor_impl_t : public member_descriptor_t {
   MemberType HostType::*const m_member_var_ptr;
 #ifndef REFLEXIO_MINIMAL_FEATURES
-  reflexio_traits<MemberType>::DefaultType const m_default_value;
+  typename reflexio_traits<MemberType>::DefaultType const m_default_value;
 #endif
 
   template <typename... Args>
-  constexpr member_descriptor_impl_t(MemberType HostType::*member_var_ptr,
+  constexpr member_descriptor_impl_t(
+    MemberType HostType::*member_var_ptr,
 #ifndef REFLEXIO_MINIMAL_FEATURES
-                                     reflexio_traits<MemberType>::DefaultType defaultValue,
+      typename reflexio_traits<MemberType>::DefaultType defaultValue,
 #else
-                                     MemberType /*defaultValue*/,
+      MemberType /*defaultValue*/,
 #endif
-                                     Args&& ...args)
+    Args&& ...args)
       : member_descriptor_t(std::forward<Args>(args)...)
       , m_member_var_ptr(member_var_ptr)
 #ifndef REFLEXIO_MINIMAL_FEATURES
@@ -123,7 +124,7 @@ struct member_descriptor_impl_t : public member_descriptor_t {
 
   [[nodiscard]]
   constexpr MemberType const& get_value(void const* host) const {
-    return static_cast<HostType const*>(host)->*m_member_var_ptr; 
+    return static_cast<HostType const*>(host)->*m_member_var_ptr;
   }
 
   [[nodiscard]]
@@ -167,7 +168,11 @@ struct member_descriptor_impl_t : public member_descriptor_t {
   [[nodiscard]]
   constexpr size_t get_serial_size(void const* host) const final {
     using namespace app_utils::serial;
-    return serial_size(get_value(host));
+    if constexpr (std::is_standard_layout<MemberType>()) {
+      return serial_size(MemberType{});
+    } else {
+      return serial_size(get_value(host));
+    }
   }
 
 #ifdef DO_PYBIND_WRAPPING

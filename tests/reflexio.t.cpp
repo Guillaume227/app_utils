@@ -59,12 +59,15 @@ TEST_CASE("reflexio_declare", "[reflexio]") {
   REQUIRE(MyStruct::get_member_descriptors()[3]->default_value_as_string() == "true"); // TODO: should be "true"
 }
 
+
 TEST_CASE("reflexio_serialize", "[reflexio]") {
 
-  TrivialStruct trivialStruct;
-  REQUIRE(trivialStruct.get_serial_size() == sizeof(float) + sizeof(int));
+  constexpr TrivialStruct trivialStruct;
+  constexpr size_t whole_struct_size_0 = trivialStruct.get_serial_size();
+  REQUIRE(whole_struct_size_0 == sizeof(float) + sizeof(int));
 
-  REQUIRE(serial_size(trivialStruct) == sizeof(float) + sizeof(int));
+  constexpr size_t whole_struct_size = serial_size(trivialStruct);
+  REQUIRE(whole_struct_size == whole_struct_size_0);
 
   MyStruct sendStruct;
   sendStruct.var1 = 2;
@@ -90,9 +93,11 @@ TEST_CASE("reflexio_serialize", "[reflexio]") {
 }
 
 /*
- should this work once c++20 is fully implemented?
+ The below won't work because of the static_cast in reflexio::get_value,
+ which the language doesn't allow in a constexpr context.
+
 TEST_CASE("reflexio_constexpr", "[reflexio]") {
-    constexpr NestedStruct myStruct_const;
+    constexpr TrivialStruct myStruct_const;
     static_assert(myStruct_const.has_all_default_values());
     static_assert(myStruct_const.non_default_values().empty());
     constexpr std::string repr = to_string(myStruct_const);
