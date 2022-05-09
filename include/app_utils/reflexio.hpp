@@ -57,7 +57,10 @@ struct member_descriptor_t {
   constexpr virtual std::string value_as_string(void const* host) const = 0;
   [[nodiscard]]
   constexpr virtual bool is_at_default(void const* host) const = 0;
+  [[nodiscard]]
+  constexpr virtual size_t get_var_offset() const = 0;
 #endif
+
 
 #ifndef REFLEXIO_NO_COMPARISON_OPERATORS
   [[nodiscard]]
@@ -134,6 +137,12 @@ struct member_descriptor_impl_t : public member_descriptor_t {
   }
 
 #ifndef REFLEXIO_MINIMAL_FEATURES
+
+  [[nodiscard]]
+  constexpr size_t get_var_offset() const final {
+    return HostType::offset_of(m_member_var_ptr);
+  }
+
   [[nodiscard]]
   constexpr std::string default_value_as_string() const final {
     using namespace app_utils::strutils;
@@ -229,6 +238,7 @@ class ReflexioIterator {
       , m_idx(calc_next_index(idx)) {
   }
 
+  [[nodiscard]]
   constexpr size_t calc_next_index(size_t idx) const {
     while (idx < m_excludeMask.size() and bool(m_excludeMask[idx])) {
       idx++;
@@ -277,6 +287,33 @@ struct ReflexioStructBase {
     return NumMemberVariables; }
 
   using MemberVarsMask = std::bitset<NumMemberVariables>;
+
+#ifndef REFLEXIO_MINIMAL_FEATURES
+  template <typename T2>
+  static constexpr size_t offset_of(T2 CRTP::* const member) {
+    CRTP object {};
+    return size_t(&(object.*member)) - size_t(&object);
+  }
+
+  template <typename T2>
+  static constexpr size_t index_of_var(T2 CRTP::* const varPtr) {
+    size_t offset = offset_of(varPtr);
+    for (size_t i = 0; i < NumMemberVariables; i++) {
+      if (CRTP::s_member_var_register[i]->get_var_offset() == offset) {
+        return i;
+      }
+    }
+    return 0; // should never get there - how to enforce it during compilation?
+  }
+
+  template<typename ...VarPtrs>
+    requires(sizeof...(VarPtrs) <= NumMemberVariables)
+  constexpr static MemberVarsMask make_vars_mask(VarPtrs const& ... varPtrs) {
+    MemberVarsMask include_mask;
+    (include_mask.set(index_of_var(varPtrs)), ...);
+    return include_mask.flip();
+  }
+#endif
 
   struct View {
     MemberVarsMask const& m_excludeMask;
@@ -492,52 +529,59 @@ using is_reflexio_struct = std::is_base_of<ReflexioStructBase<T, T::NumMemberVar
 
 //}  // namespace app_utils::reflexio
 
-#define REFLEXIO_MEMBER_VAR_DEFINE(var_type, var_name, default_value, description)                  \
-  var_type var_name = var_type(default_value);                                                      \
-                                                                                                    \
-  inline static constexpr auto __##var_name##_descr = [] {                                          \
-    return member_descriptor_impl_t<var_type, ReflexioTypeName>{&ReflexioTypeName::var_name,        \
-                                                                default_value,                      \
-                                                                #var_name,                          \
-                                                                description};                       \
-  }();                                                                                              \
-                                                                                                    \
-  static constexpr int __##var_name##_id = __COUNTER__;                                             \
-                                                                                                    \
-  template <class Dummy>                                                                            \
-  struct member_var_counter_t<__##var_name##_id, Dummy> {                                           \
-    static constexpr int index = member_var_counter_t<__##var_name##_id - 1, Dummy>::index + 1;     \
-  };                                                                                                \
-  template <class Dummy>                                                                            \
+#define REFLEXIO_MEMBER_VAR_DEFINE(var_type, var_name, default_value, description)              \
+  var_type var_name = var_type(default_value);                                                  \
+                                                                                                \
+  inline static constexpr auto __##var_name##_descr = [] {                                      \
+    return member_descriptor_impl_t<var_type, ReflexioTypeName>{                                \
+            &ReflexioTypeName::var_name,                                                        \
+            default_value,                                                                      \
+            #var_name,                                                                          \
+            description};                                                                       \
+  }();                                                                                          \
+                                                                                                \
+  static constexpr int __##var_name##_id = __COUNTER__;                                         \
+                                                                                                \
+  template<class Dummy>                                                                         \
+  struct member_var_counter_t<__##var_name##_id, Dummy> {                                       \
+    static constexpr int index = member_var_counter_t<__##var_name##_id - 1, Dummy>::index + 1; \
+  };                                                                                            \
+                                                                                                \
+  template<class Dummy>                                                                         \
   struct member_var_traits_t<member_var_counter_t<__##var_name##_id, int>::index, Dummy> {      \
-    static constexpr member_descriptor_t const* descriptor = &__##var_name##_descr;                 \
+    static constexpr member_descriptor_t const* descriptor = &__##var_name##_descr;             \
   }
 
 // define a member variable with a 'default default'
 #define REFLEXIO_MEMBER_VAR_DEFINE_DEF(var_type, var_name, description) \
   REFLEXIO_MEMBER_VAR_DEFINE(var_type, var_name, var_type(), description)
 
-#define REFLEXIO_STRUCT_DEFINE(StructName, ...)                                                     \
-  struct StructName : ReflexioStructBase<StructName, count_member_var_declarations(#__VA_ARGS__)> { \
-    template <size_t N, class dummy>                                                                \
-    struct member_var_traits_t {};                                                                  \
-                                                                                                    \
-    template <int N, class Dummy=int>                                                               \
-    struct member_var_counter_t {                                                                   \
-      static constexpr int index = member_var_counter_t<N - 1, Dummy>::index;                       \
-    };                                                                                              \
-    template <class Dummy>                                                                          \
-    struct member_var_counter_t<-1, Dummy> {                                                        \
-      static constexpr int index = -1;                                                              \
-    };                                                                                              \
-    constexpr StructName() = default;                                                               \
-    __VA_ARGS__                                                                                     \
-                                                                                                    \
-    inline static constexpr member_var_register_t s_member_var_register =                           \
-        []<size_t... NN>(std::index_sequence<NN...>){                                               \
-      member_var_register_t out{nullptr};                                                           \
-      std::size_t i = 0;                                                                            \
-      (void(out[i++] = member_var_traits_t<NN, int>::descriptor), ...);                             \
-      return out;                                                                                   \
-    }(std::make_index_sequence<num_registered_member_vars()>());                                    \
+#define REFLEXIO_STRUCT_DEFINE(StructName, ...)                                         \
+  struct StructName : ReflexioStructBase<StructName,                                    \
+                                         count_member_var_declarations(#__VA_ARGS__)> { \
+    template<size_t N, class dummy>                                                     \
+    struct member_var_traits_t {};                                                      \
+                                                                                        \
+    template<int N, class Dummy = int>                                                  \
+    struct member_var_counter_t {                                                       \
+      static constexpr int index = member_var_counter_t<N - 1, Dummy>::index;           \
+    };                                                                                  \
+                                                                                        \
+    template<class Dummy>                                                               \
+    struct member_var_counter_t<-1, Dummy> {                                            \
+      static constexpr int index = -1;                                                  \
+    };                                                                                  \
+                                                                                        \
+    constexpr StructName() = default;                                                   \
+                                                                                        \
+    __VA_ARGS__                                                                         \
+                                                                                        \
+    inline static constexpr member_var_register_t s_member_var_register =               \
+            []<size_t... NN>(std::index_sequence<NN...>) {                              \
+      member_var_register_t out{nullptr};                                               \
+      std::size_t i = 0;                                                                \
+      (void(out[i++] = member_var_traits_t<NN, int>::descriptor), ...);                 \
+      return out;                                                                       \
+    }                                                                                   \
+    (std::make_index_sequence<num_registered_member_vars()>());                         \
   }

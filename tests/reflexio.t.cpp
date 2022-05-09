@@ -35,6 +35,18 @@ TEST_CASE("reflexio_default_values", "[reflexio]") {
   REQUIRE(not myStruct.has_all_default_values());
 }
 
+TEST_CASE("reflexio_mask", "[reflexio]") {
+  TrivialStruct myStruct;
+  auto mask_var1 = TrivialStruct::make_vars_mask(&TrivialStruct::var1);
+  REQUIRE(mask_var1 == TrivialStruct::MemberVarsMask{2});
+  auto mask_var2 = TrivialStruct::make_vars_mask(&TrivialStruct::var2);
+  REQUIRE(mask_var2 == TrivialStruct::MemberVarsMask{1});
+
+  auto mask_var_all = TrivialStruct::make_vars_mask(&TrivialStruct::var1,
+                                                    &TrivialStruct::var2);
+  REQUIRE(mask_var_all == TrivialStruct::MemberVarsMask{});
+}
+
 TEST_CASE("reflexio_declare", "[reflexio]") {
 
   size_t const expected_member_vars = 5;
