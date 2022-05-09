@@ -3,7 +3,7 @@
 
 #include <array>
 #include <bitset>
-#include <cstddef>// std::byte
+#include <cstddef> // std::byte
 #include <utility>
 
 
@@ -18,11 +18,11 @@
 
 
 #ifndef REFLEXIO_MINIMAL_FEATURES
-#include <app_utils/cond_check.hpp>
-#include <app_utils/string_utils.hpp>
-#include <sstream>
 #include <string_view>
 #include <typeinfo>
+#include <sstream>
+#include <app_utils/string_utils.hpp>
+#include <app_utils/cond_check.hpp>
 #else
 #define checkCond(...)
 #endif
@@ -101,17 +101,18 @@ template <typename MemberType, typename HostType>
 struct member_descriptor_impl_t : public member_descriptor_t {
   MemberType HostType::*const m_member_var_ptr;
 #ifndef REFLEXIO_MINIMAL_FEATURES
-  reflexio_traits<MemberType>::DefaultType const m_default_value;
+  typename reflexio_traits<MemberType>::DefaultType const m_default_value;
 #endif
 
   template <typename... Args>
-  constexpr member_descriptor_impl_t(MemberType HostType::*member_var_ptr,
+  constexpr member_descriptor_impl_t(
+    MemberType HostType::*member_var_ptr,
 #ifndef REFLEXIO_MINIMAL_FEATURES
-      reflexio_traits<MemberType>::DefaultType defaultValue,
+      typename reflexio_traits<MemberType>::DefaultType defaultValue,
 #else
       MemberType /*defaultValue*/,
 #endif
-      Args&&... args)
+    Args&& ...args)
       : member_descriptor_t(std::forward<Args>(args)...)
       , m_member_var_ptr(member_var_ptr)
 #ifndef REFLEXIO_MINIMAL_FEATURES
@@ -124,7 +125,7 @@ struct member_descriptor_impl_t : public member_descriptor_t {
 
   [[nodiscard]]
   constexpr MemberType const& get_value(void const* host) const {
-    return static_cast<HostType const*>(host)->*m_member_var_ptr; 
+    return static_cast<HostType const*>(host)->*m_member_var_ptr;
   }
 
   [[nodiscard]]
@@ -168,7 +169,11 @@ struct member_descriptor_impl_t : public member_descriptor_t {
   [[nodiscard]]
   constexpr size_t get_serial_size(void const* host) const final {
     using namespace app_utils::serial;
-    return serial_size(get_value(host));
+    if constexpr (std::is_standard_layout<MemberType>()) {
+      return serial_size(MemberType{});
+    } else {
+      return serial_size(get_value(host));
+    }
   }
 
 #ifdef DO_PYBIND_WRAPPING
@@ -217,7 +222,7 @@ class ReflexioIterator {
   ReflexioStruct::MemberVarsMask const& m_excludeMask;
   size_t m_idx;
 
-public:
+ public:
   constexpr ReflexioIterator(size_t idx = 0,
                    ReflexioStruct::MemberVarsMask const& excludeMask = {})
       : m_excludeMask(excludeMask)
@@ -262,11 +267,11 @@ struct ReflexioStructBase {
   using PybindClassType = pybind11::class_<CRTP>;
 #endif
 
-protected:
+ protected:
   using member_var_register_t =
           std::array<member_descriptor_t const*, NumMemberVariables>;
 
-public:
+ public:
   static constexpr size_t NumMemberVars = NumMemberVariables;
   static constexpr size_t num_registered_member_vars() {
     return NumMemberVariables; }
@@ -284,7 +289,7 @@ public:
   };
 
   constexpr static member_var_register_t const& get_member_descriptors() {
-    return CRTP::s_member_var_register;
+    return CRTP::s_member_var_register;    
   }
 
   constexpr static View get_member_descriptors(MemberVarsMask const& excludeMask) {
@@ -423,7 +428,7 @@ public:
   [[nodiscard]]
   constexpr size_t get_serial_size() const {
     size_t res = 0;
-    for (auto& descriptor: CRTP::get_member_descriptors()) {
+    for (auto& descriptor : CRTP::get_member_descriptors()) {
       res += descriptor->get_serial_size(this);
     }
     return res;
@@ -457,9 +462,9 @@ public:
     for (auto& descriptor: CRTP::get_member_descriptors(excludeMask)) {
       res += descriptor.read_from_bytes(buffer + res, buffer_size - res, &instance);
     }
-    checkCond(buffer_size >= res, "input buffer has less data than required:", buffer_size, '<', res,
-              ". Look for inconsistent serialization/deserialization of", app_utils::typeName<CRTP>());
-    return res;//TODO: revisit, saw mismatch between buffer size (383) and read byte (386) buffer_size >= res ? res : 0;
+    checkCond(buffer_size >= res, "input buffer has less data than required:", buffer_size, '<', res, 
+      ". Look for inconsistent serialization/deserialization of", app_utils::typeName<CRTP>());
+    return res; //TODO: revisit, saw mismatch between buffer size (383) and read byte (386) buffer_size >= res ? res : 0;
   }
 
   friend size_t from_bytes(std::span<std::byte const> buffer,
