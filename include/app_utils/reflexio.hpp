@@ -504,7 +504,7 @@ using is_reflexio_struct = std::is_base_of<ReflexioStructBase<T, T::NumMemberVar
     static constexpr int index = member_var_counter_t<__##var_name##_id - 1, Dummy>::index + 1;     \
   };                                                                                                \
   template <class Dummy>                                                                            \
-  struct member_var_descriptor_t<member_var_counter_t<__##var_name##_id, int>::index, Dummy> {      \
+  struct member_var_traits_t<member_var_counter_t<__##var_name##_id, int>::index, Dummy> {      \
     static constexpr member_descriptor_t const* descriptor = &__##var_name##_descr;                 \
   }
 
@@ -515,8 +515,8 @@ using is_reflexio_struct = std::is_base_of<ReflexioStructBase<T, T::NumMemberVar
 #define REFLEXIO_STRUCT_DEFINE(StructName, ...)                                                     \
   struct StructName : ReflexioStructBase<StructName, count_member_var_declarations(#__VA_ARGS__)> { \
     template <size_t N, class dummy>                                                                \
-    struct member_var_descriptor_t {                                                                \
-    };                                                                                              \
+    struct member_var_traits_t {};                                                                  \
+                                                                                                    \
     template <int N, class Dummy=int>                                                               \
     struct member_var_counter_t {                                                                   \
       static constexpr int index = member_var_counter_t<N - 1, Dummy>::index;                       \
@@ -532,7 +532,7 @@ using is_reflexio_struct = std::is_base_of<ReflexioStructBase<T, T::NumMemberVar
         []<size_t... NN>(std::index_sequence<NN...>){                                               \
       member_var_register_t out{nullptr};                                                           \
       std::size_t i = 0;                                                                            \
-      (void(out[i++] = member_var_descriptor_t<NN, int>::descriptor), ...);                         \
+      (void(out[i++] = member_var_traits_t<NN, int>::descriptor), ...);                             \
       return out;                                                                                   \
     }(std::make_index_sequence<num_registered_member_vars()>());                                    \
   }
