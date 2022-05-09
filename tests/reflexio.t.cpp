@@ -22,7 +22,7 @@ REFLEXIO_STRUCT_DEFINE(MyStruct,
   REFLEXIO_MEMBER_VAR_DEFINE(Array8_t, var5, {0}, "var6 doc");
   Array8_t normal_var;
   static_assert(member_var_counter_t<__var2_id>::index == 1);
-  static_assert(member_var_descriptor_t<3, int>::descriptor != nullptr);
+  static_assert(member_var_traits_t<3, int>::descriptor != nullptr);
   );
 
 static_assert(std::is_standard_layout<MyStruct>());

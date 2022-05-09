@@ -17,7 +17,7 @@ static_assert(serial_size(TestEnum{}) == 1);
 REFLEXIO_STRUCT_DEFINE(SingleVarStruct,
   REFLEXIO_MEMBER_VAR_DEFINE(int, var1, 14, "var1 doc");
   static_assert(member_var_counter_t<__var1_id>::index == 0);
-  static_assert(member_var_descriptor_t<0, int>::descriptor != nullptr););
+  static_assert(member_var_traits_t<0, int>::descriptor != nullptr););
 
 static_assert(SingleVarStruct().var1 < 15);
 
