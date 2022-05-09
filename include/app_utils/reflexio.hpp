@@ -2,7 +2,8 @@
 
 
 #include <array>
-#include <cstddef> // std::byte
+#include <bitset>
+#include <cstddef>// std::byte
 #include <utility>
 
 
@@ -17,11 +18,11 @@
 
 
 #ifndef REFLEXIO_MINIMAL_FEATURES
+#include <app_utils/cond_check.hpp>
+#include <app_utils/string_utils.hpp>
+#include <sstream>
 #include <string_view>
 #include <typeinfo>
-#include <sstream>
-#include <app_utils/string_utils.hpp>
-#include <app_utils/cond_check.hpp>
 #else
 #define checkCond(...)
 #endif
@@ -106,11 +107,11 @@ struct member_descriptor_impl_t : public member_descriptor_t {
   template <typename... Args>
   constexpr member_descriptor_impl_t(MemberType HostType::*member_var_ptr,
 #ifndef REFLEXIO_MINIMAL_FEATURES
-                                     reflexio_traits<MemberType>::DefaultType defaultValue,
+      reflexio_traits<MemberType>::DefaultType defaultValue,
 #else
-                                     MemberType /*defaultValue*/,
+      MemberType /*defaultValue*/,
 #endif
-                                     Args&& ...args)
+      Args&&... args)
       : member_descriptor_t(std::forward<Args>(args)...)
       , m_member_var_ptr(member_var_ptr)
 #ifndef REFLEXIO_MINIMAL_FEATURES
@@ -202,36 +203,56 @@ struct member_descriptor_impl_t : public member_descriptor_t {
 #endif
 };
 
-
+/**
+ * class for iterating over field descriptors
+ */
 template <typename ReflexioStruct>
 class ReflexioIterator {
   using iterator_category = std::forward_iterator_tag;
   using difference_type = std::ptrdiff_t;
-  using value_type = std::string_view const;
+  using value_type = member_descriptor_t const;
   using pointer = value_type*;    // or also value_type*
   using reference = value_type&;  // or also value_type&
 
+  ReflexioStruct::MemberVarsMask const& m_excludeMask;
   size_t m_idx;
 
- public:
-  ReflexioIterator(size_t idx = 0) : m_idx(idx) {}
+public:
+  constexpr ReflexioIterator(size_t idx = 0,
+                   ReflexioStruct::MemberVarsMask const& excludeMask = {})
+      : m_excludeMask(excludeMask)
+      , m_idx(calc_next_index(idx)) {
+  }
 
-  reference operator*() const { return ReflexioStruct::get_member_descriptors()[m_idx]->get_name(); }
-  pointer operator->() { return &ReflexioStruct::get_member_descriptors()[m_idx]->get_name(); }
+  constexpr size_t calc_next_index(size_t idx) const {
+    while (idx < m_excludeMask.size() and m_excludeMask.test(idx)) {
+      idx++;
+    }
+    return idx;
+  }
 
-  ReflexioIterator& operator++() {
-    m_idx++;
+  constexpr reference operator*() const {
+    return *ReflexioStruct::get_member_descriptors()[m_idx];
+  }
+  constexpr pointer operator->() {
+    return ReflexioStruct::get_member_descriptors()[m_idx];
+  }
+
+  constexpr ReflexioIterator& operator++() {
+    m_idx = calc_next_index(m_idx + 1);
     return *this;
   }
 
-  ReflexioIterator operator++(int) {
+  constexpr ReflexioIterator operator++(int) {
     ReflexioIterator tmp = *this;
     ++(*this);
     return tmp;
   }
 
-  friend bool operator==(ReflexioIterator const& a, ReflexioIterator const& b) { return a.m_idx == b.m_idx; };
-  friend bool operator!=(ReflexioIterator const& a, ReflexioIterator const& b) { return a.m_idx != b.m_idx; };
+  constexpr friend
+  bool operator<(ReflexioIterator const& a, ReflexioIterator const& b) { return a.m_idx < b.m_idx; };
+  constexpr friend bool operator==(ReflexioIterator const& a, ReflexioIterator const& b) { return a.m_idx == b.m_idx; };
+  constexpr friend bool operator!=(ReflexioIterator const& a, ReflexioIterator const& b) { return a.m_idx != b.m_idx; };
 };
 
 template <typename CRTP, size_t NumMemberVariables>
@@ -241,15 +262,39 @@ struct ReflexioStructBase {
   using PybindClassType = pybind11::class_<CRTP>;
 #endif
 
- protected:
-  using member_var_register_t = std::array<member_descriptor_t const*, NumMemberVariables>;
+protected:
+  using member_var_register_t =
+          std::array<member_descriptor_t const*, NumMemberVariables>;
 
- public:
+public:
   static constexpr size_t NumMemberVars = NumMemberVariables;
-  static constexpr size_t num_registered_member_vars() { return NumMemberVariables; }
+  static constexpr size_t num_registered_member_vars() {
+    return NumMemberVariables; }
+
+  using MemberVarsMask = std::bitset<NumMemberVariables>;
+
+  struct View {
+    MemberVarsMask const& m_excludeMask;
+    View(MemberVarsMask const& excludeMask)
+        : m_excludeMask(excludeMask) {}
+
+    using Iterator = ReflexioIterator<CRTP>;
+    Iterator begin() const { return Iterator(0, m_excludeMask); }
+    Iterator end  () const { return Iterator(NumMemberVars); }
+  };
 
   constexpr static member_var_register_t const& get_member_descriptors() {
-    return CRTP::s_member_var_register;    
+    return CRTP::s_member_var_register;
+  }
+
+  constexpr static View get_member_descriptors(MemberVarsMask const& excludeMask) {
+    /*
+    auto is_included =
+            [&excludeMask, i=size_t{0}](member_descriptor_t const*) mutable {
+                return not excludeMask.test(i++); };
+    return CRTP::s_member_var_register | std::views::filter(is_included);
+    */
+    return {excludeMask};
   }
 
 #ifndef REFLEXIO_NO_COMPARISON_OPERATORS
@@ -275,9 +320,11 @@ struct ReflexioStructBase {
   Iterator end  () const { return Iterator(NumMemberVars); }
 
   [[nodiscard]]
-  constexpr bool has_all_default_values() const {
-    for (auto& descriptor : get_member_descriptors()) {
-      if (not descriptor->is_at_default(this)) {
+  constexpr bool has_all_default_values(
+          MemberVarsMask const& excludeMask={}) const
+  {
+    for (auto& descriptor: get_member_descriptors(excludeMask)) {
+      if (not descriptor.is_at_default(this)) {
         return false;
       }
     }
@@ -285,54 +332,64 @@ struct ReflexioStructBase {
   }
 
   [[nodiscard]]
-  std::vector<std::string_view> non_default_values() const {
+  std::vector<std::string_view> non_default_values(
+          MemberVarsMask const& excludeMask={}) const
+  {
     std::vector<std::string_view> res;
-    for (auto& descriptor : get_member_descriptors()) {
-      if (not descriptor->is_at_default(this)) {
-        res.push_back(descriptor->get_name());
+    for (auto& descriptor: get_member_descriptors(excludeMask)) {
+      if (not descriptor.is_at_default(this)) {
+        res.push_back(descriptor.get_name());
       }
     }
     return res;
   }
 
   [[nodiscard]]
-  std::vector<std::string_view> differing_members(CRTP const& other) const {
+  std::vector<std::string_view> differing_members(
+          CRTP const& other,
+          MemberVarsMask const& excludeMask={}) const
+  {
     std::vector<std::string_view> res;
-    for (auto& descriptor : get_member_descriptors()) {
-      if (descriptor->values_differ(this, &other)) {
-        res.push_back(descriptor->get_name());
+    for (auto& descriptor: get_member_descriptors(excludeMask)) {
+      if (descriptor.values_differ(this, &other)) {
+        res.push_back(descriptor.get_name());
       }
     }
     return res;
   }
 
   [[nodiscard]]
-  std::string differences(CRTP const& other) const {
+  std::string differences(
+          CRTP const& other,
+          MemberVarsMask const& excludeMask={}) const {
     std::ostringstream out;
-    for (auto& descriptor : get_member_descriptors()) {
-      if (descriptor->values_differ(this, &other)) {
-        out << descriptor->get_name() << ": " 
-            << descriptor->value_as_string(this) << " vs "
-            << descriptor->value_as_string(&other) << '\n';
+    for (auto& descriptor: get_member_descriptors(excludeMask)) {
+      if (descriptor.values_differ(this, &other)) {
+        out << descriptor.get_name() << ": "
+            << descriptor.value_as_string(this) << " vs "
+            << descriptor.value_as_string(&other) << '\n';
       }
     }
     return out.str();
   }
 
   [[nodiscard]]
-  constexpr friend std::string to_string(CRTP const& instance) {
+  constexpr friend std::string to_string(
+          CRTP const& instance,
+          MemberVarsMask const& excludeMask={})
+  {
     std::ostringstream oss;
-    for (auto& descriptor : CRTP::get_member_descriptors()) {
-      oss << descriptor->get_name() << ": " << descriptor->value_as_string(&instance) << "\n";
+    for (auto& descriptor: CRTP::get_member_descriptors(excludeMask)) {
+      oss << descriptor.get_name() << ": " << descriptor.value_as_string(&instance) << "\n";
     }
     return oss.str();
   }
 
-  static std::string const& get_docstring() {
-    static std::string const docstring = [] {
+  static std::string const& get_docstring(MemberVarsMask const& excludeMask={}) {
+    static std::string const docstring = [&excludeMask] {
       std::ostringstream oss;
-      for (auto& descriptor: CRTP::get_member_descriptors()) {
-        oss << descriptor->get_name() << ": " << descriptor->get_description() << "\n";
+      for (auto& descriptor: CRTP::get_member_descriptors(excludeMask)) {
+        oss << descriptor.get_name() << ": " << descriptor.get_description() << "\n";
       }
       return oss.str();
     }();
@@ -342,46 +399,77 @@ struct ReflexioStructBase {
 #endif
 
   [[nodiscard]]
-  friend constexpr size_t serial_size(CRTP const& val) { return val.get_serial_size(); }
+  friend constexpr size_t serial_size(
+          CRTP const& val) {
+    return val.get_serial_size();
+  }
+
+  [[nodiscard]]
+  friend constexpr size_t serial_size(
+          CRTP const& val,
+          MemberVarsMask const& excludeMask) {
+    return val.get_serial_size(excludeMask);
+  }
+
+  [[nodiscard]]
+  constexpr size_t get_serial_size(MemberVarsMask const& excludeMask) const {
+    size_t res = 0;
+    for (auto& descriptor: CRTP::get_member_descriptors(excludeMask)) {
+      res += descriptor.get_serial_size(this);
+    }
+    return res;
+  }
 
   [[nodiscard]]
   constexpr size_t get_serial_size() const {
     size_t res = 0;
-    for (auto& descriptor : CRTP::get_member_descriptors()) {
+    for (auto& descriptor: CRTP::get_member_descriptors()) {
       res += descriptor->get_serial_size(this);
     }
     return res;
   }
 
   // return number of written bytes
-  friend size_t to_bytes(std::byte* buffer, size_t const buffer_size, CRTP const& instance) {
+  friend size_t to_bytes(std::byte* buffer,
+                         size_t const buffer_size,
+                         CRTP const& instance,
+                         MemberVarsMask const& excludeMask={}) {
     size_t res = 0;
-    for (auto& descriptor : CRTP::get_member_descriptors()) {
-      res += descriptor->write_to_bytes(buffer + res, buffer_size - res, &instance);
+    for (auto& descriptor: CRTP::get_member_descriptors(excludeMask)) {
+      res += descriptor.write_to_bytes(buffer + res, buffer_size - res, &instance);
     }
     checkCond(buffer_size >= res, "output buffer is not big enough to fit object", buffer_size, '<', res);
     return res;
   }
-  friend size_t to_bytes(std::span<std::byte> buffer, CRTP& instance) {
-    return to_bytes(buffer.data(), buffer.size(), instance);
+
+  friend size_t to_bytes(std::span<std::byte> buffer,
+                         CRTP& instance,
+                         MemberVarsMask const& excludeMask={}) {
+    return to_bytes(buffer.data(), buffer.size(), instance, excludeMask);
   }
 
   // return number of bytes read
-  friend size_t from_bytes(std::byte const* buffer, size_t const buffer_size, CRTP& instance) {
+  friend size_t from_bytes(std::byte const* buffer,
+                           size_t const buffer_size,
+                           CRTP& instance,
+                           MemberVarsMask const& excludeMask={}) {
     size_t res = 0;
-    for (auto& descriptor : CRTP::get_member_descriptors()) {
-      res += descriptor->read_from_bytes(buffer + res, buffer_size - res, &instance);
+    for (auto& descriptor: CRTP::get_member_descriptors(excludeMask)) {
+      res += descriptor.read_from_bytes(buffer + res, buffer_size - res, &instance);
     }
-    checkCond(buffer_size >= res, "input buffer has less data than required:", buffer_size, '<', res, 
-      ". Look for inconsistent serialization/deserialization of", app_utils::typeName<CRTP>());
-    return res; //TODO: revisit, saw mismatch between buffer size (383) and read byte (386) buffer_size >= res ? res : 0;
+    checkCond(buffer_size >= res, "input buffer has less data than required:", buffer_size, '<', res,
+              ". Look for inconsistent serialization/deserialization of", app_utils::typeName<CRTP>());
+    return res;//TODO: revisit, saw mismatch between buffer size (383) and read byte (386) buffer_size >= res ? res : 0;
   }
-  friend size_t from_bytes(std::span<std::byte const> buffer, CRTP& instance) {
-    return from_bytes(buffer.data(), buffer.size(), instance);
+
+  friend size_t from_bytes(std::span<std::byte const> buffer,
+                           CRTP& instance,
+                           MemberVarsMask const& excludeMask={}) {
+    return from_bytes(buffer.data(), buffer.size(), instance, excludeMask);
   }
 };
 
-constexpr size_t count_member_var_declarations(std::string_view const text) {
+consteval size_t count_member_var_declarations(std::string_view const text) {
   size_t count = 0;
 
   std::string_view const register_member_str = "REFLEXIO_MEMBER_VAR_DEFINE";

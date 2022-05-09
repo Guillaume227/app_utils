@@ -4,6 +4,7 @@
 #define DO_PYBIND_WRAPPING
 #endif
 #include <pybind11/numpy.h>
+#include <pybind11/stl.h>
 #include "reflexio.hpp"
 
 namespace app_utils::pybind {
@@ -40,9 +41,9 @@ struct pybind_wrapper<ReflexioStruct,
                  return dico;
                })
           .def("__len__", [](ReflexioStruct const&) { return ReflexioStruct::get_member_descriptors().size(); })
-          .def("__iter__",
-               [](ReflexioStruct const& self_) { return py::make_iterator(self_.begin(), self_.end()); },
-               py::keep_alive<0, 1>())
+          //.def("__iter__",
+          //     [](ReflexioStruct const& self_) { return py::make_iterator(self_.begin(), self_.end()); },
+          //     py::keep_alive<0, 1>())
           .def("__getitem__", [](ReflexioStruct const& self_, std::string_view name) { 
                   for (auto member_descriptor : ReflexioStruct::get_member_descriptors()) {
                    if (name == member_descriptor->get_name()) {
@@ -61,7 +62,7 @@ struct pybind_wrapper<ReflexioStruct,
                  }
                  throw py::key_error("key '" + std::string{name} + "' does not exist");
                })
-          .def("get_serial_size", &ReflexioStruct::get_serial_size)
+          .def("get_serial_size", static_cast<size_t(ReflexioStruct::*)() const>(&ReflexioStruct::get_serial_size))
           .def("deserialize",
                [&](ReflexioStruct& self, pybind11::bytes const& data) {
                  std::string dataStr(data);
@@ -75,8 +76,8 @@ struct pybind_wrapper<ReflexioStruct,
                })
           .def("non_default_values", &ReflexioStruct::non_default_values)
           .def("has_all_default_values", &ReflexioStruct::has_all_default_values)
-          .def("differing_members", &ReflexioStruct::differing_members)
-          .def("differences", &ReflexioStruct::differences);
+          .def("differing_members", [](ReflexioStruct const& _self, ReflexioStruct const& other){ return _self.differing_members(other);})
+          .def("differences", [](ReflexioStruct const& _self, ReflexioStruct const& other){ return _self.differences(other);});
 
       for (auto member_descriptor : ReflexioStruct::get_member_descriptors()) {
         member_descriptor->wrap_with_pybind(pybindHost, &wrappedType);

@@ -65,7 +65,7 @@ def test_reflexio_nested():
     nested_struct1.var1 = nested_struct2.var1
     assert(nested_struct1 == nested_struct2)
 
-    nested_struct2.var2.var1 = 555
+    nested_struct2.var2.var1 = 7
 
     assert(nested_struct1 != nested_struct2)
     assert(list(nested_struct1.var2.differing_members(nested_struct2.var2)) == ['var1'])
@@ -96,9 +96,9 @@ def test_reflexio_as_dict():
     assert(my_struct1['var2'] == new_var2_val)
     assert(my_struct1.var2 == new_var2_val)
 
-    print('labels:')
-    for label in my_struct1:
-        print(label)
+    #print('labels:')
+    #for label in my_struct1:
+    #    print(label)
 
 
 def test_doc_string():

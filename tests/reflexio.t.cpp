@@ -7,9 +7,9 @@
 
 #include "reflexio.t.hpp"
 
-TEST_CASE("mini_struct", "[reflexio]") {  
-  MiniStruct miniStruct;
-  REQUIRE(miniStruct.has_all_default_values());
+TEST_CASE("reflexio_single_var_struct", "[reflexio]") {
+  SingleVarStruct SingleVarStruct;
+  REQUIRE(SingleVarStruct.has_all_default_values());
 }
 
 REFLEXIO_STRUCT_DEFINE(MyStruct,
@@ -28,7 +28,14 @@ REFLEXIO_STRUCT_DEFINE(MyStruct,
 static_assert(std::is_standard_layout<MyStruct>());
 static_assert(std::is_trivially_copyable<MyStruct>());
 
-TEST_CASE("reflexio_declare", "[reflexio]") { 
+TEST_CASE("reflexio_default_values", "[reflexio]") {
+  TrivialStruct myStruct;
+  REQUIRE(myStruct.has_all_default_values());
+  myStruct.var2 = 7;
+  REQUIRE(not myStruct.has_all_default_values());
+}
+
+TEST_CASE("reflexio_declare", "[reflexio]") {
 
   size_t const expected_member_vars = 5;
 
@@ -62,9 +69,13 @@ TEST_CASE("reflexio_declare", "[reflexio]") {
 TEST_CASE("reflexio_serialize", "[reflexio]") {
 
   TrivialStruct trivialStruct;
-  REQUIRE(trivialStruct.get_serial_size() == sizeof(float) + sizeof(int));
+  REQUIRE(trivialStruct.get_serial_size() == sizeof(float) + sizeof(int8_t));
 
-  REQUIRE(serial_size(trivialStruct) == sizeof(float) + sizeof(int));
+  REQUIRE(serial_size(trivialStruct) == sizeof(float) + sizeof(int8_t));
+  REQUIRE(serial_size(trivialStruct, TrivialStruct::MemberVarsMask{0}) == sizeof(float) + sizeof(int8_t));
+  REQUIRE(serial_size(trivialStruct, TrivialStruct::MemberVarsMask{1}) == sizeof(float));
+  REQUIRE(serial_size(trivialStruct, TrivialStruct::MemberVarsMask{2}) == sizeof(int8_t));
+  REQUIRE(serial_size(trivialStruct, TrivialStruct::MemberVarsMask{3}) == 0);
 
   MyStruct sendStruct;
   sendStruct.var1 = 2;
@@ -118,9 +129,9 @@ TEST_CASE("reflexio_composite", "[reflexio]") {
 
 TEST_CASE("reflexio_iterator", "[reflexio]") {
   std::ostringstream oss;
-  MiniStruct miniStruct;
-  for (auto& label : miniStruct) {
-    oss << label << ";";
+  SingleVarStruct SingleVarStruct;
+  for (auto& descriptor : SingleVarStruct) {
+    oss << descriptor.get_name() << ";";
   }
   REQUIRE(oss.str() == "var1;");
 }
