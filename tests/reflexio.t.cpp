@@ -100,16 +100,25 @@ TEST_CASE("reflexio_serialize", "[reflexio]") {
   REQUIRE(sendStruct == receiveStruct);
 }
 
-/*
- should this work once c++20 is fully implemented?
 TEST_CASE("reflexio_constexpr", "[reflexio]") {
-    constexpr NestedStruct myStruct_const;
-    static_assert(myStruct_const.has_all_default_values());
-    static_assert(myStruct_const.non_default_values().empty());
-    constexpr std::string repr = to_string(myStruct_const);
-    static_assert(not repr.empty());
+  constexpr TrivialStruct myStruct_const;
+
+  constexpr size_t myStruct_size = myStruct_const.get_serial_size();
+  REQUIRE(myStruct_size == sizeof(float) + sizeof(int8_t));
+
+  constexpr TrivialStruct::MemberVarsMask filter{1};
+  constexpr size_t myStruct_size_1 = myStruct_const.get_serial_size(filter);
+  REQUIRE(myStruct_size_1 == sizeof(float));
+
+  // The below won't work because of the static_cast in reflexio::get_value,
+  // which the language doesn't allow in a constexpr context.
+  /*
+  static_assert(myStruct_const.has_all_default_values());
+  static_assert(myStruct_const.non_default_values().empty());
+  constexpr std::string repr = to_string(myStruct_const);
+  static_assert(not repr.empty());
+ */
 }
-*/
 
 TEST_CASE("reflexio_composite", "[reflexio]") {
 

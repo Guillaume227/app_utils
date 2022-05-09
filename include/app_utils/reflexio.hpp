@@ -230,7 +230,7 @@ class ReflexioIterator {
   }
 
   constexpr size_t calc_next_index(size_t idx) const {
-    while (idx < m_excludeMask.size() and m_excludeMask.test(idx)) {
+    while (idx < m_excludeMask.size() and bool(m_excludeMask[idx])) {
       idx++;
     }
     return idx;
@@ -280,12 +280,12 @@ struct ReflexioStructBase {
 
   struct View {
     MemberVarsMask const& m_excludeMask;
-    View(MemberVarsMask const& excludeMask)
+    constexpr View(MemberVarsMask const& excludeMask)
         : m_excludeMask(excludeMask) {}
 
     using Iterator = ReflexioIterator<CRTP>;
-    Iterator begin() const { return Iterator(0, m_excludeMask); }
-    Iterator end  () const { return Iterator(NumMemberVars); }
+    constexpr Iterator begin() const { return Iterator(0, m_excludeMask); }
+    constexpr Iterator end  () const { return Iterator(NumMemberVars); }
   };
 
   constexpr static member_var_register_t const& get_member_descriptors() {
@@ -321,8 +321,8 @@ struct ReflexioStructBase {
 #ifndef REFLEXIO_MINIMAL_FEATURES
 
   using Iterator = ReflexioIterator<CRTP>;
-  Iterator begin() const { return Iterator(0); }
-  Iterator end  () const { return Iterator(NumMemberVars); }
+  constexpr Iterator begin() const { return Iterator(0); }
+  constexpr Iterator end  () const { return Iterator(NumMemberVars); }
 
   [[nodiscard]]
   constexpr bool has_all_default_values(
