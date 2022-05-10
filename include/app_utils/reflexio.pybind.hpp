@@ -13,7 +13,7 @@ namespace py = pybind11;
 
 template <typename ReflexioStruct>
 struct pybind_wrapper<ReflexioStruct,
-                      std::enable_if_t<is_reflexio_struct<ReflexioStruct>::value, int>> {
+                      std::enable_if_t<reflexio::is_reflexio_struct<ReflexioStruct>::value, int>> {
   inline static bool s_registered_once = false;
 
   template <typename PybindHost>

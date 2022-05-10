@@ -28,7 +28,7 @@
 #endif
 #include <app_utils/serial_utils.hpp>
 
-//namespace app_utils::reflexio {
+namespace app_utils::reflexio {
 struct member_descriptor_t {
 #ifndef REFLEXIO_MINIMAL_FEATURES
   std::string_view const m_name;
@@ -527,29 +527,31 @@ consteval size_t count_member_var_declarations(std::string_view const text) {
 template <typename T>
 using is_reflexio_struct = std::is_base_of<ReflexioStructBase<T, T::NumMemberVars>, T>;
 
-//}  // namespace app_utils::reflexio
+}  // namespace app_utils::reflexio
 
-#define REFLEXIO_MEMBER_VAR_DEFINE(var_type, var_name, default_value, description)              \
-  var_type var_name = var_type(default_value);                                                  \
-                                                                                                \
-  inline static constexpr auto __##var_name##_descr = [] {                                      \
-    return member_descriptor_impl_t<var_type, ReflexioTypeName>{                                \
-            &ReflexioTypeName::var_name,                                                        \
-            default_value,                                                                      \
-            #var_name,                                                                          \
-            description};                                                                       \
-  }();                                                                                          \
-                                                                                                \
-  static constexpr int __##var_name##_id = __COUNTER__;                                         \
-                                                                                                \
-  template<class Dummy>                                                                         \
-  struct member_var_counter_t<__##var_name##_id, Dummy> {                                       \
-    static constexpr int index = member_var_counter_t<__##var_name##_id - 1, Dummy>::index + 1; \
-  };                                                                                            \
-                                                                                                \
-  template<class Dummy>                                                                         \
-  struct member_var_traits_t<member_var_counter_t<__##var_name##_id, int>::index, Dummy> {      \
-    static constexpr member_descriptor_t const* descriptor = &__##var_name##_descr;             \
+#define REFLEXIO_MEMBER_VAR_DEFINE(var_type, var_name, default_value, description)         \
+  var_type var_name = var_type(default_value);                                             \
+                                                                                           \
+  inline static constexpr auto __##var_name##_descr = [] {                                 \
+    return app_utils::reflexio::member_descriptor_impl_t<var_type, ReflexioTypeName>{      \
+            &ReflexioTypeName::var_name,                                                   \
+            default_value,                                                                 \
+            #var_name,                                                                     \
+            description};                                                                  \
+  }();                                                                                     \
+                                                                                           \
+  static constexpr int __##var_name##_id = __COUNTER__;                                    \
+                                                                                           \
+  template<class Dummy>                                                                    \
+  struct member_var_counter_t<__##var_name##_id, Dummy> {                                  \
+    static constexpr int index =                                                           \
+            member_var_counter_t<__##var_name##_id - 1, Dummy>::index + 1;                 \
+  };                                                                                       \
+                                                                                           \
+  template<class Dummy>                                                                    \
+  struct member_var_traits_t<member_var_counter_t<__##var_name##_id, int>::index, Dummy> { \
+    static constexpr app_utils::reflexio::member_descriptor_t const* descriptor =          \
+            &__##var_name##_descr;                                                         \
   }
 
 // define a member variable with a 'default default'
@@ -557,8 +559,11 @@ using is_reflexio_struct = std::is_base_of<ReflexioStructBase<T, T::NumMemberVar
   REFLEXIO_MEMBER_VAR_DEFINE(var_type, var_name, var_type(), description)
 
 #define REFLEXIO_STRUCT_DEFINE(StructName, ...)                                         \
-  struct StructName : ReflexioStructBase<StructName,                                    \
-                                         count_member_var_declarations(#__VA_ARGS__)> { \
+  struct StructName                                                                     \
+      : app_utils::reflexio::ReflexioStructBase<                                        \
+              StructName,                                                               \
+              app_utils::reflexio::count_member_var_declarations(#__VA_ARGS__)> {       \
+                                                                                        \
     template<size_t N, class dummy>                                                     \
     struct member_var_traits_t {};                                                      \
                                                                                         \
