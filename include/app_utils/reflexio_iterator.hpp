@@ -15,7 +15,7 @@ template<typename ReflexioStruct>
 class ReflexioIterator {
   using iterator_category = std::forward_iterator_tag;
   using difference_type = std::ptrdiff_t;
-  using value_type = member_descriptor_t const;
+  using value_type = member_descriptor_t<ReflexioStruct> const;
   using pointer = value_type*;  // or also value_type*
   using reference = value_type&;// or also value_type&
 

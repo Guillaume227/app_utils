@@ -36,7 +36,7 @@ struct pybind_wrapper<ReflexioStruct,
                [](ReflexioStruct const& self_) {
                  py::dict dico;
                  for (auto member_descriptor : ReflexioStruct::get_member_descriptors()) {                   
-                   dico[member_descriptor->get_name().data()] = member_descriptor->get_py_value(&self_);
+                   dico[member_descriptor->get_name().data()] = member_descriptor->get_py_value(self_);
                  }
                  return dico;
                })
@@ -47,7 +47,7 @@ struct pybind_wrapper<ReflexioStruct,
           .def("__getitem__", [](ReflexioStruct const& self_, std::string_view name) { 
                   for (auto member_descriptor : ReflexioStruct::get_member_descriptors()) {
                    if (name == member_descriptor->get_name()) {
-                     return member_descriptor->get_py_value(&self_);
+                     return member_descriptor->get_py_value(self_);
                    }
                  }
                  throw py::key_error("key '" + std::string{name} + "' does not exist");                    
@@ -56,7 +56,7 @@ struct pybind_wrapper<ReflexioStruct,
                [](ReflexioStruct& self_, std::string_view name, py::object const& value) {
                  for (auto member_descriptor : ReflexioStruct::get_member_descriptors()) {
                    if (name == member_descriptor->get_name()) {
-                     member_descriptor->set_py_value(&self_, value);
+                     member_descriptor->set_py_value(self_, value);
                      return;
                    }
                  }

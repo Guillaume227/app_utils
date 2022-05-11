@@ -29,6 +29,8 @@
 #include <app_utils/serial_utils.hpp>
 
 namespace app_utils::reflexio {
+
+template<typename ReflexioStruct>
 struct member_descriptor_t {
 #ifndef REFLEXIO_MINIMAL_FEATURES
   std::string_view const m_name;
@@ -54,9 +56,9 @@ struct member_descriptor_t {
   [[nodiscard]]
   constexpr virtual std::string default_value_as_string() const = 0;
   [[nodiscard]]
-  constexpr virtual std::string value_as_string(void const* host) const = 0;
+  constexpr virtual std::string value_as_string(ReflexioStruct const& host) const = 0;
   [[nodiscard]]
-  constexpr virtual bool is_at_default(void const* host) const = 0;
+  constexpr virtual bool is_at_default(ReflexioStruct const& host) const = 0;
   [[nodiscard]]
   constexpr virtual size_t get_var_offset() const = 0;
 #endif
@@ -64,20 +66,20 @@ struct member_descriptor_t {
 
 #ifndef REFLEXIO_NO_COMPARISON_OPERATORS
   [[nodiscard]]
-  constexpr virtual bool values_differ(void const* host1, void const* host2) const = 0;
+  constexpr virtual bool values_differ(ReflexioStruct const& host1, ReflexioStruct const& host2) const = 0;
 #endif
   [[nodiscard]]
-  constexpr virtual size_t get_serial_size(void const* host) const = 0;
+  constexpr virtual size_t get_serial_size(ReflexioStruct const& host) const = 0;
 
   // returns number of bytes written
-  constexpr virtual size_t write_to_bytes(std::byte* buffer, size_t buffer_size, void const* host) const = 0;
+  constexpr virtual size_t write_to_bytes(std::byte* buffer, size_t buffer_size, ReflexioStruct const& host) const = 0;
   // returns number of bytes read
-  constexpr virtual size_t read_from_bytes(std::byte const* buffer, size_t buffer_size, void* host) const = 0;
+  constexpr virtual size_t read_from_bytes(std::byte const* buffer, size_t buffer_size, ReflexioStruct& host) const = 0;
 
 #ifdef DO_PYBIND_WRAPPING
   virtual void wrap_with_pybind(::pybind11::module& pybindmodule_, void* pybindhost_) const = 0;
-  virtual ::pybind11::object get_py_value(void const* host) const = 0;
-  virtual void set_py_value(void* host, pybind11::object const&) const = 0;
+  virtual ::pybind11::object get_py_value(ReflexioStruct const& host) const = 0;
+  virtual void set_py_value(ReflexioStruct& host, pybind11::object const&) const = 0;
   virtual bool add_numpy_descriptor(std::vector<::pybind11::detail::field_descriptor>&) const = 0;
 #endif
 };
@@ -100,23 +102,23 @@ struct reflexio_traits<std::string> {
 
 #endif
 
-template <typename MemberType, typename HostType>
-struct member_descriptor_impl_t : public member_descriptor_t {
-  MemberType HostType::*const m_member_var_ptr;
+template <typename ReflexioStruct, typename MemberType>
+struct member_descriptor_impl_t : public member_descriptor_t<ReflexioStruct> {
+  MemberType ReflexioStruct::*const m_member_var_ptr;
 #ifndef REFLEXIO_MINIMAL_FEATURES
   typename reflexio_traits<MemberType>::DefaultType const m_default_value;
 #endif
 
   template <typename... Args>
   constexpr member_descriptor_impl_t(
-    MemberType HostType::*member_var_ptr,
+    MemberType ReflexioStruct::*member_var_ptr,
 #ifndef REFLEXIO_MINIMAL_FEATURES
       typename reflexio_traits<MemberType>::DefaultType defaultValue,
 #else
       MemberType /*defaultValue*/,
 #endif
     Args&& ...args)
-      : member_descriptor_t(std::forward<Args>(args)...)
+      : member_descriptor_t<ReflexioStruct>(std::forward<Args>(args)...)
       , m_member_var_ptr(member_var_ptr)
 #ifndef REFLEXIO_MINIMAL_FEATURES
       , m_default_value(std::move(defaultValue))
@@ -127,20 +129,20 @@ struct member_descriptor_impl_t : public member_descriptor_t {
   constexpr ~member_descriptor_impl_t() override = default;
 
   [[nodiscard]]
-  constexpr MemberType const& get_value(void const* host) const {
-    return static_cast<HostType const*>(host)->*m_member_var_ptr;
+  constexpr MemberType const& get_value(ReflexioStruct const& host) const {
+    return host.*m_member_var_ptr;
   }
 
   [[nodiscard]]
-  constexpr MemberType& get_mutable_value(void* host) const {
-    return static_cast<HostType*>(host)->*m_member_var_ptr; 
+  constexpr MemberType& get_mutable_value(ReflexioStruct& host) const {
+    return host.*m_member_var_ptr;
   }
 
 #ifndef REFLEXIO_MINIMAL_FEATURES
 
   [[nodiscard]]
   constexpr size_t get_var_offset() const final {
-    return HostType::offset_of(m_member_var_ptr);
+    return ReflexioStruct::offset_of(m_member_var_ptr);
   }
 
   [[nodiscard]]
@@ -149,34 +151,34 @@ struct member_descriptor_impl_t : public member_descriptor_t {
     return std::string{to_string(m_default_value)};
   }
   [[nodiscard]]
-  constexpr std::string value_as_string(void const* host) const final {
+  constexpr std::string value_as_string(ReflexioStruct const& host) const final {
     using namespace app_utils::strutils;
     return std::string{to_string(get_value(host))};
   }
   [[nodiscard]]
-  constexpr bool is_at_default(void const* host) const final {
+  constexpr bool is_at_default(ReflexioStruct const& host) const final {
     return get_value(host) == m_default_value;
   }
 #endif
 #ifndef REFLEXIO_NO_COMPARISON_OPERATORS
   [[nodiscard]]
-  constexpr bool values_differ(void const* host1, void const* host2) const final {
+  constexpr bool values_differ(ReflexioStruct const& host1, ReflexioStruct const& host2) const final {
     return get_value(host1) != get_value(host2);
   }
 #endif
   // returns number of bytes written
-  constexpr size_t write_to_bytes(std::byte* buffer, size_t buffer_size, void const* host) const final {
+  constexpr size_t write_to_bytes(std::byte* buffer, size_t buffer_size, ReflexioStruct const& host) const final {
     using namespace app_utils::serial;
     return to_bytes(buffer, buffer_size, get_value(host));
   }
   // return number of bytes read
-  constexpr size_t read_from_bytes(std::byte const* buffer, size_t buffer_size, void* host) const final {
+  constexpr size_t read_from_bytes(std::byte const* buffer, size_t buffer_size, ReflexioStruct& host) const final {
     using namespace app_utils::serial;
     return from_bytes(buffer, buffer_size, get_mutable_value(host));
   }
 
   [[nodiscard]]
-  constexpr size_t get_serial_size(void const* host) const final {
+  constexpr size_t get_serial_size(ReflexioStruct const& host) const final {
     using namespace app_utils::serial;
     if constexpr (std::is_standard_layout<MemberType>()) {
       return serial_size(MemberType{});
@@ -187,24 +189,24 @@ struct member_descriptor_impl_t : public member_descriptor_t {
 
 #ifdef DO_PYBIND_WRAPPING
   void wrap_with_pybind(pybind11::module& pybindmodule_, void* pybindhost_) const final {
-    auto* py_class = static_cast<HostType::PybindClassType*>(pybindhost_);
+    auto* py_class = static_cast<ReflexioStruct::PybindClassType*>(pybindhost_);
     using namespace app_utils::pybind;
     pybind_wrapper<MemberType>::wrap_with_pybind(pybindmodule_);
-    py_class->def_readwrite(get_name().data(), m_member_var_ptr, pybind_wrapper_traits<MemberType>::def_readwrite_rvp);
+    py_class->def_readwrite(this->get_name().data(), m_member_var_ptr, pybind_wrapper_traits<MemberType>::def_readwrite_rvp);
   }
 
-  pybind11::object get_py_value(void const* host) const final { 
+  pybind11::object get_py_value(ReflexioStruct const& host) const final {
     return pybind11::cast(&get_value(host));
   }
 
-  void set_py_value(void* host, pybind11::object const& obj) const final {
+  void set_py_value(ReflexioStruct& host, pybind11::object const& obj) const final {
       get_mutable_value(host) = obj.cast<MemberType>();
   }
 
   bool add_numpy_descriptor(std::vector<::pybind11::detail::field_descriptor>& vect) const final {
     if constexpr(std::is_standard_layout<MemberType>()) {
-      vect.emplace_back(m_name.data(),
-                        ((::pybind11::ssize_t) &reinterpret_cast<char const volatile&>((((HostType*) 0)->*
+      vect.emplace_back(this->get_name().data(),
+                        ((::pybind11::ssize_t) &reinterpret_cast<char const volatile&>((((ReflexioStruct*) 0)->*
                                                                                         m_member_var_ptr))),
                         sizeof(MemberType),
                         ::pybind11::format_descriptor<MemberType>::format(),
