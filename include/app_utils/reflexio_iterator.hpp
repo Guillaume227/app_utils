@@ -6,7 +6,7 @@
 #include <utility>
 
 
-namespace app_utils::reflexio {
+namespace reflexio {
 
 /**
  * class for iterating over field descriptors
@@ -59,4 +59,4 @@ public:
   constexpr friend bool operator!=(ReflexioIterator const& a, ReflexioIterator const& b) { return a.m_idx != b.m_idx; };
 };
 
-}// namespace app_utils::reflexio
+}// namespace reflexio

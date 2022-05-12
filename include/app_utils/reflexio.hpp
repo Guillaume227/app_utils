@@ -8,7 +8,7 @@
 #include "reflexio_field_descriptor.hpp"
 #include "reflexio_iterator.hpp"
 
-namespace app_utils::reflexio {
+namespace reflexio {
 
 template <typename ReflexioStruct, size_t NumMemberVariables>
 struct ReflexioStructBase {
@@ -271,13 +271,13 @@ consteval size_t count_member_var_declarations(std::string_view const text) {
 template <typename T>
 using is_reflexio_struct = std::is_base_of<ReflexioStructBase<T, T::NumMemberVars>, T>;
 
-}  // namespace app_utils::reflexio
+}  // namespace reflexio
 
 #define REFLEXIO_MEMBER_VAR_DEFINE(var_type, var_name, default_value, description)         \
   var_type var_name = var_type(default_value);                                             \
                                                                                            \
   inline static constexpr auto __##var_name##_descr = [] {                                 \
-    return app_utils::reflexio::member_descriptor_impl_t<ReflexioTypeName, var_type>{      \
+    return reflexio::member_descriptor_impl_t<ReflexioTypeName, var_type>{                 \
             &ReflexioTypeName::var_name,                                                   \
             default_value,                                                                 \
             #var_name,                                                                     \
@@ -295,7 +295,7 @@ using is_reflexio_struct = std::is_base_of<ReflexioStructBase<T, T::NumMemberVar
   template<class Dummy>                                                                    \
   struct member_var_traits_t<member_var_counter_t<__##var_name##_id, int>::index, Dummy> { \
     static constexpr                                                                       \
-    app_utils::reflexio::member_descriptor_t<ReflexioTypeName> const* descriptor =         \
+    reflexio::member_descriptor_t<ReflexioTypeName> const* descriptor =                    \
             &__##var_name##_descr;                                                         \
   }
 
@@ -305,9 +305,9 @@ using is_reflexio_struct = std::is_base_of<ReflexioStructBase<T, T::NumMemberVar
 
 #define REFLEXIO_STRUCT_DEFINE(StructName, ...)                                         \
   struct StructName                                                                     \
-      : app_utils::reflexio::ReflexioStructBase<                                        \
+        : reflexio::ReflexioStructBase<                                                 \
               StructName,                                                               \
-              app_utils::reflexio::count_member_var_declarations(#__VA_ARGS__)> {       \
+              reflexio::count_member_var_declarations(#__VA_ARGS__)> {                  \
                                                                                         \
     template<size_t N, class dummy>                                                     \
     struct member_var_traits_t {};                                                      \

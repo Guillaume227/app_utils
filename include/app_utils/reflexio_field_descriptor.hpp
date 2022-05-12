@@ -28,7 +28,7 @@
 #endif
 #include <app_utils/serial_utils.hpp>
 
-namespace app_utils::reflexio {
+namespace reflexio {
 
 template<typename ReflexioStruct>
 struct member_descriptor_t {
@@ -218,4 +218,4 @@ struct member_descriptor_impl_t : public member_descriptor_t<ReflexioStruct> {
   }
 #endif
 };
-}  // namespace app_utils::reflexio
+}  // namespace reflexio
