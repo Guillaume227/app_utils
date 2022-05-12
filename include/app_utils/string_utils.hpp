@@ -95,11 +95,11 @@ inline bool hasOnlyDigits(std::string_view s) { return s.find_first_not_of("0123
 void replaceAll(std::string& str, std::string_view from, std::string_view to);
 
 template<typename T>
-std::string to_string(T val) {
+std::string to_string(T const& val) {
   return std::to_string(val);
 }
 
-inline std::string to_string(std::string val) {
+inline std::string to_string(std::string const& val) {
   return val;
 }
 
@@ -112,8 +112,9 @@ std::string to_string(char const (&val)[N] ) {
   return val;
 }
 
-template<>
-inline std::string to_string<bool>(bool b) { return b ? "true" : "false"; }
+inline std::string to_string(bool b) {
+  return b ? "true" : "false";
+}
 
 template<typename T>
 std::string contiguous_items_to_string(T const* vals, size_t num_items) {
