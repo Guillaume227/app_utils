@@ -238,7 +238,7 @@ struct Enumatic {
   }
 
   /* returns true if conversion was successful */
-  constexpr static bool from_string(std::string_view val, EnumType& enumVal) {
+  constexpr static bool from_string(EnumType& enumVal, std::string_view val) {
     
     if (val.empty()) {
       return false;
@@ -277,7 +277,7 @@ struct Enumatic {
   /* Attempt at converting from std::string avlue - throws on failure */
   constexpr static EnumType from_string(std::string_view const val) {
     EnumType enumVal;    
-    if (not from_string(val, enumVal)) {
+    if (not from_string(enumVal, val)) {
       throwExc(" '", val, "' is not a valid '", name(), "' value. Options are:", enum_values_as_string(EnumType{}));
     }
     return enumVal;
@@ -298,8 +298,8 @@ struct Enumatic {
     consteval std::string_view enum_values_as_string(EnumType) { return #__VA_ARGS__; }                            \
     consteval size_t size(EnumType) { return enumatic::details::num_comma_separated_items(#__VA_ARGS__); }         \
     constexpr std::string_view to_string(EnumType arg) { return Enumatic<EnumType>::to_string(arg); }              \
-    constexpr bool from_string(std::string_view valStr, EnumType& arg) {                                           \
-      return Enumatic<EnumType>::from_string(valStr, arg);                                                                \
+    constexpr bool from_string(EnumType& arg, std::string_view valStr) {                                           \
+      return Enumatic<EnumType>::from_string(arg, valStr);                                                                \
     }                                                                                                              \
     constexpr size_t get_index(EnumType arg) { return Enumatic<EnumType>::get_index(arg); }                        \
     constexpr bool is_enumatic_type(EnumType*) noexcept { return true; }                                           \

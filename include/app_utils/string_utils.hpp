@@ -5,6 +5,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <app_utils/cond_check.hpp>
 
 namespace app_utils {
 
@@ -70,7 +71,7 @@ std::vector<std::string> splitByRegex(std::string const& s, char const* delim);
 // i.e. "(1, 2), (3, 4)" will return "(1, 2)", "(3, 4)" and not "(1", "2)", "(3", "4)"
 // Recognized brackets include: "()", "{}", "<>", and "[]"
 //
-// **NOTE**: empty input std::string will results in an empty vector
+// **NOTE**: empty input std::string will result in an empty vector
 //
 
 std::vector<std::string_view> splitParse(std::string_view valStr, char delimiter, bool doStrip, int numSplits);
@@ -131,12 +132,49 @@ std::string contiguous_items_to_string(T const* vals, size_t num_items) {
 
 template <typename T, size_t N>
 std::string to_string(std::array<T, N> const& val) {
-  return contiguous_items_to_string(val.size() > 0 ? &val.front() : nullptr, val.size());
+  return contiguous_items_to_string(val.empty() ? nullptr : &val.front(), val.size());
 }
 
 template <typename T>
 std::string to_string(std::vector<T> const& val) {
-  return contiguous_items_to_string(val.size() > 0 ? &val.front() : nullptr, val.size());
+  return contiguous_items_to_string(val.empty() ? nullptr : &val.front(), val.size());
+}
+
+inline void from_string(std::string& val, std::string_view val_str) {
+  val = std::string{val_str};
+}
+
+inline void from_string(std::string_view& val, std::string_view val_str) {
+  val = val_str;
+}
+
+template<typename T>
+requires(std::is_integral_v<T>)
+inline void from_string(T& val, std::string_view val_str) {
+  val = std::stoi(val_str.data());
+}
+
+inline void from_string(float& val, std::string_view val_str) {
+  val = std::stof(val_str.data());
+}
+
+template <typename T, size_t N>
+void from_string(std::array<T, N>& val, std::string_view val_str) {
+  std::vector<std::string_view> vals_str = splitParse(val_str, ',');
+  checkCond(val.size() == vals_str.size());
+  for(size_t i = 0; i < vals_str.size(); i++) {
+    from_string(val[i], vals_str[i]);
+  }
+}
+
+template <typename T>
+void from_string( std::vector<T>& val, std::string_view val_str) {
+  val.clear();
+  std::vector<std::string_view> vals_str = splitParse(val_str, ',');
+  val.resize(vals_str.size());
+  for(size_t i = 0; i < vals_str.size(); i++) {
+    from_string(val[i], vals_str[i]);
+  }
 }
 
 }  // namespace strutils

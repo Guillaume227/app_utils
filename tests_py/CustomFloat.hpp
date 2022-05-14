@@ -46,6 +46,13 @@ struct CustomFloat {
     return oss.str();
   }
 
+  friend void from_string(CustomFloat& val, std::string_view val_str) {
+    auto items = app_utils::strutils::split(' ', val_str);
+    checkCond(items.size() == 2);
+    checkCond(items[1] == app_utils::typeName<Tag>());
+    return app_utils::strutils::from_string(val.m_arg, items[0]);
+  }
+
   friend constexpr size_t serial_size(CustomFloat const& val) {
     return app_utils::serial::serial_size(val.m_arg);
   }

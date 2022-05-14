@@ -178,6 +178,7 @@ class SplitIter {
 
   std::string_view next() {
     std::vector<char> expectedBrackets;
+
     m_start_i = ++m_end_i;
 
     if (m_end_i >= (int)m_data.size()) {
@@ -192,10 +193,11 @@ class SplitIter {
     for (; m_end_i < int(m_data.size()); m_end_i++) {
       auto const character = m_data[m_end_i];
 
-      if (auto expectedCloseBracket = getCloseSymbol(character)) {
-        expectedBrackets.push_back(expectedCloseBracket);
+      if (isOpenSymbol(character)) {
+        expectedBrackets.push_back(getCloseSymbol(character));
+
       } else if (isCloseSymbol(character)) {
-        if (character == '>') {
+        if (character != '>') {
           // only if we found a match we pop the bracket off and continue
           // otherwise no error will be triggered
           if (not expectedBrackets.empty() and expectedBrackets.back() == character) {
@@ -220,10 +222,10 @@ class SplitIter {
           checkCond(character == expectedBracket, "Imbalanced brackets in string \"", m_data, "\".",
                     "Expected closing bracket", expectedBracket, ", but found", character);
         }
-      }
-
-      if (m_data[m_end_i] == m_separator and expectedBrackets.empty()) {
-        break;
+      } else if (character == m_separator) {
+        if (expectedBrackets.empty()) {
+          break;
+        }
       }
     }
 
@@ -235,6 +237,7 @@ class SplitIter {
     return m_data.substr(size_t(m_start_i), size_t(m_end_i - m_start_i));
   }
 
+  [[nodiscard]]
   bool hasNext() const { return not m_data.empty() and m_end_i < int(m_data.size()); }
 
  private:
@@ -247,8 +250,11 @@ class SplitIter {
 };
 }  // namespace
 
-std::vector<std::string_view> splitParse(std::string_view const valStr, char delimiter, bool doStrip, int maxSplits) {
-  SplitIter splitIter(std::string{valStr}, delimiter, maxSplits);
+std::vector<std::string_view> splitParse(std::string_view const valStr,
+                                         char delimiter,
+                                         bool doStrip,
+                                         int maxSplits) {
+  SplitIter splitIter(valStr, delimiter, maxSplits);
 
   std::vector<std::string_view> res;
   while (splitIter.hasNext()) {
