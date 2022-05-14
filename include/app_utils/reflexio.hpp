@@ -8,6 +8,11 @@
 #include "reflexio_field_descriptor.hpp"
 #include "reflexio_iterator.hpp"
 
+#ifndef REFLEXIO_MINIMAL_FEATURES
+#include <unordered_map>
+#include <app_utils/string_utils.hpp>
+#endif
+
 namespace reflexio {
 
 template <typename ReflexioStruct, size_t NumMemberVariables>
@@ -28,18 +33,24 @@ struct ReflexioStructBase {
 
   using MemberVarsMask = std::bitset<NumMemberVariables>;
 
-#ifndef REFLEXIO_MINIMAL_FEATURES
   template <typename T2>
   static constexpr size_t offset_of(T2 ReflexioStruct::* const member) {
-    ReflexioStruct object {};
-    return size_t(&(object.*member)) - size_t(&object);
+    ReflexioStruct* object = nullptr;
+    return size_t(&(object->*member)) - size_t(object);
   }
 
   template <typename T2>
-  static constexpr size_t index_of_var(T2 ReflexioStruct::* const varPtr) {
+  static size_t index_of_var(T2 ReflexioStruct::* const varPtr) {
     size_t offset = offset_of(varPtr);
+    static const auto var_offsets = []{
+      std::array<size_t, NumMemberVariables> offsets;
+      for (size_t i = 0; i < NumMemberVariables; i++) {
+        offsets[i] = ReflexioStruct::s_member_var_register[i]->get_var_offset();
+      }
+      return offsets;
+    }();
     for (size_t i = 0; i < NumMemberVariables; i++) {
-      if (ReflexioStruct::s_member_var_register[i]->get_var_offset() == offset) {
+      if (var_offsets[i] == offset) {
         return i;
       }
     }
@@ -53,7 +64,6 @@ struct ReflexioStructBase {
     (include_mask.set(index_of_var(varPtrs)), ...);
     return include_mask.flip();
   }
-#endif
 
   struct View {
     MemberVarsMask const& m_excludeMask;
@@ -81,6 +91,10 @@ struct ReflexioStructBase {
 
   constexpr ReflexioStruct const& cast_this() const {
     return static_cast<ReflexioStruct const&>(*this);
+  }
+
+  constexpr ReflexioStruct& cast_this() {
+    return static_cast<ReflexioStruct&>(*this);
   }
 
 #ifndef REFLEXIO_NO_COMPARISON_OPERATORS
@@ -115,6 +129,13 @@ struct ReflexioStructBase {
       }
     }
     return true;
+  }
+
+  constexpr void set_to_default(
+          MemberVarsMask const& excludeMask={}) {
+    for (auto& descriptor: get_member_descriptors(excludeMask)) {
+      descriptor.set_to_default(cast_this());
+    }
   }
 
   [[nodiscard]]
@@ -159,6 +180,8 @@ struct ReflexioStructBase {
     return out.str();
   }
 
+  static constexpr char name_value_separator = ':';
+
   [[nodiscard]]
   constexpr friend std::string to_string(
           ReflexioStruct const& instance,
@@ -166,16 +189,65 @@ struct ReflexioStructBase {
   {
     std::ostringstream oss;
     for (auto& descriptor: ReflexioStruct::get_member_descriptors(excludeMask)) {
-      oss << descriptor.get_name() << ": " << descriptor.value_as_string(instance) << "\n";
+      oss << descriptor.get_name() << name_value_separator << ' '
+          << descriptor.value_as_string(instance) << "\n";
     }
     return oss.str();
+  }
+
+  constexpr friend void update_from_string(
+          ReflexioStruct& instance,
+          std::string_view const val_str)
+  {
+    if (val_str.empty()) {
+      return;
+    }
+    using descriptor_map_t = std::unordered_map<std::string_view, member_descriptor_t<ReflexioStruct> const*>;
+    const descriptor_map_t descriptor_map =
+            []{
+              descriptor_map_t map;
+              for (auto& descriptor: ReflexioStruct::get_member_descriptors()) {
+                map[descriptor->get_name()] = descriptor;
+              }
+              return map;
+            }();
+
+    auto process_line = [&instance, &descriptor_map](std::string_view line) {
+      auto items = app_utils::strutils::split(name_value_separator, line, /*stripWhiteSpace=*/true, 1);
+      checkCond(items.size() == 2, "bad name value pair:", line);
+      auto name = items[0];
+      auto value_str = items[1];
+      auto it = descriptor_map.find(name);
+      checkCond(it != descriptor_map.end(), "unrecognized member name", name);
+      it->second->set_value_from_string(instance, value_str);
+    };
+
+    std::string_view search_str = val_str;
+    while(not search_str.empty()) {
+      auto separator_pos = search_str.find_first_of('\n');
+      std::string_view line = search_str.substr(0, separator_pos);
+      process_line(line);
+      if (separator_pos < std::string::npos) {
+        search_str = search_str.substr(separator_pos + 1, std::string::npos);
+      } else {
+        break;
+      }
+    }
+  }
+
+  constexpr friend void from_string(
+          ReflexioStruct& instance,
+          std::string_view const val_str) {
+    instance.set_to_default();
+    update_from_string(instance, val_str);
   }
 
   static std::string const& get_docstring(MemberVarsMask const& excludeMask={}) {
     static std::string const docstring = [&excludeMask] {
       std::ostringstream oss;
       for (auto& descriptor: ReflexioStruct::get_member_descriptors(excludeMask)) {
-        oss << descriptor.get_name() << ": " << descriptor.get_description() << "\n";
+        oss << descriptor.get_name() << name_value_separator
+            << ' ' << descriptor.get_description() << "\n";
       }
       return oss.str();
     }();

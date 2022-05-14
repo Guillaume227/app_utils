@@ -57,11 +57,13 @@ struct member_descriptor_t {
   constexpr virtual std::string default_value_as_string() const = 0;
   [[nodiscard]]
   constexpr virtual std::string value_as_string(ReflexioStruct const& host) const = 0;
+  constexpr virtual void set_value_from_string(ReflexioStruct& host, std::string_view val_str) const = 0;
   [[nodiscard]]
   constexpr virtual bool is_at_default(ReflexioStruct const& host) const = 0;
+  constexpr virtual void set_to_default(ReflexioStruct& host) const = 0;
+#endif
   [[nodiscard]]
   constexpr virtual size_t get_var_offset() const = 0;
-#endif
 
 
 #ifndef REFLEXIO_NO_COMPARISON_OPERATORS
@@ -138,12 +140,12 @@ struct member_descriptor_impl_t : public member_descriptor_t<ReflexioStruct> {
     return host.*m_member_var_ptr;
   }
 
-#ifndef REFLEXIO_MINIMAL_FEATURES
-
   [[nodiscard]]
   constexpr size_t get_var_offset() const final {
     return ReflexioStruct::offset_of(m_member_var_ptr);
   }
+
+#ifndef REFLEXIO_MINIMAL_FEATURES
 
   [[nodiscard]]
   constexpr std::string default_value_as_string() const final {
@@ -155,9 +157,16 @@ struct member_descriptor_impl_t : public member_descriptor_t<ReflexioStruct> {
     using namespace app_utils::strutils;
     return std::string{to_string(get_value(host))};
   }
+  constexpr void set_value_from_string(ReflexioStruct& host, std::string_view val_str) const final {
+    using namespace app_utils::strutils;
+    from_string(get_mutable_value(host), val_str);
+  }
   [[nodiscard]]
   constexpr bool is_at_default(ReflexioStruct const& host) const final {
     return get_value(host) == m_default_value;
+  }
+  constexpr void set_to_default(ReflexioStruct& host) const final {
+    get_mutable_value(host) = m_default_value;
   }
 #endif
 #ifndef REFLEXIO_NO_COMPARISON_OPERATORS

@@ -8,8 +8,9 @@
 #include "reflexio.t.hpp"
 
 TEST_CASE("reflexio_single_var_struct", "[reflexio]") {
-  SingleVarStruct SingleVarStruct;
-  REQUIRE(SingleVarStruct.has_all_default_values());
+  SingleVarStruct singleVarStruct;
+  REQUIRE(singleVarStruct.has_all_default_values());
+  REQUIRE(to_string(singleVarStruct) == "var1: " + std::to_string(singleVarStruct.var1) + "\n");
 }
 
 REFLEXIO_STRUCT_DEFINE(MyStruct,
@@ -132,6 +133,66 @@ TEST_CASE("reflexio_constexpr", "[reflexio]") {
  */
 }
 
+TEST_CASE("reflexio_iterator", "[reflexio]") {
+  std::ostringstream oss;
+  SingleVarStruct SingleVarStruct;
+  for (auto& descriptor : SingleVarStruct) {
+    oss << descriptor.get_name() << ";";
+  }
+  REQUIRE(oss.str() == "var1;");
+}
+
+TEST_CASE("reflexio_from_string", "[reflexio]") {
+
+  {
+    TrivialStruct reflexioStruct;
+    std::string_view val_str = R"(var1: 11
+    var2: 22.22)";
+    from_string(reflexioStruct, val_str);
+    TrivialStruct refStruct;
+    refStruct.var1 = 11;
+    refStruct.var2 = 22.22;
+    REQUIRE(reflexioStruct == refStruct);
+
+    std::string valstr = to_string(reflexioStruct);
+    reflexioStruct.var2 = 33.33;
+    from_string(reflexioStruct, valstr);
+
+    REQUIRE(reflexioStruct == refStruct);
+  }
+  {
+    TrivialStruct reflexioStruct;
+    std::string_view val_str = R"(   var1: 11      )";
+    from_string(reflexioStruct, val_str);
+    TrivialStruct refStruct;
+    refStruct.var1 = 11;
+    REQUIRE(reflexioStruct == refStruct);
+  }
+  {// with no extra new lines
+    TrivialStruct reflexioStruct;
+    std::string_view val_str = "var1: 11";
+    from_string(reflexioStruct, val_str);
+    TrivialStruct refStruct;
+    refStruct.var1 = 11;
+    REQUIRE(reflexioStruct == refStruct);
+  }
+  {
+    TrivialStruct reflexioStruct;
+    std::string_view val_str = R"(var2: 22.22)";
+    from_string(reflexioStruct, val_str);
+    TrivialStruct refStruct;
+    refStruct.var2 = 22.22;
+    REQUIRE(reflexioStruct == refStruct);
+  }
+  {
+    TrivialStruct reflexioStruct;
+    std::string_view val_str = "";
+    from_string(reflexioStruct, val_str);
+    TrivialStruct refStruct;
+    REQUIRE(reflexioStruct == refStruct);
+  }
+}
+
 TEST_CASE("reflexio_composite", "[reflexio]") {
 
   NestedStruct myStruct;
@@ -146,15 +207,14 @@ TEST_CASE("reflexio_composite", "[reflexio]") {
   subStruct.var2 = 22.f;
 
   REQUIRE(myStructCopy != myStruct);
-}
 
-TEST_CASE("reflexio_iterator", "[reflexio]") {
-  std::ostringstream oss;
-  SingleVarStruct SingleVarStruct;
-  for (auto& descriptor : SingleVarStruct) {
-    oss << descriptor.get_name() << ";";
-  }
-  REQUIRE(oss.str() == "var1;");
+  /*
+  auto val_str = to_string(myStruct);
+  std::cout << "Value:" << std::endl << val_str << std::endl << "endvalue" << std::endl;
+  from_string(myStructCopy, val_str);
+
+  REQUIRE(myStructCopy == myStruct);
+  */
 }
 
 #ifdef CONSTEXPR_STRING_AND_VECTOR
