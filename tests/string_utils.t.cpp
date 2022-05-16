@@ -58,3 +58,18 @@ TEST_CASE("strutils::split_parse", "[string_utils]") {
     REQUIRE(res[1] == "({3, 4})");
   }
 }
+
+TEST_CASE("strutils::from_string", "[string_utils]") {
+  using namespace app_utils::strutils;
+  float f;
+  REQUIRE_THROWS(from_string(f, "11.11 asldk"));
+
+  REQUIRE_THROWS(from_string(f, "asdf 11.11"));
+
+  from_string(f, "11.11");
+  REQUIRE(f == 11.11f);
+
+  double d;
+  from_string(d, "11.11");
+  REQUIRE(d == 11.11);
+}

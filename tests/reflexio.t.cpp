@@ -10,7 +10,7 @@
 TEST_CASE("reflexio_single_var_struct", "[reflexio]") {
   SingleVarStruct singleVarStruct;
   REQUIRE(singleVarStruct.has_all_default_values());
-  REQUIRE(to_string(singleVarStruct) == "var1: " + std::to_string(singleVarStruct.var1) + "\n");
+  REQUIRE(to_yaml(singleVarStruct) == "var1: " + std::to_string(singleVarStruct.var1) + "\n");
 }
 
 REFLEXIO_STRUCT_DEFINE(MyStruct,
@@ -73,10 +73,10 @@ TEST_CASE("reflexio_declare", "[reflexio]") {
   REQUIRE(not myStruct.has_all_default_values());
   REQUIRE(myStruct != myStruct2);
 
-  REQUIRE(MyStruct::get_member_descriptors()[0]->default_value_as_string() == "12");
-  REQUIRE(MyStruct::get_member_descriptors()[1]->default_value_as_string() == "1.500000");
-  REQUIRE(MyStruct::get_member_descriptors()[2]->default_value_as_string() == "EnumVal2");
-  REQUIRE(MyStruct::get_member_descriptors()[3]->default_value_as_string() == "true"); // TODO: should be "true"
+  //REQUIRE(MyStruct::get_member_descriptors()[0]->default_to_yaml() == "12");
+  //REQUIRE(MyStruct::get_member_descriptors()[1]->default_to_yaml() == "1.500000");
+  //REQUIRE(MyStruct::get_member_descriptors()[2]->default_to_yaml() == "EnumVal2");
+  //REQUIRE(MyStruct::get_member_descriptors()[3]->default_to_yaml() == "true"); // TODO: should be "true"
 }
 
 TEST_CASE("reflexio_serialize", "[reflexio]") {
@@ -148,30 +148,30 @@ TEST_CASE("reflexio_from_string", "[reflexio]") {
     TrivialStruct reflexioStruct;
     std::string_view val_str = R"(var1: 11
     var2: 22.22)";
-    from_string(reflexioStruct, val_str);
+    from_yaml(reflexioStruct, val_str);
     TrivialStruct refStruct;
     refStruct.var1 = 11;
     refStruct.var2 = 22.22;
     REQUIRE(reflexioStruct == refStruct);
 
-    std::string valstr = to_string(reflexioStruct);
+    std::string valstr = to_yaml(reflexioStruct);
     reflexioStruct.var2 = 33.33;
-    from_string(reflexioStruct, valstr);
+    from_yaml(reflexioStruct, valstr);
 
     REQUIRE(reflexioStruct == refStruct);
   }
   {
     TrivialStruct reflexioStruct;
     std::string_view val_str = R"(   var1: 11      )";
-    from_string(reflexioStruct, val_str);
+    from_yaml(reflexioStruct, val_str);
     TrivialStruct refStruct;
     refStruct.var1 = 11;
     REQUIRE(reflexioStruct == refStruct);
   }
   {// with no extra new lines
     TrivialStruct reflexioStruct;
-    std::string_view val_str = "var1: 11";
-    from_string(reflexioStruct, val_str);
+    std::string_view val_str = "var1: 11 # some comment";
+    from_yaml(reflexioStruct, val_str);
     TrivialStruct refStruct;
     refStruct.var1 = 11;
     REQUIRE(reflexioStruct == refStruct);
@@ -179,7 +179,7 @@ TEST_CASE("reflexio_from_string", "[reflexio]") {
   {
     TrivialStruct reflexioStruct;
     std::string_view val_str = R"(var2: 22.22)";
-    from_string(reflexioStruct, val_str);
+    from_yaml(reflexioStruct, val_str);
     TrivialStruct refStruct;
     refStruct.var2 = 22.22;
     REQUIRE(reflexioStruct == refStruct);
@@ -187,7 +187,7 @@ TEST_CASE("reflexio_from_string", "[reflexio]") {
   {
     TrivialStruct reflexioStruct;
     std::string_view val_str = "";
-    from_string(reflexioStruct, val_str);
+    from_yaml(reflexioStruct, val_str);
     TrivialStruct refStruct;
     REQUIRE(reflexioStruct == refStruct);
   }
@@ -197,24 +197,75 @@ TEST_CASE("reflexio_composite", "[reflexio]") {
 
   NestedStruct myStruct;
   REQUIRE(myStruct.has_all_default_values());
-  myStruct.var1.var1 = 2;
+  myStruct.struct1.var1 = 2;
 
   REQUIRE(not myStruct.has_all_default_values());
 
   auto myStructCopy = myStruct;
   REQUIRE(myStructCopy == myStruct);
-  auto& subStruct = myStructCopy.var1;
+  auto& subStruct = myStructCopy.struct1;
   subStruct.var2 = 22.f;
 
   REQUIRE(myStructCopy != myStruct);
 
-  /*
-  auto val_str = to_string(myStruct);
-  std::cout << "Value:" << std::endl << val_str << std::endl << "endvalue" << std::endl;
-  from_string(myStructCopy, val_str);
+  auto val_str = to_yaml(myStruct);
+  std::cout << "---" << std::endl
+            << val_str
+            << "..." << std::endl;
+
+  from_yaml(myStructCopy, val_str);
 
   REQUIRE(myStructCopy == myStruct);
-  */
+}
+
+TEST_CASE("reflexio_yaml_sections", "[reflexio]") {
+
+  for (int i = 0; i <= 1; i++) {
+    // tests with and without '...' separator
+    // which seems to be optional in yaml.
+    bool const with_end_separator = i > 0;
+
+    TrivialStruct myStruct;
+    REQUIRE(myStruct.has_all_default_values());
+    myStruct.var1 *= 2;
+    myStruct.var2 *= 2;
+
+    REQUIRE(not myStruct.has_all_default_values());
+
+    TrivialStruct otherStruct;
+    otherStruct.var1 += 1;
+    otherStruct.var2 += 1;
+
+    REQUIRE(otherStruct != myStruct);
+
+    std::ostringstream oss;
+    oss << "---\n"
+        << myStruct;
+    if (with_end_separator) {
+      oss << "...\n";
+    }
+
+    oss << "---\n"
+        << otherStruct;
+
+    std::string const val_str = oss.str();
+    //std::cout << val_str;
+    std::istringstream iss(val_str);
+
+    TrivialStruct myStruct2;
+    TrivialStruct otherStruct2;
+
+    REQUIRE(myStruct != myStruct2);
+    REQUIRE(otherStruct != otherStruct2);
+
+    from_yaml(myStruct2, iss);
+    from_yaml(otherStruct2, iss);
+
+    REQUIRE(myStruct == myStruct2);
+    //std::cerr << "differences: " << otherStruct.differences(otherStruct2) << std::endl;
+    //REQUIRE(not otherStruct.differs(otherStruct2));
+    REQUIRE(otherStruct == otherStruct2);
+  }
 }
 
 #ifdef CONSTEXPR_STRING_AND_VECTOR
@@ -231,10 +282,10 @@ TEST_CASE("reflexio_string_and_vector", "[reflexio]") {
   sendStruct.var6 = "new_val";
   sendStruct.var7 = {1.f, 2.f, 3.f};
 
-  REQUIRE(StructWithStringAndVector::get_member_descriptors()[0]->default_value_as_string() == "12");
-  REQUIRE(StructWithStringAndVector::get_member_descriptors()[1]->default_value_as_string() == "var2_val");
+  REQUIRE(StructWithStringAndVector::get_member_descriptors()[0]->default_to_yaml() == "12");
+  REQUIRE(StructWithStringAndVector::get_member_descriptors()[1]->default_to_yaml() == "var2_val");
   // transient constexpr allocation: see comment in reflexio.hpp around reflexio_traits::DefaultType specialization
-  //REQUIRE(StructWithStringAndVector::get_member_descriptors()[2]->default_value_as_string() == "{10.f}");
+  //REQUIRE(StructWithStringAndVector::get_member_descriptors()[2]->default_to_yaml() == "{10.f}");
 
   StructWithStringAndVector receiveStruct;
   REQUIRE(sendStruct != receiveStruct);

@@ -151,11 +151,27 @@ inline void from_string(std::string_view& val, std::string_view val_str) {
 template<typename T>
 requires(std::is_integral_v<T>)
 inline void from_string(T& val, std::string_view val_str) {
-  val = std::stoi(val_str.data());
+  size_t last_converted_pos = 0;
+  val = std::stoi(val_str.data(), &last_converted_pos);
+  checkCond(last_converted_pos == val_str.size(), "failed converting", val_str, "to", typeName<T>());
 }
 
 inline void from_string(float& val, std::string_view val_str) {
-  val = std::stof(val_str.data());
+  size_t last_converted_pos = 0;
+  val = std::stof(val_str.data(), &last_converted_pos);
+  checkCond(last_converted_pos == val_str.size(), "failed converting", val_str, "to float");
+}
+
+inline void from_string(double& val, std::string_view val_str) {
+  size_t last_converted_pos = 0;
+  val = std::stod(val_str.data(), &last_converted_pos);
+  checkCond(last_converted_pos == val_str.size(), "failed converting", val_str, "to double");
+}
+
+inline void from_string(int& val, std::string_view val_str) {
+  size_t last_converted_pos = 0;
+  val = std::stoi(val_str.data(), &last_converted_pos);
+  checkCond(last_converted_pos == val_str.size(), "failed converting", val_str, "to int");
 }
 
 template <typename T, size_t N>

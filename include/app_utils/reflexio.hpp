@@ -10,6 +10,7 @@
 
 #ifndef REFLEXIO_MINIMAL_FEATURES
 #include <unordered_map>
+#include <sstream>
 #include <app_utils/string_utils.hpp>
 #endif
 
@@ -172,38 +173,53 @@ struct ReflexioStructBase {
     std::ostringstream out;
     for (auto& descriptor: get_member_descriptors(excludeMask)) {
       if (descriptor.values_differ(cast_this(), other)) {
-        out << descriptor.get_name() << ": "
-            << descriptor.value_as_string(cast_this()) << " vs "
-            << descriptor.value_as_string(other.cast_this()) << '\n';
+        out << descriptor.get_name() << ": ";
+        descriptor.value_to_yaml(cast_this(), out);
+        out << " vs ";
+        descriptor.value_to_yaml(other.cast_this(), out);
+        out << '\n';
       }
     }
     return out.str();
   }
 
-  static constexpr char name_value_separator = ':';
+  constexpr friend std::ostream& to_yaml(
+          ReflexioStruct const& instance,
+          std::ostream& os)
+  {
+    app_utils::yaml::indenter_t indenter;
+    if (app_utils::yaml::get_indent_depth() > 0) {
+      os << "\n";
+    }
+    for (auto& descriptor: ReflexioStruct::get_member_descriptors()) {
+      app_utils::yaml::print_indent(os);
+      os << descriptor->get_name() << ": ";
+      descriptor->value_to_yaml(instance, os);
+    }
+    return os;
+  }
+
+  friend std::ostream& operator<<(std::ostream& os,
+                                  ReflexioStruct const& instance) {
+    to_yaml(instance, os);
+    return os;
+  }
 
   [[nodiscard]]
-  constexpr friend std::string to_string(
-          ReflexioStruct const& instance,
-          MemberVarsMask const& excludeMask={})
-  {
+  friend std::string to_yaml(
+        ReflexioStruct const& instance) {
     std::ostringstream oss;
-    for (auto& descriptor: ReflexioStruct::get_member_descriptors(excludeMask)) {
-      oss << descriptor.get_name() << name_value_separator << ' '
-          << descriptor.value_as_string(instance) << "\n";
-    }
+    oss << instance;
     return oss.str();
   }
 
-  constexpr friend void update_from_string(
+  friend std::istream& from_yaml(
           ReflexioStruct& instance,
-          std::string_view const val_str)
+          std::istream& is)
   {
-    if (val_str.empty()) {
-      return;
-    }
+
     using descriptor_map_t = std::unordered_map<std::string_view, member_descriptor_t<ReflexioStruct> const*>;
-    const descriptor_map_t descriptor_map =
+    static const descriptor_map_t descriptor_map =
             []{
               descriptor_map_t map;
               for (auto& descriptor: ReflexioStruct::get_member_descriptors()) {
@@ -212,42 +228,83 @@ struct ReflexioStructBase {
               return map;
             }();
 
-    auto process_line = [&instance, &descriptor_map](std::string_view line) {
-      auto items = app_utils::strutils::split(name_value_separator, line, /*stripWhiteSpace=*/true, 1);
-      checkCond(items.size() == 2, "bad name value pair:", line);
-      auto name = items[0];
-      auto value_str = items[1];
-      auto it = descriptor_map.find(name);
-      checkCond(it != descriptor_map.end(), "unrecognized member name", name);
-      it->second->set_value_from_string(instance, value_str);
-    };
+    bool first_line_seen = false;
+    size_t start_indent = 0;
 
-    std::string_view search_str = val_str;
-    while(not search_str.empty()) {
-      auto separator_pos = search_str.find_first_of('\n');
-      std::string_view line = search_str.substr(0, separator_pos);
-      process_line(line);
-      if (separator_pos < std::string::npos) {
-        search_str = search_str.substr(separator_pos + 1, std::string::npos);
-      } else {
+    for(std::string raw_line; std::getline(is, raw_line);) {
+
+      std::string_view line = app_utils::strutils::strip(raw_line);
+      size_t indent = raw_line.find_first_not_of(' ') / app_utils::yaml::indent_width;
+      if (line == "---") {
+        if (first_line_seen) {
+          // signals the start of another section
+          break;
+        } else {
+          checkCond(indent == 0);
+          start_indent = 0;
+        }
+        continue;
+      } else if (line == "...") {
+        // end of section
         break;
+      } else if (not first_line_seen) {
+        start_indent = indent;
+      } else {
+        if (start_indent > indent) {
+          int rewind_offset = -static_cast<int>(raw_line.size()) - 1;
+          is.seekg(rewind_offset, std::ios_base::cur);
+          break;
+        }
+      }
+
+      first_line_seen = true;
+
+      size_t separator_pos = line.find_first_of(':');
+
+      checkCond(separator_pos != std::string::npos, "bad name value pair:", raw_line);
+      auto const name = line.substr(0, separator_pos);
+      auto const val = line.substr(separator_pos + 1);
+      auto it = descriptor_map.find(name);
+      checkCond(it != descriptor_map.end(), "unrecognized",
+                app_utils::typeName<ReflexioStruct>(), "member name", name);
+
+      if (val.empty()) {
+        it->second->set_value_from_yaml(instance, is);
+      } else {
+        // value fits on just one line
+        try {
+          int rewind_offset = -static_cast<int>(raw_line.size() - raw_line.find_first_of(':') - 1);
+          is.seekg(rewind_offset, std::ios_base::cur);
+          it->second->set_value_from_yaml(instance, is);
+        } catch (std::exception const& exc) {
+          throwExc("Failed parsing yaml line:", raw_line, exc.what());
+        }
       }
     }
+
+    return is;
   }
 
-  constexpr friend void from_string(
+  friend void from_yaml(
           ReflexioStruct& instance,
           std::string_view const val_str) {
     instance.set_to_default();
-    update_from_string(instance, val_str);
+    std::istringstream iss (std::string{val_str});
+    from_yaml(instance, iss);
+  }
+
+  friend std::istream& operator>>(std::istream& is,
+                                  ReflexioStruct const& instance) {
+    from_yaml(is, instance);
+    return is;
   }
 
   static std::string const& get_docstring(MemberVarsMask const& excludeMask={}) {
     static std::string const docstring = [&excludeMask] {
       std::ostringstream oss;
       for (auto& descriptor: ReflexioStruct::get_member_descriptors(excludeMask)) {
-        oss << descriptor.get_name() << name_value_separator
-            << ' ' << descriptor.get_description() << "\n";
+        oss << descriptor.get_name() << ": "
+            << descriptor.get_description() << "\n";
       }
       return oss.str();
     }();

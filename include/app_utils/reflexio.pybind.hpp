@@ -31,7 +31,7 @@ struct pybind_wrapper<ReflexioStruct,
           .def("__deepcopy__", [](ReflexioStruct const& self, py::dict) { return ReflexioStruct(self); })
           .def(pybind11::self == pybind11::self)
           .def(pybind11::self != pybind11::self)
-          .def("__str__", [](ReflexioStruct const& self_) { return to_string(self_); })
+          .def("__str__", [](ReflexioStruct const& self_) { return to_yaml(self_); })
           .def("as_dict",
                [](ReflexioStruct const& self_) {
                  py::dict dico;

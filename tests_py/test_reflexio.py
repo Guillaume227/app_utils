@@ -54,21 +54,21 @@ def test_reflexio_nested():
 
     assert(nested_struct1 == nested_struct2)
 
-    var1 = nested_struct1.var1
-    var1.var1 = 33
+    substruct1 = nested_struct1.struct1
+    substruct1.var1 = 33
 
     assert(nested_struct1 != nested_struct2)
 
-    assert(list(nested_struct1.differing_members(nested_struct2)) == ['var1'])
-    assert(list(nested_struct1.var1.differing_members(nested_struct2.var1)) == ['var1'])    
+    assert(list(nested_struct1.differing_members(nested_struct2)) == ['struct1'])
+    assert(list(nested_struct1.struct1.differing_members(nested_struct2.struct1)) == ['var1'])
 
-    nested_struct1.var1 = nested_struct2.var1
+    nested_struct1.struct1 = nested_struct2.struct1
     assert(nested_struct1 == nested_struct2)
 
-    nested_struct2.var2.var1 = 7
+    nested_struct2.struct2.var1 = 7
 
     assert(nested_struct1 != nested_struct2)
-    assert(list(nested_struct1.var2.differing_members(nested_struct2.var2)) == ['var1'])
+    assert(list(nested_struct1.struct2.differing_members(nested_struct2.struct2)) == ['var1'])
 
 
 def test_reflexio_as_dict():

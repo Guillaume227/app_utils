@@ -41,5 +41,5 @@ static_assert(std::is_trivially_copy_constructible_v<TrivialStruct>);
 //static_assert(std::is_trivially_constructible_v<TrivialStruct>); // NO: because of in-line initialization
 
 REFLEXIO_STRUCT_DEFINE(NestedStruct, 
-  REFLEXIO_MEMBER_VAR_DEFINE(MyOtherStruct, var1, {}, "var1 doc");
-  REFLEXIO_MEMBER_VAR_DEFINE(TrivialStruct, var2, {}, "var2 doc"););
+  REFLEXIO_MEMBER_VAR_DEFINE(MyOtherStruct, struct1, {}, "var1 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(TrivialStruct, struct2, {}, "var2 doc"););
