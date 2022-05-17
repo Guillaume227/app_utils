@@ -2,6 +2,7 @@
 
 #include <app_utils/serial_utils.hpp>
 #include <app_utils/stream_utils.hpp>
+#include <app_utils/string_utils.hpp>
 
 template<typename Tag>
 struct CustomFloat {

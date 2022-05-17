@@ -4,6 +4,7 @@
 
 #include <app_utils/enumatic.hpp>
 #include <app_utils/cond_check.hpp>
+#include "CustomFloat.hpp"
 
 #if defined(_MSC_VER) && _MSC_VER >= 1929
 #define CONSTEXPR_STRING_AND_VECTOR
@@ -43,3 +44,31 @@ static_assert(std::is_trivially_copy_constructible_v<TrivialStruct>);
 REFLEXIO_STRUCT_DEFINE(NestedStruct, 
   REFLEXIO_MEMBER_VAR_DEFINE(MyOtherStruct, struct1, {}, "var1 doc");
   REFLEXIO_MEMBER_VAR_DEFINE(TrivialStruct, struct2, {}, "var2 doc"););
+
+ENUMATIC_DEFINE(MyEnum,
+                EnumVal1 = 1,
+                EnumVal2 ,
+                EnumVal3 [[deprecated]] ,
+                EnumVal4 [[deprecated]] = 5 );
+
+ENUMATIC_DEFINE(
+        MyOtherEnum,
+        EnumVal1,
+        EnumVal2,
+        EnumVal3);
+
+struct bla {}; // inherits default CustomFlag copy policy
+struct foo {}; // overrides default below
+
+using ArrayFloat8_t = std::array<float, 8>;
+REFLEXIO_STRUCT_DEFINE(
+    FancierStruct,
+    REFLEXIO_MEMBER_VAR_DEFINE(int, var1, 12, "var1 doc");
+    REFLEXIO_MEMBER_VAR_DEFINE(float, var2, 1.5f, "var2 doc");
+    REFLEXIO_MEMBER_VAR_DEFINE(MyEnum, var3, MyEnum::EnumVal2, "var3 doc");
+    REFLEXIO_MEMBER_VAR_DEFINE(MyOtherEnum, var4, MyOtherEnum::EnumVal2, "var4 doc");
+    REFLEXIO_MEMBER_VAR_DEFINE(bool, var5, true, "var5 doc");
+    REFLEXIO_MEMBER_VAR_DEFINE(ArrayFloat8_t, var6, {0}, "var6 doc");
+    REFLEXIO_MEMBER_VAR_DEFINE(CustomFloat<bla>, var7, 22.2f, "var7 doc");
+    REFLEXIO_MEMBER_VAR_DEFINE(CustomFloat<foo>, var8, 11.1f, "var8 doc");
+);

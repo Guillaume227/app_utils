@@ -4,7 +4,6 @@ struct timeval;  // Windows-specific: forward declaration to fix compilation err
 #define strdup _strdup  // Windows-specific: https://github.com/pybind/pybind11/issues/1212
 #endif
 
-
 #include "CustomFloat.pybind.hpp"
 #include <app_utils/enumatic.pybind.hpp>
 #include <app_utils/reflexio.pybind.hpp>
@@ -13,19 +12,7 @@ struct timeval;  // Windows-specific: forward declaration to fix compilation err
 
 #include "../tests/reflexio.t.hpp"
 
-ENUMATIC_DEFINE(MyEnum, 
-	EnumVal1 = 1, 
-	EnumVal2 , 
-    EnumVal3 [[deprecated]] , 
-    EnumVal4 [[deprecated]] = 5 );
 
-ENUMATIC_DEFINE(
-  MyOtherEnum, 
-  EnumVal1, 
-  EnumVal2, 
-  EnumVal3);
-
-using ArrayFloat8_t = std::array<float, 8>;
 PYBIND11_MAKE_OPAQUE(ArrayFloat8_t);
 PYBIND11_MAKE_OPAQUE(std::vector<int>);
 PYBIND11_MAKE_OPAQUE(std::vector<float>);
@@ -37,10 +24,7 @@ PYBIND11_MAKE_OPAQUE(std::vector<std::string_view>);
 #define CONSTEXPR_STRING_AND_VECTOR
 #endif
 
-// test different return value policies for those CustomFloat tags
-struct bla {}; // inherits default CustomFlag copy policy
-struct foo {}; // overrides default below
-
+// test different return value policies for different CustomFloat tags
 namespace app_utils::pybind {
 template<>
 struct pybind_wrapper_traits<CustomFloat<foo>, int> {

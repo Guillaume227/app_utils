@@ -6,7 +6,7 @@
 #include <pybind11/numpy.h>
 
 #include <app_utils/pybind_utils.hpp>
-#include "CustomFloat.hpp"
+#include "../tests/CustomFloat.hpp"
 
 namespace app_utils::pybind {
 
