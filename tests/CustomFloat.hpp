@@ -47,7 +47,7 @@ struct CustomFloat {
     return oss.str();
   }
 
-  friend void from_string(CustomFloat& val, std::string_view val_str) {
+  friend bool from_string(CustomFloat& val, std::string_view val_str) {
     auto items = app_utils::strutils::split(' ', val_str);
     checkCond(items.size() == 2);
     checkCond(items[1] == app_utils::typeName<Tag>());

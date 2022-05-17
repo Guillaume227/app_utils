@@ -146,15 +146,15 @@ struct member_descriptor_impl_t : public member_descriptor_t<ReflexioStruct> {
   }
 #ifndef REFLEXIO_MINIMAL_FEATURES
   constexpr void default_to_yaml(std::ostream& os) const final {
-    using namespace app_utils::yaml;
+    using namespace yaml_utils;
     to_yaml(m_default_value, os);
   }
   constexpr void value_to_yaml(ReflexioStruct const& host, std::ostream& os) const final {
-    using namespace app_utils::yaml;
+    using namespace yaml_utils;
     to_yaml(get_value(host), os);
   }
   constexpr void set_value_from_yaml(ReflexioStruct& host, std::istream& stream) const final {
-    using namespace app_utils::yaml;
+    using namespace yaml_utils;
     from_yaml(get_mutable_value(host), stream);
   }
   [[nodiscard]]

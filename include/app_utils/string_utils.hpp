@@ -96,6 +96,7 @@ inline bool hasOnlyDigits(std::string_view s) { return s.find_first_not_of("0123
 void replaceAll(std::string& str, std::string_view from, std::string_view to);
 
 template<typename T>
+  requires requires(T x) { std::to_string(x); }
 std::string to_string(T const& val) {
   return std::to_string(val);
 }
@@ -143,15 +144,17 @@ std::string to_string(std::vector<T> const& val) {
   return contiguous_items_to_string(val.empty() ? nullptr : &val.front(), val.size());
 }
 
-inline void from_string(std::string& val, std::string_view val_str) {
+inline bool from_string(std::string& val, std::string_view val_str) {
   val = std::string{val_str};
+  return true;
 }
 
-inline void from_string(std::string_view& val, std::string_view val_str) {
+inline bool from_string(std::string_view& val, std::string_view val_str) {
   val = val_str;
+  return true;
 }
 
-inline void from_string(bool& b, std::string_view val_str) {
+inline bool from_string(bool& b, std::string_view val_str) {
   if (val_str == "true") {
     b = true;
   } else if (val_str == "false") {
@@ -163,53 +166,61 @@ inline void from_string(bool& b, std::string_view val_str) {
     checkCond(val == 1 or val == 0);
     b = val == 1;
   }
-
+  return true;
 }
 
 template<typename T>
 requires(std::is_integral_v<T>)
-inline void from_string(T& val, std::string_view val_str) {
+inline bool from_string(T& val, std::string_view val_str) {
   size_t last_converted_pos = 0;
   val = std::stoi(val_str.data(), &last_converted_pos);
   checkCond(last_converted_pos == val_str.size(), "failed converting", val_str, "to", typeName<T>());
+  return true;
 }
 
-inline void from_string(float& val, std::string_view val_str) {
+inline bool from_string(float& val, std::string_view val_str) {
   size_t last_converted_pos = 0;
   val = std::stof(val_str.data(), &last_converted_pos);
   checkCond(last_converted_pos == val_str.size(), "failed converting", val_str, "to float");
+  return true;
 }
 
-inline void from_string(double& val, std::string_view val_str) {
+inline bool from_string(double& val, std::string_view val_str) {
   size_t last_converted_pos = 0;
   val = std::stod(val_str.data(), &last_converted_pos);
   checkCond(last_converted_pos == val_str.size(), "failed converting", val_str, "to double");
+  return true;
 }
 
-inline void from_string(int& val, std::string_view val_str) {
+inline bool from_string(int& val, std::string_view val_str) {
   size_t last_converted_pos = 0;
   val = std::stoi(val_str.data(), &last_converted_pos);
   checkCond(last_converted_pos == val_str.size(), "failed converting", val_str, "to int");
+  return true;
 }
 
 template <typename T, size_t N>
-void from_string(std::array<T, N>& val, std::string_view val_str) {
+bool from_string(std::array<T, N>& val, std::string_view val_str) {
   val_str = stripBraces(val_str, "[]");
   std::vector<std::string_view> vals_str = splitParse(val_str, ',');
   checkCond(val.size() == vals_str.size());
+  bool success = true;
   for(size_t i = 0; i < vals_str.size(); i++) {
-    from_string(val[i], vals_str[i]);
+    success &= from_string(val[i], vals_str[i]);
   }
+  return success;
 }
 
 template <typename T>
-void from_string(std::vector<T>& val, std::string_view val_str) {
+bool from_string(std::vector<T>& val, std::string_view val_str) {
   val.clear();
   std::vector<std::string_view> vals_str = splitParse(val_str, ',');
   val.resize(vals_str.size());
+  bool success = true;
   for(size_t i = 0; i < vals_str.size(); i++) {
-    from_string(val[i], vals_str[i]);
+    success &= from_string(val[i], vals_str[i]);
   }
+  return success;
 }
 
 }  // namespace strutils

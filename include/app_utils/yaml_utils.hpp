@@ -5,7 +5,7 @@
 #include <iostream>
 #include "string_utils.hpp"
 
-namespace app_utils::yaml {
+namespace yaml_utils {
 
 constexpr char const* indent_str = "  ";
 constexpr size_t indent_width = strlen(indent_str);
@@ -35,7 +35,7 @@ inline std::ostream& print_indent(std::ostream& os) {
 template<typename T>
 std::ostream& to_yaml(T const& value, std::ostream& os) {
   using namespace app_utils::strutils;
-  return os << to_string(value) << '\n';
+  return os << to_string(value);
 }
 
 template<typename T>
@@ -48,7 +48,7 @@ std::ostream& sequence_to_yaml(T const* vals, size_t num_items, std::ostream& os
     using namespace app_utils::strutils;
     os << to_string(vals[i]);
   }
-  os << "]\n";
+  os << "]";
   return os;
 }
 
@@ -65,15 +65,18 @@ std::ostream& to_yaml(std::vector<T> const& val, std::ostream& os) {
 // this method handles single-line yaml constructs and
 // defers to the from_string implementation.
 template <typename T>
-std::istream& from_yaml(T& val, std::istream& is) {
+bool from_yaml(T& val, std::istream& is) {
   std::string line;
   std::getline(is, line);
   using namespace app_utils::strutils;
   std::string_view line_view = line;
   // strip comment from end of line
   line_view = line_view.substr(0, line_view.find_first_of('#'));
-  from_string(val, strip(line_view));
-  return is;
+  bool success = from_string(val, strip(line_view));
+  if (not success) {
+    throwExc("failed converting to yaml:", line);
+  }
+  return success;
 }
 
-}// namespace app_utils::yaml
+}// namespace yaml_utils

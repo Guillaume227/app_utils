@@ -187,14 +187,20 @@ struct ReflexioStructBase {
           ReflexioStruct const& instance,
           std::ostream& os)
   {
-    app_utils::yaml::indenter_t indenter;
-    if (app_utils::yaml::get_indent_depth() > 0) {
+    yaml_utils::indenter_t indenter;
+    bool const am_i_nested = yaml_utils::get_indent_depth() > 0;
+    if (am_i_nested) {
       os << "\n";
     }
-    for (auto& descriptor: ReflexioStruct::get_member_descriptors()) {
-      app_utils::yaml::print_indent(os);
+    auto const descriptors = ReflexioStruct::get_member_descriptors();
+    for (size_t i = 0; i < descriptors.size(); i++){
+      auto& descriptor = descriptors[i];
+      yaml_utils::print_indent(os);
       os << descriptor->get_name() << ": ";
       descriptor->value_to_yaml(instance, os);
+      if (i < descriptors.size() - 1 or not am_i_nested) {
+        os << '\n'; // avoid adding a newline
+      }
     }
     return os;
   }
@@ -234,7 +240,7 @@ struct ReflexioStructBase {
     for(std::string raw_line; std::getline(is, raw_line);) {
 
       std::string_view line = app_utils::strutils::strip(raw_line);
-      size_t indent = raw_line.find_first_not_of(' ') / app_utils::yaml::indent_width;
+      size_t indent = raw_line.find_first_not_of(' ') / yaml_utils::indent_width;
       if (line == "---") {
         if (first_line_seen) {
           // signals the start of another section
