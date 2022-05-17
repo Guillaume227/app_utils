@@ -45,9 +45,10 @@ std::ostream& sequence_to_yaml(T const* vals, size_t num_items, std::ostream& os
     if (i != 0) {
       os << ", ";
     }
-    to_yaml(vals[i], os);
+    using namespace app_utils::strutils;
+    os << to_string(vals[i]);
   }
-  os << ']';
+  os << "]\n";
   return os;
 }
 

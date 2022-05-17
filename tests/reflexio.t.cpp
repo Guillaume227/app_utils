@@ -268,6 +268,27 @@ TEST_CASE("reflexio_yaml_sections", "[reflexio]") {
   }
 }
 
+TEST_CASE("reflexio_yaml_io", "[reflexio]") {
+
+    FancierStruct myStruct_in;
+    myStruct_in.var1 = 256;
+    myStruct_in.var2 = 3.14;
+    myStruct_in.var3 = MyEnum::EnumVal1;
+    myStruct_in.var4 = MyOtherEnum::EnumVal3;
+    myStruct_in.var5 = false;
+    myStruct_in.var6 = {1, 2, 3, 4, 5, 6, 7, 8};
+    myStruct_in.var7 = 10.;
+    myStruct_in.var8 = 20.;
+
+    FancierStruct myStruct_out;
+
+    auto val_str = to_yaml(myStruct_in);
+    std::cout << val_str << std::endl;
+    from_yaml(myStruct_out, val_str);
+
+    REQUIRE(myStruct_in == myStruct_out);
+}
+
 #ifdef CONSTEXPR_STRING_AND_VECTOR
 REFLEXIO_STRUCT_DEFINE(StructWithStringAndVector, 
   REFLEXIO_MEMBER_VAR_DEFINE(int, var1, 12, "var1 doc");

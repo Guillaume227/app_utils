@@ -326,6 +326,18 @@ void replaceAll(std::string& str, std::string_view const from, std::string_view 
   }
 }
 
+std::string to_string(double val) {
+  std::ostringstream oss;
+  oss << std::setprecision(8) << std::noshowpoint << val;
+  return oss.str();
+}
+
+std::string to_string(float val) {
+  std::ostringstream oss;
+  oss << std::setprecision(8) << std::noshowpoint << val;
+  return oss.str();
+}
+
 }  // namespace strutils
 
 }  // namespace app_utils

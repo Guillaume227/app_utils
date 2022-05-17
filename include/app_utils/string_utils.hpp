@@ -100,6 +100,9 @@ std::string to_string(T const& val) {
   return std::to_string(val);
 }
 
+std::string to_string(double val);
+std::string to_string(float val);
+
 inline std::string to_string(std::string const& val) {
   return val;
 }
@@ -119,14 +122,14 @@ inline std::string to_string(bool b) {
 
 template<typename T>
 std::string contiguous_items_to_string(T const* vals, size_t num_items) {
-  std::string res = "{";
+  std::string res = "[";
   for (size_t i = 0; i < num_items; ++i) {
     if (i != 0) {
       res += ", ";
     }
     res += to_string(vals[i]);
   }
-  res += '}';
+  res += ']';
   return res;
 }
 
@@ -146,6 +149,21 @@ inline void from_string(std::string& val, std::string_view val_str) {
 
 inline void from_string(std::string_view& val, std::string_view val_str) {
   val = val_str;
+}
+
+inline void from_string(bool& b, std::string_view val_str) {
+  if (val_str == "true") {
+    b = true;
+  } else if (val_str == "false") {
+    b = false;
+  } else {
+    size_t last_converted_pos = 0;
+    int val = std::stoi(val_str.data(), &last_converted_pos);
+    checkCond(last_converted_pos == val_str.size(), "failed converting", val_str, "to bool");
+    checkCond(val == 1 or val == 0);
+    b = val == 1;
+  }
+
 }
 
 template<typename T>
@@ -176,6 +194,7 @@ inline void from_string(int& val, std::string_view val_str) {
 
 template <typename T, size_t N>
 void from_string(std::array<T, N>& val, std::string_view val_str) {
+  val_str = stripBraces(val_str, "[]");
   std::vector<std::string_view> vals_str = splitParse(val_str, ',');
   checkCond(val.size() == vals_str.size());
   for(size_t i = 0; i < vals_str.size(); i++) {
@@ -184,7 +203,7 @@ void from_string(std::array<T, N>& val, std::string_view val_str) {
 }
 
 template <typename T>
-void from_string( std::vector<T>& val, std::string_view val_str) {
+void from_string(std::vector<T>& val, std::string_view val_str) {
   val.clear();
   std::vector<std::string_view> vals_str = splitParse(val_str, ',');
   val.resize(vals_str.size());
