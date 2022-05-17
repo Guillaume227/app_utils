@@ -151,11 +151,11 @@ TEST_CASE("reflexio_from_string", "[reflexio]") {
     from_yaml(reflexioStruct, val_str);
     TrivialStruct refStruct;
     refStruct.var1 = 11;
-    refStruct.var2 = 22.22;
+    refStruct.var2 = 22.22f;
     REQUIRE(reflexioStruct == refStruct);
 
     std::string valstr = to_yaml(reflexioStruct);
-    reflexioStruct.var2 = 33.33;
+    reflexioStruct.var2 = 33.33f;
     from_yaml(reflexioStruct, valstr);
 
     REQUIRE(reflexioStruct == refStruct);
@@ -181,7 +181,7 @@ TEST_CASE("reflexio_from_string", "[reflexio]") {
     std::string_view val_str = R"(var2: 22.22)";
     from_yaml(reflexioStruct, val_str);
     TrivialStruct refStruct;
-    refStruct.var2 = 22.22;
+    refStruct.var2 = 22.22f;
     REQUIRE(reflexioStruct == refStruct);
   }
   {
@@ -272,13 +272,13 @@ TEST_CASE("reflexio_yaml_io", "[reflexio]") {
 
     FancierStruct myStruct_in;
     myStruct_in.var1 = 256;
-    myStruct_in.var2 = 3.14;
+    myStruct_in.var2 = 3.14f;
     myStruct_in.var3 = MyEnum::EnumVal1;
     myStruct_in.var4 = MyOtherEnum::EnumVal3;
     myStruct_in.var5 = false;
     myStruct_in.var6 = {1, 2, 3, 4, 5, 6, 7, 8};
-    myStruct_in.var7 = 10.;
-    myStruct_in.var8 = 20.;
+    myStruct_in.var7 = 10.f;
+    myStruct_in.var8 = 20.f;
 
     FancierStruct myStruct_out;
 
@@ -303,8 +303,14 @@ TEST_CASE("reflexio_string_and_vector", "[reflexio]") {
   sendStruct.var6 = "new_val";
   sendStruct.var7 = {1.f, 2.f, 3.f};
 
-  REQUIRE(StructWithStringAndVector::get_member_descriptors()[0]->default_to_yaml() == "12");
-  REQUIRE(StructWithStringAndVector::get_member_descriptors()[1]->default_to_yaml() == "var2_val");
+  auto const default_as_str = [&](size_t index){
+    std::ostringstream os;
+    StructWithStringAndVector::get_member_descriptors()[index]->default_to_yaml(os);
+    return os.str();
+  };
+
+  REQUIRE(default_as_str(0) == "12");
+  REQUIRE(default_as_str(1) == "var2_val");
   // transient constexpr allocation: see comment in reflexio.hpp around reflexio_traits::DefaultType specialization
   //REQUIRE(StructWithStringAndVector::get_member_descriptors()[2]->default_to_yaml() == "{10.f}");
 

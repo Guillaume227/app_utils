@@ -8,7 +8,7 @@
 namespace yaml_utils {
 
 constexpr char const* indent_str = "  ";
-constexpr size_t indent_width = strlen(indent_str);
+constexpr size_t indent_width = 2;
 inline static thread_local int _indent_depth = -1;
 inline int get_indent_depth() {
   return _indent_depth;

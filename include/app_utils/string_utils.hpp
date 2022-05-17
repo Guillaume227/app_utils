@@ -173,7 +173,7 @@ template<typename T>
 requires(std::is_integral_v<T>)
 inline bool from_string(T& val, std::string_view val_str) {
   size_t last_converted_pos = 0;
-  val = std::stoi(val_str.data(), &last_converted_pos);
+  val = static_cast<T>(std::stoi(val_str.data(), &last_converted_pos));
   checkCond(last_converted_pos == val_str.size(), "failed converting", val_str, "to", typeName<T>());
   return true;
 }
