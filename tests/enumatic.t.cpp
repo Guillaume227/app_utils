@@ -5,8 +5,9 @@
 #include <app_utils/serial_utils.hpp>
 #include <app_utils/serial_buffer.hpp>
 
+namespace {
 ENUMATIC_DEFINE(TestEnum, valneg = -1, val1 = 1, val2 = 2, val3, val4 = -3, val5,);
-
+}
 static_assert(std::is_standard_layout<TestEnum>());
 static_assert(std::is_enum<TestEnum>());
 
@@ -94,7 +95,7 @@ TEST_CASE("enumatic_to_from_string", "[enumatic]") {
   REQUIRE(to_string(TestEnum::val2) == "val2");
   REQUIRE(to_string(TestEnum::val5) == "val5");
 }
-
+namespace {
 ENUMATIC_DEFINE(ShortEnum, val1 = 0, val2);
 static_assert(Enumatic<ShortEnum>::has_default_indexation());
 
@@ -110,6 +111,7 @@ static_assert(Enumatic<ShortEnum1>::max_value() == 255);
 
 static_assert(Enumatic<ShortEnum2>::min_value() == -1);
 static_assert(Enumatic<ShortEnum2>::max_value() == 0);
+}
 
 TEST_CASE("enumatic_serial_size", "[enumatic]") { 
   using namespace app_utils::serial;
