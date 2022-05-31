@@ -62,6 +62,24 @@ struct pybind_wrapper<ReflexioStruct,
                  }
                  throw py::key_error("key '" + std::string{name} + "' does not exist");
                })
+         /**
+          * getitem and setitem that take an index: required for numpy compatibility
+          */
+          .def("__getitem__", [](ReflexioStruct const& self_, size_t index) {
+            if (index >= self_.num_registered_member_vars()) {
+              throw py::key_error("key '" + std::to_string(index) + "' does not exist");
+            }
+            auto member_descriptor = ReflexioStruct::get_member_descriptors()[index];
+            return member_descriptor->get_py_value(self_);
+          })
+          .def("__setitem__",
+           [](ReflexioStruct& self_, size_t index, py::object const& value) {
+              if (index >= self_.num_registered_member_vars()) {
+                throw py::key_error("key '" + std::to_string(index) + "' does not exist");
+              }
+              auto member_descriptor = ReflexioStruct::get_member_descriptors()[index];
+              return member_descriptor->set_py_value(self_, value);
+           })
           .def("get_serial_size", static_cast<size_t(ReflexioStruct::*)() const>(&ReflexioStruct::get_serial_size))
           .def("deserialize",
                [&](ReflexioStruct& self, pybind11::bytes const& data) {
