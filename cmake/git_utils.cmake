@@ -9,7 +9,8 @@ execute_process(COMMAND git log --pretty=format:'%h' -n 1
 if ("${GIT_REV}" STREQUAL "")
     set(GIT_REV "N/A")
     set(GIT_DIFF "")
-    set(GIT_DIFF_NUM "0")
+    set(GIT_DIFF_AS_HEX "0")
+    # 0 means clean working tree, else its an F
     set(GIT_TAG "N/A")
     set(GIT_BRANCH "N/A")
 else()
@@ -18,7 +19,7 @@ else()
         OUTPUT_VARIABLE GIT_DIFF)
     execute_process(
         COMMAND bash -c "git diff --quiet --exit-code || echo F"
-        OUTPUT_VARIABLE GIT_DIFF_NUM)
+        OUTPUT_VARIABLE GIT_DIFF_AS_HEX)
     execute_process(
         COMMAND git describe --exact-match --tags
         OUTPUT_VARIABLE GIT_TAG ERROR_QUIET)
@@ -29,7 +30,7 @@ else()
     string(STRIP "${GIT_REV}" GIT_REV)
     string(SUBSTRING "${GIT_REV}" 1 7 GIT_REV)
     string(STRIP "${GIT_DIFF}" GIT_DIFF)
-    string(STRIP "${GIT_DIFF_NUM}" GIT_DIFF_NUM)
+    string(STRIP "${GIT_DIFF_AS_HEX}" GIT_DIFF_AS_HEX)
     string(STRIP "${GIT_TAG}" GIT_TAG)
     string(STRIP "${GIT_BRANCH}" GIT_BRANCH)
 endif()
@@ -63,7 +64,11 @@ set(VERSION_H
 /* AUTOMATICALLY GENERATED - DO NOT COMMIT, DO NOT EDIT AS IT WILL BE OVERWRITTEN */
 #pragma once
 #include <stdint.h>
-#define VERSION_APP 0x${GIT_REV}${GIT_DIFF_NUM}
+/**
+ * this code is made of the first 7 digits of the hexadecimal git hash
+ * if there is uncommited changes a trailing F is added, else a 0
+ */
+#define VERSION_APP 0x${GIT_REV}${GIT_DIFF_AS_HEX}
 
 namespace version {
 char const* git_rev();
