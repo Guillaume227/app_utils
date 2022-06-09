@@ -9,7 +9,7 @@ struct timeval;  // Windows-specific: forward declaration to fix compilation err
 #include <app_utils/reflexio.pybind.hpp>
 #include <app_utils/serial_utils.hpp>
 #include <app_utils/cond_check.hpp>
-
+#include <app_utils/async.pybind.hpp>
 #include "../tests/reflexio.t.hpp"
 
 
@@ -91,11 +91,20 @@ PYBIND11_MODULE(REFLEXIO_STRUCT_USE_PYBIND_MODULE, m) {
 
   using app_utils::pybind::pybind_wrapper;
   // explicit registration of MyEnum on the module.
-  // note that MyOtherEnum is implicitly registered through MyStruct as it's the type of a member variable.
+  // note that MyOtherEnum is implicitly registered through MyStruct as it's the type of a member variable  .
   pybind_wrapper<MyEnum>::wrap_with_pybind(m);
   pybind_wrapper<MyStruct>::wrap_with_pybind(m);
   pybind_wrapper<NestedStruct>::wrap_with_pybind(m);
   pybind_wrapper<SimpleStruct>::wrap_with_pybind(m);
+
+
+  pybind_wrapper<std::future<SimpleStruct>>::wrap_with_pybind(m);
+
+  m.def("make_simple_struct_future", []() {
+    return std::async([] {
+      return SimpleStruct{};
+    });
+  });
 
   m.def("get_simple_struct_array", [](size_t n){
     auto arr = app_utils::pybind::mkarray_via_buffer<SimpleStruct>(n);
