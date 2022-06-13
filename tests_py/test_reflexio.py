@@ -1,5 +1,5 @@
-from app_utils_test import *
-import app_utils_test
+from app_utils_test_pybind import *
+import app_utils_test_pybind
 
 
 def test_reflexio():
@@ -37,7 +37,7 @@ def test_reflexio():
     assert(previous_value == new_value), f"expected reference semantics but {previous_value} != {new_value}"
     assert(previous_value == my_struct1.var8), f"expected reference semantics but {previous_value} != {my_struct1.var8}"
 
-    if hasattr(app_utils_test, 'CONSTEXPR_STRING_AND_VECTOR'):
+    if hasattr(app_utils_test_pybind, 'CONSTEXPR_STRING_AND_VECTOR'):
         my_struct1.var_string = "hello hello"
         my_struct1.var_vect = VectorFloat([1, 2, 3])
         assert(my_struct1.get_serial_size() == my_struct2.get_serial_size() 
@@ -82,7 +82,7 @@ def test_reflexio_as_dict():
     dico['var6'][2] = var6_val
     assert(my_struct1.var6[2] == var6_val), 'vector should have pointer semantics'
 
-    if hasattr(app_utils_test, 'CONSTEXPR_STRING_AND_VECTOR'):
+    if hasattr(app_utils_test_pybind, 'CONSTEXPR_STRING_AND_VECTOR'):
         # strings not supported on linux yet due to imperfect c++20 gcc compliance
         dico['var_string'] = dico['var_string'] + '_suffix'
         assert(my_struct1.var_string != 'var_string_val_suffix'), "python strings have value semantics"
@@ -103,12 +103,12 @@ def test_reflexio_as_dict():
 
 def test_doc_string():
     """auto-generated docstring"""
-    from app_utils_test import SimpleStruct
+    from app_utils_test_pybind import SimpleStruct
     assert(SimpleStruct.__doc__ == "var1: var1 doc\nvar3: var3 doc\n")
 
 
 def test_numpy():
-    from app_utils_test import SimpleStruct, MyEnum, get_simple_struct_array
+    from app_utils_test_pybind import SimpleStruct, MyEnum, get_simple_struct_array
     import numpy as np
     assert(SimpleStruct.dtype == np.dtype([('var1', '<i4'), ('var3', '<i4')]))
     a = np.array([(12, MyEnum.EnumVal1), (3, MyEnum.EnumVal2)], dtype=SimpleStruct.dtype)

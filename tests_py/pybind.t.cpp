@@ -74,9 +74,9 @@ namespace py = pybind11;
 
 namespace app_utils::tests {
 
-PYBIND11_MODULE(REFLEXIO_STRUCT_USE_PYBIND_MODULE, m) {
+PYBIND11_MODULE(app_utils_test_pybind, m) {
   // Optional docstring
-  m.doc() = "app utils tests module";
+  m.doc() = "app utils test module";
 
 #ifdef CONSTEXPR_STRING_AND_VECTOR
   m.attr("CONSTEXPR_STRING_AND_VECTOR") = py::bool_(true);

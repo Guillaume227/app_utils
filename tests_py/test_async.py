@@ -1,5 +1,5 @@
 
-from .app_utils_test import make_simple_struct_future, SimpleStruct
+from app_utils_test_pybind import make_simple_struct_future, SimpleStruct
 
 import asyncio
 
