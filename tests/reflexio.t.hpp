@@ -7,7 +7,7 @@
 #include "CustomFloat.hpp"
 
 #if defined(_MSC_VER) && _MSC_VER >= 1929
-#define CONSTEXPR_STRING_AND_VECTOR
+//#define CONSTEXPR_STRING_AND_VECTOR
 #endif
 
 ENUMATIC_DEFINE(TestEnum, EnumVal1, EnumVal2);

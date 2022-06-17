@@ -20,10 +20,6 @@ PYBIND11_MAKE_OPAQUE(std::vector<double>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::string>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::string_view>);
 
-#if defined(_MSC_VER) && _MSC_VER >= 1929
-#define CONSTEXPR_STRING_AND_VECTOR
-#endif
-
 // test different return value policies for different CustomFloat tags
 namespace app_utils::pybind {
 template<>
