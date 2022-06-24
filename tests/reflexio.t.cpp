@@ -96,21 +96,40 @@ TEST_CASE("reflexio_serialize", "[reflexio]") {
   sendStruct.var3 = TestEnum::EnumVal1;
   sendStruct.var4 = false;
   sendStruct.var5 = {1.f, 2.f, 3.f, 6.f, 5.f, 4.f, 7.f, 8.f};
-  MyStruct receiveStruct;
-  REQUIRE(sendStruct != receiveStruct);
-  std::vector<std::byte> buffer(256);
-  
-  size_t const written_bytes = to_bytes(buffer.data(), buffer.size(), sendStruct);
+  {
+    MyStruct receiveStruct;
+    REQUIRE(sendStruct != receiveStruct);
+    std::vector<std::byte> buffer(256);
 
-  size_t const expected_serial_size = sizeof(int) + sizeof(float) +
-                                      /*TestEnum*/ 1 + /*bool*/ 1 +
-                                      8 * sizeof(float);
-  
-  REQUIRE(written_bytes == expected_serial_size);
+    size_t const written_bytes = to_bytes(buffer.data(), buffer.size(), sendStruct);
 
-  from_bytes(buffer.data(), written_bytes, receiveStruct);
+    size_t const expected_serial_size = sizeof(int) + sizeof(float) +
+                                        /*TestEnum*/ 1 + /*bool*/ 1 +
+                                        8 * sizeof(float);
 
-  REQUIRE(sendStruct == receiveStruct);
+    REQUIRE(written_bytes == expected_serial_size);
+
+    from_bytes(buffer.data(), written_bytes, receiveStruct);
+
+    REQUIRE(sendStruct == receiveStruct);
+  }
+
+  { // Partial serialization of a subset of the members
+    auto vars_mask = MyStruct::make_vars_mask(&MyStruct::var2, &MyStruct::var5);
+    std::vector<std::byte> buffer(256);
+    size_t const written_bytes = to_bytes(buffer, sendStruct, vars_mask);
+    buffer.resize(written_bytes);
+
+    MyStruct receiveStruct;
+    from_bytes(buffer, receiveStruct, vars_mask);
+
+    MyStruct expectedStruct;
+    expectedStruct.var2 = sendStruct.var2;
+    expectedStruct.var5 = sendStruct.var5;
+
+    REQUIRE(expectedStruct != sendStruct);
+    REQUIRE(expectedStruct == receiveStruct);
+  }
 }
 
 TEST_CASE("reflexio_constexpr", "[reflexio]") {
