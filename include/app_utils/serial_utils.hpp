@@ -6,6 +6,7 @@
 
 #include <string>
 #include <vector>
+#include <bitset>
 #include <array>
 #include <span>
 #include <bit>
@@ -42,15 +43,14 @@ constexpr size_t serial_size(std::vector<T> const& val) {
   return num_bytes;
 }
 
-/*
-  arithmetic types
-*/
-
-template<typename T>
-size_t from_bytes(std::span<std::byte const> bytes, T& val) {
-  return from_bytes(bytes.data(), bytes.size(), val);
+template <size_t N>
+constexpr size_t serial_size(std::bitset<N> const& /*val*/) {
+  return (N + 7) / 8; // == sizeof(val) ?
 }
 
+/*
+ *  arithmetic types
+ */
 template<typename T>
 requires std::is_arithmetic_v<T>
 size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, T& val) {
@@ -148,6 +148,33 @@ inline size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, std::string co
   return str_size + 1;
 }
 
+
+template<size_t N>
+size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, std::bitset<N>& val) {
+  size_t num_bytes = serial_size(val);
+  val.reset();
+  for (size_t i = 0; i < N; i++) {
+    auto b = std::byte(1 << i % 8);
+    if ((buffer[i/8] & b) == b) {
+      val.set(i);
+    }
+  }
+  return num_bytes;
+}
+
+template<size_t N>
+size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, std::bitset<N> const& val) {
+  size_t num_bytes = serial_size(val);
+  std::memset(buffer, 0, num_bytes);
+  for (size_t i = 0; i < N; i++) {
+    if (val.test(i)) {
+      buffer[i/8] |= std::byte(1 << i % 8);
+    }
+  }
+  return num_bytes;
+}
+
+
 /* 
   C-style array
 */
@@ -211,4 +238,17 @@ size_t to_bytes(std::byte* buffer, size_t buffer_size, std::vector<T> const& val
   }
   return num_bytes;
 }
+
+
+template<typename T>
+size_t from_bytes(std::span<std::byte const> bytes, T& val) {
+  return from_bytes(bytes.data(), bytes.size(), val);
+}
+
+template<typename T>
+size_t to_bytes(std::vector<std::byte>& bytes, T const& val) {
+  bytes.resize(serial_size(val));
+  return to_bytes(bytes.data(), bytes.size(), val);
+}
+
 }  // namespace app_utils::serial
