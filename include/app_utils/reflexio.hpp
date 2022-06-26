@@ -424,8 +424,16 @@ struct reflexio_view {
   static size_t parse_mask(std::byte const* buffer,
                            size_t const buffer_size,
                            ReflexioStruct::MemberVarsMask& exclude_mask) {
+
     size_t const serial_mask_size = (size_t) buffer[0];
-    checkCond(serial_mask_size <= buffer_size - 1, "mask size doesn't fit in buffer:", serial_mask_size, ">", buffer_size - 1);
+    if (serial_mask_size == 0) {
+      exclude_mask.reset();
+      return 1;
+    }
+    (void) buffer_size;
+    checkCond(serial_mask_size <= buffer_size - 1,
+              "mask size doesn't fit in buffer:",
+              serial_mask_size, ">", buffer_size - 1);
     size_t num_bytes = app_utils::serial::from_bytes(buffer + 1,
                                                      serial_mask_size,
                                                      exclude_mask);
@@ -435,6 +443,11 @@ struct reflexio_view {
   static size_t encode_mask(std::byte* buffer,
                             size_t const buffer_size,
                             ReflexioStruct::MemberVarsMask const& exclude_mask) {
+    if (exclude_mask.none()) {
+      buffer[0] = std::byte{0};
+      return 1;
+    }
+
     size_t mask_size = app_utils::serial::serial_size(exclude_mask);
     checkCond(mask_size < 0xFF);
     buffer[0] = (std::byte) mask_size;
