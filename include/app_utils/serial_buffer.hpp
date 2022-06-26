@@ -7,9 +7,9 @@
 
 namespace app_utils::serial {
 
-template<typename ...Args>
-constexpr size_t serial_size(Args const& ... args) {
-  return (serial_size(args) + ... );
+template<typename Arg1, typename Arg2, typename ...Args>
+constexpr size_t serial_size(Arg1 const& arg1, Arg2 const& arg2, Args const& ... args) {
+  return serial_size(arg1) + serial_size(arg2) + (serial_size(args) + ... + 0 );
 }
 
 template<typename ...Args>
