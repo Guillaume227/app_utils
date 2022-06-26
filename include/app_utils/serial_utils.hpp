@@ -148,12 +148,15 @@ inline size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, std::string co
   return str_size + 1;
 }
 
-
 template<size_t N>
-size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, std::bitset<N>& val) {
-  size_t num_bytes = serial_size(val);
+size_t from_bytes(std::byte const* buffer, size_t buffer_size, std::bitset<N>& val) {
+  // note: for backward compatibility, allow a serial size smaller than buffer size.
+  size_t num_bytes = std::min(serial_size(val), buffer_size);
   val.reset();
   for (size_t i = 0; i < N; i++) {
+    if (i/8 >= num_bytes) {
+      break;
+    }
     auto b = std::byte(1 << i % 8);
     if ((buffer[i/8] & b) == b) {
       val.set(i);
