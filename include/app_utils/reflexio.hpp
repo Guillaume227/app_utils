@@ -357,9 +357,11 @@ struct ReflexioStructBase {
                          MemberVarsMask const& excludeMask={}) {
     size_t res = 0;
     for (auto& descriptor: ReflexioStruct::get_member_descriptors(excludeMask)) {
+      //std::cout << "    encoded " << descriptor.get_name() << std::endl;
       res += descriptor.write_to_bytes(buffer + res, buffer_size - res, instance);
     }
-    checkCond(buffer_size >= res, "output buffer is not big enough to fit object", buffer_size, '<', res);
+    //std::cout << std::endl;
+    checkCond(buffer_size >= res, "output buffer is not big enough to accomodate object", buffer_size, '<', res);
     return res;
   }
 
@@ -376,8 +378,10 @@ struct ReflexioStructBase {
                            MemberVarsMask const& excludeMask={}) {
     size_t res = 0;
     for (auto& descriptor: ReflexioStruct::get_member_descriptors(excludeMask)) {
+      //std::cout << "    decoded " << descriptor.get_name() << std::endl;
       res += descriptor.read_from_bytes(buffer + res, buffer_size - res, instance);
     }
+    //std::cout << std::endl;
     checkCond(buffer_size >= res, "input buffer has less data than required:", buffer_size, '<', res, 
       ". Look for inconsistent serialization/deserialization of", app_utils::typeName<ReflexioStruct>());
     return res; //TODO: revisit, saw mismatch between buffer size (383) and read byte (386) buffer_size >= res ? res : 0;
@@ -406,7 +410,69 @@ consteval size_t count_member_var_declarations(std::string_view const text) {
 template <typename T>
 using is_reflexio_struct = std::is_base_of<ReflexioStructBase<T, T::NumMemberVars>, T>;
 
-}  // namespace reflexio
+template <typename ReflexioStruct>
+struct reflexio_view {
+
+  ReflexioStruct::MemberVarsMask exclude_mask;
+  ReflexioStruct& reflexio_struct;
+
+  reflexio_view(ReflexioStruct& reflexio_struct_,
+                ReflexioStruct::MemberVarsMask exclude_mask_={})
+  : exclude_mask(std::move(exclude_mask_))
+  , reflexio_struct(reflexio_struct_) {}
+
+  static size_t parse_mask(std::byte const* buffer,
+                           size_t const buffer_size,
+                           ReflexioStruct::MemberVarsMask& exclude_mask) {
+    size_t const serial_mask_size = (size_t) buffer[0];
+    checkCond(serial_mask_size <= buffer_size - 1, "mask size doesn't fit in buffer:", serial_mask_size, ">", buffer_size - 1);
+    size_t num_bytes = app_utils::serial::from_bytes(buffer + 1,
+                                                     serial_mask_size,
+                                                     exclude_mask);
+    return num_bytes + 1;
+  }
+
+  static size_t encode_mask(std::byte* buffer,
+                            size_t const buffer_size,
+                            ReflexioStruct::MemberVarsMask const& exclude_mask) {
+    size_t mask_size = app_utils::serial::serial_size(exclude_mask);
+    checkCond(mask_size < 0xFF);
+    buffer[0] = (std::byte) mask_size;
+    size_t num_bytes = 1;
+    num_bytes += app_utils::serial::to_bytes(buffer + num_bytes,
+                                             buffer_size - num_bytes,
+                                             exclude_mask);
+    return num_bytes;
+  }
+
+  friend size_t serial_size(reflexio_view const& view) {
+    return 1 + app_utils::serial::serial_size(view.exclude_mask) + serial_size(view.reflexio_struct);
+  }
+
+  friend size_t to_bytes(std::byte* buffer,
+                         size_t const buffer_size,
+                         reflexio_view const& instance) {
+
+    size_t num_bytes = encode_mask(buffer, buffer_size, instance.exclude_mask);
+    num_bytes += to_bytes(buffer + num_bytes,
+                          buffer_size - num_bytes,
+                          instance.reflexio_struct,
+                          instance.exclude_mask);
+    return num_bytes;
+  }
+
+  friend size_t from_bytes(std::byte const* buffer, size_t const buffer_size, reflexio_view& val) {
+    // note: for backward compatibility, allow a serial size smaller than buffer size.
+    size_t num_bytes = parse_mask(buffer, buffer_size, val.exclude_mask);
+    num_bytes += from_bytes(buffer + num_bytes,
+                            buffer_size - num_bytes,
+                            val.reflexio_struct,
+                            val.exclude_mask);
+    return num_bytes;
+  }
+};
+
+} // namespace reflexio
 
 #define REFLEXIO_MEMBER_VAR_DEFINE(var_type, var_name, default_value, description)         \
   var_type var_name = var_type(default_value);                                             \
