@@ -30,37 +30,56 @@ struct ReflexioStructBase {
  public:
   static constexpr size_t NumMemberVars = NumMemberVariables;
   static constexpr size_t num_registered_member_vars() {
-    return NumMemberVariables; }
+    return NumMemberVariables;
+  }
 
   using MemberVarsMask = std::bitset<NumMemberVariables>;
 
+  // same as:
+  // offsetof(ReflexioStruct, member);
+  // but can be called in a programmatic way.
   template <typename T2>
   static constexpr size_t offset_of(T2 ReflexioStruct::* const member) {
     ReflexioStruct* object = nullptr;
     return size_t(&(object->*member)) - size_t(object);
   }
 
+  static constexpr auto get_member_var_offsets() {
+    std::array<size_t, NumMemberVariables> offsets;
+    for (size_t i = 0; i < NumMemberVariables; i++) {
+      offsets[i] = ReflexioStruct::s_member_var_register[i]->get_var_offset();
+    }
+    return offsets;
+  }
+
   template <typename T2>
   static size_t index_of_var(T2 ReflexioStruct::* const varPtr) {
+    static const auto member_var_offsets = get_member_var_offsets();
     size_t offset = offset_of(varPtr);
-    static const auto var_offsets = []{
-      std::array<size_t, NumMemberVariables> offsets;
-      for (size_t i = 0; i < NumMemberVariables; i++) {
-        offsets[i] = ReflexioStruct::s_member_var_register[i]->get_var_offset();
-      }
-      return offsets;
-    }();
     for (size_t i = 0; i < NumMemberVariables; i++) {
-      if (var_offsets[i] == offset) {
+      if (member_var_offsets[i] == offset) {
         return i;
       }
     }
     return 0; // should never get there - how to enforce it during compilation?
   }
 
+  template <typename Arg, typename... Args>
+  static /*consteval*/ bool strictly_increasing(Arg const& arg0, Args const&... args) {
+    if constexpr (sizeof...(args) == 0) {
+      (void) arg0; // avoid unreferenced formal parameter compiler warning
+      return true;
+    } else {
+      auto arg = index_of_var(arg0);
+      return ((arg < index_of_var(args) ? (arg = index_of_var(args), true) : false) && ...);
+    }
+  }
+
   template<typename ...VarPtrs>
     requires(sizeof...(VarPtrs) <= NumMemberVariables)
   constexpr static MemberVarsMask make_vars_mask(VarPtrs const& ... varPtrs) {
+    // strictly_increasing can't be called in a constexpr context (because of index_of_var)
+    //static_assert(strictly_increasing(varPtrs...));
     MemberVarsMask include_mask;
     (include_mask.set(index_of_var(varPtrs)), ...);
     return include_mask.flip();
@@ -459,7 +478,8 @@ struct reflexio_view {
   }
 
   friend size_t serial_size(reflexio_view const& view) {
-    return 1 + app_utils::serial::serial_size(view.exclude_mask) + serial_size(view.reflexio_struct);
+    return 1 + app_utils::serial::serial_size(view.exclude_mask) +
+           serial_size(view.reflexio_struct, view.exclude_mask);
   }
 
   friend size_t to_bytes(std::byte* buffer,
