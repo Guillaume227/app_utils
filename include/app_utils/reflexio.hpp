@@ -171,6 +171,25 @@ struct ReflexioStructBase {
     return res;
   }
 
+  /**
+   *
+   * @param other: another config
+   * @return a mask of members with matching values
+   */
+  [[nodiscard]]
+  MemberVarsMask matching_members_mask(
+          ReflexioStruct const& other) const
+  {
+    MemberVarsMask mask;
+    for (size_t i = 0; i < get_member_descriptors().size(); i++) {
+      auto& descriptor = get_member_descriptors()[i];
+      if (not descriptor.values_differ(cast_this(), other)) {
+        mask.set(i);
+      }
+    }
+    return mask;
+  }
+
   [[nodiscard]]
   std::vector<std::string_view> differing_members(
           ReflexioStruct const& other,
