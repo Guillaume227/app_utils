@@ -88,7 +88,7 @@ namespace app_utils
     struct StreamPrinter<T*> {
       static ostream& toStream(ostream& os, T const* param) {
         auto paramName = param ? typeid(*param).name() : typeid(param).name();
-        return os << parseTypeName(paramName);
+        return os << parseTypeName(paramName) << " " << std::hex << param;
       }
     };
 
