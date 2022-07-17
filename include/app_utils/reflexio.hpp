@@ -34,7 +34,7 @@ struct ReflexioStructBase {
   }
 
   using MemberVarsMask = std::bitset<NumMemberVariables>;
-  static constexpr MemberVarsMask exclude_none;
+  static constexpr MemberVarsMask exclude_none = {};
   // same as:
   // offsetof(ReflexioStruct, member);
   // but can be called in a programmatic way.
