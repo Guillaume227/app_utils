@@ -34,7 +34,7 @@ struct ReflexioStructBase {
   }
 
   using MemberVarsMask = std::bitset<NumMemberVariables>;
-
+  static constexpr MemberVarsMask exclude_none;
   // same as:
   // offsetof(ReflexioStruct, member);
   // but can be called in a programmatic way.
@@ -141,7 +141,7 @@ struct ReflexioStructBase {
 
   [[nodiscard]]
   constexpr bool has_all_default_values(
-          MemberVarsMask const& excludeMask={}) const
+          MemberVarsMask const& excludeMask=exclude_none) const
   {
     for (auto& descriptor: get_member_descriptors(excludeMask)) {
       if (not descriptor.is_at_default(cast_this())) {
@@ -152,7 +152,7 @@ struct ReflexioStructBase {
   }
 
   constexpr void set_to_default(
-          MemberVarsMask const& excludeMask={}) {
+          MemberVarsMask const& excludeMask=exclude_none) {
     for (auto& descriptor: get_member_descriptors(excludeMask)) {
       descriptor.set_to_default(cast_this());
     }
@@ -160,7 +160,7 @@ struct ReflexioStructBase {
 
   [[nodiscard]]
   std::vector<std::string_view> non_default_values(
-          MemberVarsMask const& excludeMask={}) const
+          MemberVarsMask const& excludeMask=exclude_none) const
   {
     std::vector<std::string_view> res;
     for (auto& descriptor: get_member_descriptors(excludeMask)) {
@@ -193,7 +193,7 @@ struct ReflexioStructBase {
   [[nodiscard]]
   std::vector<std::string_view> differing_members(
           ReflexioStruct const& other,
-          MemberVarsMask const& excludeMask={}) const
+          MemberVarsMask const& excludeMask=exclude_none) const
   {
     std::vector<std::string_view> res;
     for (auto& descriptor: get_member_descriptors(excludeMask)) {
@@ -207,7 +207,7 @@ struct ReflexioStructBase {
   [[nodiscard]]
   std::string differences(
           ReflexioStruct const& other,
-          MemberVarsMask const& excludeMask={}) const {
+          MemberVarsMask const& excludeMask=exclude_none) const {
     std::ostringstream out;
     for (auto& descriptor: get_member_descriptors(excludeMask)) {
       if (descriptor.values_differ(cast_this(), other)) {
@@ -343,7 +343,7 @@ struct ReflexioStructBase {
     return is;
   }
 
-  static std::string const& get_docstring(MemberVarsMask const& excludeMask={}) {
+  static std::string const& get_docstring(MemberVarsMask const& excludeMask=exclude_none) {
     static std::string const docstring = [&excludeMask] {
       std::ostringstream oss;
       for (auto& descriptor: ReflexioStruct::get_member_descriptors(excludeMask)) {
@@ -392,7 +392,7 @@ struct ReflexioStructBase {
   friend size_t to_bytes(std::byte* buffer,
                          size_t const buffer_size,
                          ReflexioStruct const& instance,
-                         MemberVarsMask const& excludeMask={}) {
+                         MemberVarsMask const& excludeMask=exclude_none) {
     size_t res = 0;
     for (auto& descriptor: ReflexioStruct::get_member_descriptors(excludeMask)) {
       //std::cout << "    encoded " << descriptor.get_name() << std::endl;
@@ -405,7 +405,7 @@ struct ReflexioStructBase {
 
   friend size_t to_bytes(std::span<std::byte> buffer,
                          ReflexioStruct& instance,
-                         MemberVarsMask const& excludeMask={}) {
+                         MemberVarsMask const& excludeMask=exclude_none) {
     return to_bytes(buffer.data(), buffer.size(), instance, excludeMask);
   }
 
@@ -413,7 +413,7 @@ struct ReflexioStructBase {
   friend size_t from_bytes(std::byte const* buffer,
                            size_t const buffer_size,
                            ReflexioStruct& instance,
-                           MemberVarsMask const& excludeMask={}) {
+                           MemberVarsMask const& excludeMask=exclude_none) {
     size_t res = 0;
     for (auto& descriptor: ReflexioStruct::get_member_descriptors(excludeMask)) {
       //std::cout << "    decoded " << descriptor.get_name() << std::endl;
@@ -427,7 +427,7 @@ struct ReflexioStructBase {
 
   friend size_t from_bytes(std::span<std::byte const> buffer,
                            ReflexioStruct& instance,
-                           MemberVarsMask const& excludeMask={}) {
+                           MemberVarsMask const& excludeMask=exclude_none) {
     return from_bytes(buffer.data(), buffer.size(), instance, excludeMask);
   }
 };
