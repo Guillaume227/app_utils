@@ -2,6 +2,7 @@
 #include <app_utils/stream_utils.hpp>
 #include <app_utils/cond_check.hpp>
 #include <charconv>
+#include <iomanip>
 
 namespace app_utils::time
 {
@@ -70,7 +71,7 @@ namespace app_utils::time
 
     auto val = chrono::duration_cast<FirstDuration>(d);
     if (val.count()) {
-      out << val;
+      out << std::setw(3) << val;
       foundNonZero = true;
     }
 
@@ -82,7 +83,7 @@ namespace app_utils::time
   }
 
   template<typename Duration>
-  std::string formatDur(Duration duration, int significantLevel)
+  std::string formatDur(Duration const duration, int const significantLevel)
   {
     std::ostringstream oss;
     if (duration.count() == 0)

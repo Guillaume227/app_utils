@@ -12,6 +12,18 @@ namespace app_utils
   {    
     namespace chrono = std::chrono;
 
+    template <typename T, typename... Others>
+    concept one_of = (... or std::same_as<T, Others>);
+
+    template<typename T>
+    concept ChronoType = one_of<T,
+            chrono::nanoseconds,
+            chrono::microseconds,
+            chrono::milliseconds,
+            chrono::seconds,
+            chrono::minutes,
+            chrono::hours>;
+
     template<typename Duration>
     struct DurationTraits{};
 
@@ -63,4 +75,14 @@ template <typename Duration, typename Ghost = typename app_utils::time::Duration
   istream& operator >>(istream& is, chrono::seconds& v);
   istream& operator >>(istream& is, chrono::minutes& v);
   istream& operator >>(istream& is, chrono::hours& v);
+}
+
+namespace app_utils::stream {
+
+template<app_utils::time::ChronoType T>
+struct StreamPrinter<T> {
+  static ostream& toStream(ostream& os, T const& param) {
+    return os << app_utils::time::formatDuration(param);
+  }
+};
 }
