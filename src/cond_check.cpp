@@ -23,7 +23,7 @@
 namespace app_utils {
   std::string Exception::formatStackInfo(char const* file, size_t line, char const* functionName) {
     std::ostringstream os;
-    std::vector<std::string> backTrace; // TODO:  = getBackTrace(50);
+    std::vector<std::string> backTrace = getBackTrace(50);
 
     for (size_t i = 0; i < backTrace.size(); i++) {
       if (app_utils::strutils::contains(backTrace[i], __FUNCTION__)) {
