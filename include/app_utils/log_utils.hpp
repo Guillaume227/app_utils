@@ -49,7 +49,6 @@ namespace app_utils
 #define LOG_LINE_FUNC(...) LOG_LINE(FUNCTION_NAME __VA_OPT__(,) __VA_ARGS__)
 #define LOG_INDENT_FUNC(...) LOG_INDENT_FUNC(FUNCTION_NAME __VA_OPT__(,) __VA_ARGS__)
 
-#define LOG_CALL            LOG_INDENT(FUNCTION_NAME)
-#define LOG_CALL_INFO(...)  LOG_INDENT(FUNCTION_NAME, __VA_ARGS__)
+#define LOG_CALL(...) LOG_INDENT(FUNCTION_NAME __VA_OPT__(,) __VA_ARGS__)
 
 #define LOG_NAME_AND_VALUE(var)   LOG_LINE(#var, ":", var);
