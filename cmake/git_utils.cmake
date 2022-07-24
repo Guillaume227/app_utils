@@ -35,10 +35,10 @@ set(VERSION
 #include \"version.h\"
 
 namespace version {
-char const* git_rev() { return \"${GIT_REV}${GIT_DIFF}\"; }
-char const* git_tag() { return \"${GIT_TAG}\"; }
-char const* git_branch() { return \"${GIT_BRANCH}\"; }
-char const* compilation_timestamp() { return __DATE__ \":\" __TIME__; }
+std::string_view git_rev() { return \"${GIT_REV}${GIT_DIFF}\"; }
+std::string_view git_tag() { return \"${GIT_TAG}\"; }
+std::string_view git_branch() { return \"${GIT_BRANCH}\"; }
+std::string_view compilation_timestamp() { return __DATE__ \":\" __TIME__; }
 }"
 )
 
