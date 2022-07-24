@@ -3,7 +3,7 @@ Include(FetchContent)
 FetchContent_Declare(
   Catch2
   GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-  GIT_TAG        v2.13.9)
+  GIT_TAG        v3.1.0)
 
 FetchContent_MakeAvailable(Catch2)
 
@@ -26,7 +26,7 @@ target_compile_features(app_utils_tests PRIVATE cxx_std_20)
 
 
 # Should be linked to the main library, as well as the Catch2 testing library
-target_link_libraries(app_utils_tests PRIVATE app_utils Catch2::Catch2)
+target_link_libraries(app_utils_tests PRIVATE app_utils Catch2::Catch2 Catch2::Catch2WithMain)
 
 
 # If you register a test, then ctest and make test will run it.
