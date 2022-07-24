@@ -459,8 +459,7 @@ struct reflexio_view {
   : exclude_mask(std::move(exclude_mask_))
   , reflexio_struct(reflexio_struct_) {}
 
-  static size_t parse_mask(std::byte const* buffer,
-                           size_t const buffer_size,
+  static size_t parse_mask(std::span<std::byte const> buffer,
                            ReflexioStruct::MemberVarsMask& exclude_mask) {
 
     size_t const serial_mask_size = (size_t) buffer[0];
@@ -468,18 +467,16 @@ struct reflexio_view {
       exclude_mask.reset();
       return 1;
     }
-    (void) buffer_size;
-    checkCond(serial_mask_size <= buffer_size - 1,
+    checkCond(serial_mask_size <= buffer.size() - 1,
               "mask size doesn't fit in buffer:",
-              serial_mask_size, ">", buffer_size - 1);
-    size_t num_bytes = app_utils::serial::from_bytes(buffer + 1,
+              serial_mask_size, ">", buffer.size() - 1);
+    size_t num_bytes = app_utils::serial::from_bytes(buffer.data() + 1,
                                                      serial_mask_size,
                                                      exclude_mask);
     return num_bytes + 1;
   }
 
-  static size_t encode_mask(std::byte* buffer,
-                            size_t const buffer_size,
+  static size_t encode_mask(std::span<std::byte> buffer,
                             ReflexioStruct::MemberVarsMask const& exclude_mask) {
     if (exclude_mask.none()) {
       buffer[0] = std::byte{0};
@@ -489,11 +486,9 @@ struct reflexio_view {
     size_t mask_size = app_utils::serial::serial_size(exclude_mask);
     checkCond(mask_size < 0xFF);
     buffer[0] = (std::byte) mask_size;
-    size_t num_bytes = 1;
-    num_bytes += app_utils::serial::to_bytes(buffer + num_bytes,
-                                             buffer_size - num_bytes,
-                                             exclude_mask);
-    return num_bytes;
+    return 1 + app_utils::serial::to_bytes(buffer.data() + 1,
+                                           buffer.size() - 1,
+                                           exclude_mask);
   }
 
   friend size_t serial_size(reflexio_view const& view) {
@@ -505,7 +500,7 @@ struct reflexio_view {
                          size_t const buffer_size,
                          reflexio_view const& instance) {
 
-    size_t num_bytes = encode_mask(buffer, buffer_size, instance.exclude_mask);
+    size_t num_bytes = encode_mask({buffer, buffer_size}, instance.exclude_mask);
     num_bytes += to_bytes(buffer + num_bytes,
                           buffer_size - num_bytes,
                           instance.reflexio_struct,
@@ -513,9 +508,11 @@ struct reflexio_view {
     return num_bytes;
   }
 
-  friend size_t from_bytes(std::byte const* buffer, size_t const buffer_size, reflexio_view& val) {
+  friend size_t from_bytes(std::byte const* buffer,
+                           size_t const buffer_size,
+                           reflexio_view& val) {
     // note: for backward compatibility, allow a serial size smaller than buffer size.
-    size_t num_bytes = parse_mask(buffer, buffer_size, val.exclude_mask);
+    size_t num_bytes = parse_mask({buffer, buffer_size}, val.exclude_mask);
     num_bytes += from_bytes(buffer + num_bytes,
                             buffer_size - num_bytes,
                             val.reflexio_struct,
@@ -561,6 +558,8 @@ struct reflexio_view {
         : reflexio::ReflexioStructBase<                                                 \
               StructName,                                                               \
               reflexio::count_member_var_declarations(#__VA_ARGS__)> {                  \
+                                                                                        \
+    using View = reflexio::reflexio_view<StructName>;                                   \
                                                                                         \
     template<size_t N, class dummy>                                                     \
     struct member_var_traits_t {};                                                      \
