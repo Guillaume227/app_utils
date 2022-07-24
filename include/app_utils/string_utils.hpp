@@ -25,6 +25,7 @@ bool contains(std::string_view src, char c);
 // Strips any character in 'whitespace' from both ends of 'src' and returns
 // a (new) string.
 std::string_view strip(std::string_view str, std::string_view whitespace = " \n\t\r");
+std::string_view& strip_in_place(std::string_view& str, std::string_view whitespace = " \n\t\r");
 std::string_view lastLine(std::string_view src);
 
 template <typename T, typename U>

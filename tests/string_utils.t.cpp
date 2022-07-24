@@ -14,6 +14,15 @@ TEST_CASE("strutils::split", "[string_utils]") {
     REQUIRE(res[1] == "tristesse");
   }
 
+  {// split on non-whitespace char
+    std::string_view valStr = " Bonjour, tristesse ";
+    auto res = split('t', valStr);
+    REQUIRE(res.size() == 3);
+    REQUIRE(res[0] == "Bonjour,");
+    REQUIRE(res[1] == "ris");
+    REQUIRE(res[2] == "esse");
+  }
+
   {// do not strip whitespace
     std::string_view valStr = " Bonjour, tristesse ";
     auto res = split(',', valStr, /*stripWhiteSpace*/ false);
@@ -31,12 +40,12 @@ TEST_CASE("strutils::split", "[string_utils]") {
     REQUIRE(res[2] == "3");
   }
 
-  {// Limited number of split
+  {// Limited number of splits
     std::string_view valStr = "1 2 3 ";
     auto res = split(' ', valStr, /*stripWhiteSpace*/ true, /*nSplit*/ 1);
     REQUIRE(res.size() == 2);
     REQUIRE(res[0] == "1");
-    REQUIRE(res[1] == "2 3 ");
+    REQUIRE(res[1] == "2 3");
   }
 
   {// Limited number of split

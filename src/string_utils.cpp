@@ -60,15 +60,22 @@ bool endswith(std::string_view src, std::string_view suffix) {
   return false;
 }
 
-std::string_view strip(std::string_view const str, std::string_view const whitespace) {
+std::string_view& strip_in_place(std::string_view& str, std::string_view const whitespace) {
   auto const strBegin = str.find_first_not_of(whitespace);
   if (strBegin == std::string::npos) {
-    return "";  // no content
+    str = "";
   } else {
     auto const strEnd = str.find_last_not_of(whitespace);
-    auto const strRange = strEnd - strBegin + 1;
-    return str.substr(strBegin, strRange);
+    str.remove_suffix(str.size() - strEnd - 1);
+    str.remove_prefix(strBegin);
   }
+  return str;
+}
+
+std::string_view strip(std::string_view const str, std::string_view const whitespace) {
+  std::string_view res = str;
+  strip_in_place(res, whitespace);
+  return res;
 }
 
 size_t split(std::string_view const str,
@@ -109,9 +116,12 @@ std::vector<std::string_view> split(char const delim,
   size_t i = 0;
   for (; i < str.size(); i++) {
     char c = str[i];
-    if(c == delim or (c == ' ' and stripWhiteSpace)) {
+    if(c == delim) {
       if(i > token_start_index) {
         res.push_back(str.substr(token_start_index, i-token_start_index));
+        if (stripWhiteSpace) {
+          strip_in_place(res.back());
+        }
       }
       token_start_index = i + 1;
     }
@@ -123,8 +133,10 @@ std::vector<std::string_view> split(char const delim,
 
   if (token_start_index < str.size()) {
     res.push_back(str.substr(token_start_index));
+    if (stripWhiteSpace) {
+      strip_in_place(res.back());
+    }
   }
-
   return res;
 }
 
