@@ -54,9 +54,13 @@ struct member_descriptor_t {
   [[nodiscard]]
   constexpr std::string_view const& get_description() const { return m_description; }
 
+  constexpr virtual std::string default_as_string() const = 0;
+  constexpr virtual std::string value_as_string(ReflexioStruct const& host) const = 0;
+  constexpr virtual void set_value_from_string(ReflexioStruct& host, std::string_view) const = 0;
+
   constexpr virtual void default_to_yaml(std::ostream&) const = 0;
   constexpr virtual void value_to_yaml(ReflexioStruct const& host, std::ostream&) const = 0;
-  constexpr virtual void set_value_from_yaml(ReflexioStruct& host, std::istream& stream) const = 0;
+  constexpr virtual void set_value_from_yaml(ReflexioStruct& host, std::istream&) const = 0;
 
   [[nodiscard]]
   constexpr virtual bool is_at_default(ReflexioStruct const& host) const = 0;
@@ -145,6 +149,27 @@ struct member_descriptor_impl_t : public member_descriptor_t<ReflexioStruct> {
     return ReflexioStruct::offset_of(m_member_var_ptr);
   }
 #ifndef REFLEXIO_MINIMAL_FEATURES
+  [[nodiscard]]
+  constexpr bool is_at_default(ReflexioStruct const& host) const final {
+    return get_value(host) == m_default_value;
+  }
+  constexpr void set_to_default(ReflexioStruct& host) const final {
+    get_mutable_value(host) = m_default_value;
+  }
+
+  constexpr std::string default_as_string() const final {
+    using namespace app_utils::strutils;
+    return std::string{to_string(m_default_value)};
+  }
+  constexpr std::string value_as_string(ReflexioStruct const& host) const final {
+    using namespace app_utils::strutils;
+    return std::string{to_string(get_value(host))};
+  }
+  constexpr void set_value_from_string(ReflexioStruct& host, std::string_view val_str) const final {
+    using namespace app_utils::strutils;
+    from_string(get_mutable_value(host), val_str);
+  }
+
   constexpr void default_to_yaml(std::ostream& os) const final {
     using namespace yaml_utils;
     to_yaml(m_default_value, os);
@@ -157,13 +182,7 @@ struct member_descriptor_impl_t : public member_descriptor_t<ReflexioStruct> {
     using namespace yaml_utils;
     from_yaml(get_mutable_value(host), stream);
   }
-  [[nodiscard]]
-  constexpr bool is_at_default(ReflexioStruct const& host) const final {
-    return get_value(host) == m_default_value;
-  }
-  constexpr void set_to_default(ReflexioStruct& host) const final {
-    get_mutable_value(host) = m_default_value;
-  }
+
 #endif
 #ifndef REFLEXIO_NO_COMPARISON_OPERATORS
   [[nodiscard]]
