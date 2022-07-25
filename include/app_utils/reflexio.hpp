@@ -38,7 +38,8 @@ struct ReflexioStructBase {
   using MemberVarsMask = Mask;
   static constexpr Mask exclude_none = {};
 
-  using View = reflexio::reflexio_view<ReflexioStruct>;
+  using View = reflexio_view<ReflexioStruct>;
+  using FatView = reflexio_fat_view<ReflexioStruct>;
 
   // same as:
   // offsetof(ReflexioStruct, member);

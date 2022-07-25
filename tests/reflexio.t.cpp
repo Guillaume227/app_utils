@@ -311,31 +311,29 @@ TEST_CASE("reflexio_yaml_io", "[reflexio]") {
 }
 
 TEST_CASE("reflexio_view_serialization", "[reflexio]") {
-  FancierStruct myStruct1;
-  myStruct1.var2 = 6.28;
-  myStruct1.var5 = true;
-  myStruct1.var7 = 10.f;
-  myStruct1.var8 = 40.f;
 
   auto excludeMask = FancierStruct::make_vars_mask(&FancierStruct::var2,
                                                    &FancierStruct::var5,
                                                    &FancierStruct::var7);
-  FancierStruct::View view {myStruct1, excludeMask};
-
+  FancierStruct::FatView view {excludeMask};
+  view.reflexio_struct.var2 = 6.28;
+  view.reflexio_struct.var5 = true;
+  view.reflexio_struct.var7 = 10.f;
+  view.reflexio_struct.var8 = 40.f;
 
   std::vector<std::byte> buffer;
   app_utils::serial::to_bytes(buffer, view);
 
-  REQUIRE(buffer.size() < serial_size(myStruct1));
+  REQUIRE(buffer.size() < serial_size(view.reflexio_struct));
 
   FancierStruct myStruct2;
   FancierStruct::View view2 {myStruct2, excludeMask};
   app_utils::serial::from_bytes(buffer, view2);
 
 
-  REQUIRE(myStruct1 != myStruct2);
-  myStruct2.var8 = myStruct1.var8;
-  REQUIRE(myStruct1 == myStruct2);
+  REQUIRE(view.reflexio_struct != myStruct2);
+  myStruct2.var8 = view.reflexio_struct.var8;
+  REQUIRE(view.reflexio_struct == myStruct2);
 }
 
 #ifdef CONSTEXPR_STRING_AND_VECTOR

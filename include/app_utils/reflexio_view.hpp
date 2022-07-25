@@ -83,4 +83,16 @@ struct reflexio_view {
   }
 };
 
+// a version of reflexio_view that holds its own ReflexioStruct value
+template <typename ReflexioStruct>
+class reflexio_fat_view : public reflexio_view<ReflexioStruct> {
+  ReflexioStruct m_own_reflexio_struct;
+
+public:
+
+  reflexio_fat_view(typename ReflexioStruct::Mask exclude_mask={})
+      : reflexio_view<ReflexioStruct>(m_own_reflexio_struct, std::move(exclude_mask))
+      {}
+};
+
 } // namespace reflexio
