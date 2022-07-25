@@ -5,6 +5,7 @@
 #include <iostream>
 #include <string>
 #include <string_view>
+#include <vector>
 #include <span>
 #include <sstream>
 #include <type_traits>
@@ -81,6 +82,13 @@ namespace app_utils
           StreamPrinter<std::decay_t<T>>::toStream(os, *(param.data() + i));
         }
         return os;
+      }
+    };
+
+    template <typename T>
+    struct StreamPrinter<std::vector<T>> {
+      static ostream& toStream(ostream& os, std::vector<T> const& param) {
+        return StreamPrinter<std::span<T const>>::toStream(os, param);
       }
     };
 
