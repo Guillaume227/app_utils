@@ -33,8 +33,9 @@ struct ReflexioStructBase {
     return NumMemberVariables;
   }
 
-  using MemberVarsMask = std::bitset<NumMemberVariables>;
-  static constexpr MemberVarsMask exclude_none = {};
+  using Mask = std::bitset<NumMemberVariables>;
+  using MemberVarsMask = Mask;
+  static constexpr Mask exclude_none = {};
   // same as:
   // offsetof(ReflexioStruct, member);
   // but can be called in a programmatic way.
@@ -77,17 +78,17 @@ struct ReflexioStructBase {
 
   template<typename ...VarPtrs>
     requires(sizeof...(VarPtrs) <= NumMemberVariables)
-  constexpr static MemberVarsMask make_vars_mask(VarPtrs const& ... varPtrs) {
+  constexpr static Mask make_vars_mask(VarPtrs const& ... varPtrs) {
     // strictly_increasing can't be called in a constexpr context (because of index_of_var)
     //static_assert(strictly_increasing(varPtrs...));
-    MemberVarsMask include_mask;
+    Mask include_mask;
     (include_mask.set(index_of_var(varPtrs)), ...);
     return include_mask.flip();
   }
 
-  struct View {
-    MemberVarsMask const& m_excludeMask;
-    constexpr View(MemberVarsMask const& excludeMask)
+  struct MembersView {
+    Mask const& m_excludeMask;
+    constexpr MembersView(Mask const& excludeMask)
         : m_excludeMask(excludeMask) {}
 
     using Iterator = ReflexioIterator<ReflexioStruct>;
@@ -99,7 +100,7 @@ struct ReflexioStructBase {
     return ReflexioStruct::s_member_var_register;
   }
 
-  constexpr static View get_member_descriptors(MemberVarsMask const& excludeMask) {
+  constexpr static MembersView get_member_descriptors(Mask const& excludeMask) {
     /*
     auto is_included =
             [&excludeMask, i=size_t{0}](member_descriptor_t const*) mutable {
@@ -141,7 +142,7 @@ struct ReflexioStructBase {
 
   [[nodiscard]]
   constexpr bool has_all_default_values(
-          MemberVarsMask const& excludeMask=exclude_none) const
+          Mask const& excludeMask=exclude_none) const
   {
     for (auto& descriptor: get_member_descriptors(excludeMask)) {
       if (not descriptor.is_at_default(cast_this())) {
@@ -152,7 +153,7 @@ struct ReflexioStructBase {
   }
 
   constexpr void set_to_default(
-          MemberVarsMask const& excludeMask=exclude_none) {
+          Mask const& excludeMask=exclude_none) {
     for (auto& descriptor: get_member_descriptors(excludeMask)) {
       descriptor.set_to_default(cast_this());
     }
@@ -160,7 +161,7 @@ struct ReflexioStructBase {
 
   [[nodiscard]]
   std::vector<std::string_view> non_default_values(
-          MemberVarsMask const& excludeMask=exclude_none) const
+          Mask const& excludeMask=exclude_none) const
   {
     std::vector<std::string_view> res;
     for (auto& descriptor: get_member_descriptors(excludeMask)) {
@@ -177,10 +178,10 @@ struct ReflexioStructBase {
    * @return a mask of members with matching values
    */
   [[nodiscard]]
-  MemberVarsMask matching_members_mask(
+  Mask matching_members_mask(
           ReflexioStruct const& other) const
   {
-    MemberVarsMask mask;
+    Mask mask;
     for (size_t i = 0; i < get_member_descriptors().size(); i++) {
       auto& descriptor = get_member_descriptors()[i];
       if (not descriptor.values_differ(cast_this(), other)) {
@@ -193,7 +194,7 @@ struct ReflexioStructBase {
   [[nodiscard]]
   std::vector<std::string_view> differing_members(
           ReflexioStruct const& other,
-          MemberVarsMask const& excludeMask=exclude_none) const
+          Mask const& excludeMask=exclude_none) const
   {
     std::vector<std::string_view> res;
     for (auto& descriptor: get_member_descriptors(excludeMask)) {
@@ -207,7 +208,7 @@ struct ReflexioStructBase {
   [[nodiscard]]
   std::string differences(
           ReflexioStruct const& other,
-          MemberVarsMask const& excludeMask=exclude_none) const {
+          Mask const& excludeMask=exclude_none) const {
     std::ostringstream out;
     for (auto& descriptor: get_member_descriptors(excludeMask)) {
       if (descriptor.values_differ(cast_this(), other)) {
@@ -343,7 +344,7 @@ struct ReflexioStructBase {
     return is;
   }
 
-  static std::string const& get_docstring(MemberVarsMask const& excludeMask=exclude_none) {
+  static std::string const& get_docstring(Mask const& excludeMask=exclude_none) {
     static std::string const docstring = [&excludeMask] {
       std::ostringstream oss;
       for (auto& descriptor: ReflexioStruct::get_member_descriptors(excludeMask)) {
@@ -366,12 +367,12 @@ struct ReflexioStructBase {
   [[nodiscard]]
   friend constexpr size_t serial_size(
           ReflexioStruct const& val,
-          MemberVarsMask const& excludeMask) {
+          Mask const& excludeMask) {
     return val.get_serial_size(excludeMask);
   }
 
   [[nodiscard]]
-  constexpr size_t get_serial_size(MemberVarsMask const& excludeMask) const {
+  constexpr size_t get_serial_size(Mask const& excludeMask) const {
     size_t res = 0;
     for (auto& descriptor: ReflexioStruct::get_member_descriptors(excludeMask)) {
       res += descriptor.get_serial_size(cast_this());
@@ -392,7 +393,7 @@ struct ReflexioStructBase {
   friend size_t to_bytes(std::byte* buffer,
                          size_t const buffer_size,
                          ReflexioStruct const& instance,
-                         MemberVarsMask const& excludeMask=exclude_none) {
+                         Mask const& excludeMask=exclude_none) {
     size_t res = 0;
     for (auto& descriptor: ReflexioStruct::get_member_descriptors(excludeMask)) {
       //std::cout << "    encoded " << descriptor.get_name() << std::endl;
@@ -405,7 +406,7 @@ struct ReflexioStructBase {
 
   friend size_t to_bytes(std::span<std::byte> buffer,
                          ReflexioStruct& instance,
-                         MemberVarsMask const& excludeMask=exclude_none) {
+                         Mask const& excludeMask=exclude_none) {
     return to_bytes(buffer.data(), buffer.size(), instance, excludeMask);
   }
 
@@ -413,7 +414,7 @@ struct ReflexioStructBase {
   friend size_t from_bytes(std::byte const* buffer,
                            size_t const buffer_size,
                            ReflexioStruct& instance,
-                           MemberVarsMask const& excludeMask=exclude_none) {
+                           Mask const& excludeMask=exclude_none) {
     size_t res = 0;
     for (auto& descriptor: ReflexioStruct::get_member_descriptors(excludeMask)) {
       //std::cout << "    decoded " << descriptor.get_name() << std::endl;
@@ -427,7 +428,7 @@ struct ReflexioStructBase {
 
   friend size_t from_bytes(std::span<std::byte const> buffer,
                            ReflexioStruct& instance,
-                           MemberVarsMask const& excludeMask=exclude_none) {
+                           Mask const& excludeMask=exclude_none) {
     return from_bytes(buffer.data(), buffer.size(), instance, excludeMask);
   }
 };
@@ -451,16 +452,17 @@ using is_reflexio_struct = std::is_base_of<ReflexioStructBase<T, T::NumMemberVar
 template <typename ReflexioStruct>
 struct reflexio_view {
 
-  ReflexioStruct::MemberVarsMask exclude_mask;
+  using Mask = typename ReflexioStruct::Mask;
+  Mask exclude_mask;
   ReflexioStruct& reflexio_struct;
 
   reflexio_view(ReflexioStruct& reflexio_struct_,
-                ReflexioStruct::MemberVarsMask exclude_mask_={})
+                Mask exclude_mask_={})
   : exclude_mask(std::move(exclude_mask_))
   , reflexio_struct(reflexio_struct_) {}
 
   static size_t parse_mask(std::span<std::byte const> buffer,
-                           ReflexioStruct::MemberVarsMask& exclude_mask) {
+                           Mask& exclude_mask) {
 
     size_t const serial_mask_size = (size_t) buffer[0];
     if (serial_mask_size == 0) {
@@ -477,7 +479,7 @@ struct reflexio_view {
   }
 
   static size_t encode_mask(std::span<std::byte> buffer,
-                            ReflexioStruct::MemberVarsMask const& exclude_mask) {
+                            Mask const& exclude_mask) {
     if (exclude_mask.none()) {
       buffer[0] = std::byte{0};
       return 1;

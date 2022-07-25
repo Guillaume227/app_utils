@@ -19,12 +19,12 @@ class ReflexioIterator {
   using pointer = value_type*;  // or also value_type*
   using reference = value_type&;// or also value_type&
 
-  ReflexioStruct::MemberVarsMask const& m_excludeMask;
+  ReflexioStruct::Mask const& m_excludeMask;
   size_t m_idx;
 
 public:
   constexpr ReflexioIterator(size_t idx = 0,
-                             ReflexioStruct::MemberVarsMask const& excludeMask = {})
+                             ReflexioStruct::Mask const& excludeMask = {})
       : m_excludeMask(excludeMask)
       , m_idx(calc_next_index(idx)) {
   }

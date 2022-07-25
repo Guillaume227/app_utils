@@ -41,13 +41,13 @@ TEST_CASE("reflexio_default_values", "[reflexio]") {
 TEST_CASE("reflexio_mask", "[reflexio]") {
   TrivialStruct myStruct;
   auto mask_var1 = TrivialStruct::make_vars_mask(&TrivialStruct::var1);
-  REQUIRE(mask_var1 == TrivialStruct::MemberVarsMask{2});
+  REQUIRE(mask_var1 == TrivialStruct::Mask{2});
   auto mask_var2 = TrivialStruct::make_vars_mask(&TrivialStruct::var2);
-  REQUIRE(mask_var2 == TrivialStruct::MemberVarsMask{1});
+  REQUIRE(mask_var2 == TrivialStruct::Mask{1});
 
   auto mask_var_all = TrivialStruct::make_vars_mask(&TrivialStruct::var1,
                                                     &TrivialStruct::var2);
-  REQUIRE(mask_var_all == TrivialStruct::MemberVarsMask{});
+  REQUIRE(mask_var_all == TrivialStruct::Mask{});
 }
 
 TEST_CASE("reflexio_declare", "[reflexio]") {
@@ -87,10 +87,10 @@ TEST_CASE("reflexio_serialize", "[reflexio]") {
   REQUIRE(trivialStruct.get_serial_size() == sizeof(float) + sizeof(int8_t));
 
   REQUIRE(serial_size(trivialStruct) == sizeof(float) + sizeof(int8_t));
-  REQUIRE(serial_size(trivialStruct, TrivialStruct::MemberVarsMask{0}) == sizeof(float) + sizeof(int8_t));
-  REQUIRE(serial_size(trivialStruct, TrivialStruct::MemberVarsMask{1}) == sizeof(float));
-  REQUIRE(serial_size(trivialStruct, TrivialStruct::MemberVarsMask{2}) == sizeof(int8_t));
-  REQUIRE(serial_size(trivialStruct, TrivialStruct::MemberVarsMask{3}) == 0);
+  REQUIRE(serial_size(trivialStruct, TrivialStruct::Mask{0}) == sizeof(float) + sizeof(int8_t));
+  REQUIRE(serial_size(trivialStruct, TrivialStruct::Mask{1}) == sizeof(float));
+  REQUIRE(serial_size(trivialStruct, TrivialStruct::Mask{2}) == sizeof(int8_t));
+  REQUIRE(serial_size(trivialStruct, TrivialStruct::Mask{3}) == 0);
 
   MyStruct sendStruct;
   sendStruct.var1 = 2;
@@ -140,7 +140,7 @@ TEST_CASE("reflexio_constexpr", "[reflexio]") {
   constexpr size_t myStruct_size = myStruct_const.get_serial_size();
   REQUIRE(myStruct_size == sizeof(float) + sizeof(int8_t));
 
-  constexpr TrivialStruct::MemberVarsMask filter{1};
+  constexpr TrivialStruct::Mask filter{1};
   constexpr size_t myStruct_size_1 = myStruct_const.get_serial_size(filter);
   REQUIRE(myStruct_size_1 == sizeof(float));
 
