@@ -316,24 +316,24 @@ TEST_CASE("reflexio_view_serialization", "[reflexio]") {
                                                    &FancierStruct::var5,
                                                    &FancierStruct::var7);
   FancierStruct::FatView view {excludeMask};
-  view.reflexio_struct.var2 = 6.28;
-  view.reflexio_struct.var5 = true;
-  view.reflexio_struct.var7 = 10.f;
-  view.reflexio_struct.var8 = 40.f;
+  view.object.var2 = 6.28;
+  view.object.var5 = true;
+  view.object.var7 = 10.f;
+  view.object.var8 = 40.f;
 
   std::vector<std::byte> buffer;
   app_utils::serial::to_bytes(buffer, view);
 
-  REQUIRE(buffer.size() < serial_size(view.reflexio_struct));
+  REQUIRE(buffer.size() < serial_size(view.object));
 
   FancierStruct myStruct2;
   FancierStruct::View view2 {myStruct2, excludeMask};
   app_utils::serial::from_bytes(buffer, view2);
 
 
-  REQUIRE(view.reflexio_struct != myStruct2);
-  myStruct2.var8 = view.reflexio_struct.var8;
-  REQUIRE(view.reflexio_struct == myStruct2);
+  REQUIRE(view.object != myStruct2);
+  myStruct2.var8 = view.object.var8;
+  REQUIRE(view.object == myStruct2);
 }
 
 #ifdef CONSTEXPR_STRING_AND_VECTOR

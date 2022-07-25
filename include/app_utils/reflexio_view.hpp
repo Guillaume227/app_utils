@@ -14,12 +14,12 @@ struct reflexio_view {
 
   using Mask = typename ReflexioStruct::Mask;
   Mask exclude_mask;
-  ReflexioStruct& reflexio_struct;
+  ReflexioStruct& object;
 
-  reflexio_view(ReflexioStruct& reflexio_struct_,
+  reflexio_view(ReflexioStruct& object_,
                 Mask exclude_mask_={})
   : exclude_mask(std::move(exclude_mask_))
-  , reflexio_struct(reflexio_struct_) {}
+  , object(object_) {}
 
   static size_t parse_mask(std::span<std::byte const> buffer,
                            Mask& exclude_mask) {
@@ -55,7 +55,7 @@ struct reflexio_view {
 
   friend size_t serial_size(reflexio_view const& view) {
     return 1 + app_utils::serial::serial_size(view.exclude_mask) +
-           serial_size(view.reflexio_struct, view.exclude_mask);
+           serial_size(view.object, view.exclude_mask);
   }
 
   friend size_t to_bytes(std::byte* buffer,
@@ -65,7 +65,7 @@ struct reflexio_view {
     size_t num_bytes = encode_mask({buffer, buffer_size}, instance.exclude_mask);
     num_bytes += to_bytes(buffer + num_bytes,
                           buffer_size - num_bytes,
-                          instance.reflexio_struct,
+                          instance.object,
                           instance.exclude_mask);
     return num_bytes;
   }
@@ -73,11 +73,11 @@ struct reflexio_view {
   friend size_t from_bytes(std::byte const* buffer,
                            size_t const buffer_size,
                            reflexio_view& val) {
-    // note: for backward compatibility, allow a serial size smaller than buffer size.
+    // Note: for backward compatibility, allow a serial size smaller than buffer size.
     size_t num_bytes = parse_mask({buffer, buffer_size}, val.exclude_mask);
     num_bytes += from_bytes(buffer + num_bytes,
                             buffer_size - num_bytes,
-                            val.reflexio_struct,
+                            val.object,
                             val.exclude_mask);
     return num_bytes;
   }
@@ -86,12 +86,14 @@ struct reflexio_view {
 // a version of reflexio_view that holds its own ReflexioStruct value
 template <typename ReflexioStruct>
 class reflexio_fat_view : public reflexio_view<ReflexioStruct> {
-  ReflexioStruct m_own_reflexio_struct;
+  // Note: that private member is referenced by object member
+  // which is part of the public interface
+  ReflexioStruct m_owned_object;
 
 public:
 
   reflexio_fat_view(typename ReflexioStruct::Mask exclude_mask={})
-      : reflexio_view<ReflexioStruct>(m_own_reflexio_struct, std::move(exclude_mask))
+      : reflexio_view<ReflexioStruct>(m_owned_object, std::move(exclude_mask))
       {}
 };
 
