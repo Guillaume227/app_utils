@@ -1,10 +1,13 @@
 ﻿#pragma once
 
+#include <app_utils/rtti_check.hpp>
+
+#ifdef RTTI_ENABLED
+
 #include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <vector>
-
 #include <app_utils/stream_utils.hpp>
 
 namespace app_utils {
@@ -46,9 +49,16 @@ struct Exception : public std::runtime_error {
   } while (false)
 
 // Checks two values compare equal using operator==
-#define checkCompareEqual(val1, val2)      \
-  do {                              \
-    if (not(val1 == val2)) {        \
-      throwExc(val1, "!=", val2);   \
-    }                               \
+#define checkCompareEqual(val1, val2) \
+  do {                                \
+    if (not(val1 == val2)) {          \
+      throwExc(val1, "!=", val2);     \
+    }                                 \
   } while (false)
+
+#else
+#define checkCond(...)
+#define checkCompareEqual(...)
+#define throwWithTrace(...)
+#define throwExc(...)
+#endif

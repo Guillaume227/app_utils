@@ -2,11 +2,7 @@
 
 #include <app_utils/rtti_check.hpp>
 
-#ifdef RTTI_ENABLED
 #include <app_utils/cond_check.hpp>
-#else
-#define throwExc(...)
-#endif
 
 #include <string_view>
 #include <array>
