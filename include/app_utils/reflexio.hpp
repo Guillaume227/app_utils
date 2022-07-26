@@ -264,6 +264,12 @@ struct ReflexioStructBase {
     return oss.str();
   }
 
+  [[nodiscard]]
+  friend std::string to_string(
+          ReflexioStruct const& instance) {
+    return to_yaml(instance);
+  }
+
   friend std::istream& from_yaml(
           ReflexioStruct& instance,
           std::istream& is)
@@ -342,6 +348,12 @@ struct ReflexioStructBase {
     instance.set_to_default();
     std::istringstream iss (std::string{val_str});
     from_yaml(instance, iss);
+  }
+
+  friend void from_string(
+        ReflexioStruct& instance,
+        std::string_view const val_str) {
+    return from_yaml(instance, val_str);
   }
 
   friend std::istream& operator>>(std::istream& is,

@@ -53,6 +53,9 @@ struct member_descriptor_t {
   constexpr std::string_view const& get_name() const { return m_name; }
   [[nodiscard]]
   constexpr std::string_view const& get_description() const { return m_description; }
+  // std::hash_code for the underlying type
+  constexpr virtual size_t type_code() const = 0;
+  constexpr virtual char const* type_name() const = 0;
 
   constexpr virtual std::string default_as_string() const = 0;
   constexpr virtual std::string value_as_string(ReflexioStruct const& host) const = 0;
@@ -149,6 +152,15 @@ struct member_descriptor_impl_t : public member_descriptor_t<ReflexioStruct> {
     return ReflexioStruct::offset_of(m_member_var_ptr);
   }
 #ifndef REFLEXIO_MINIMAL_FEATURES
+
+  constexpr size_t type_code() const final {
+    return typeid(MemberType).hash_code();
+  }
+
+  constexpr char const* type_name() const final {
+    return app_utils::typeName<MemberType>().data();
+  }
+
   [[nodiscard]]
   constexpr bool is_at_default(ReflexioStruct const& host) const final {
     return get_value(host) == m_default_value;

@@ -22,8 +22,8 @@ struct pybind_wrapper<ReflexioStruct,
     if (not s_registered_once) {
       s_registered_once = true;
     
-      static std::string const typeName = app_utils::typeName<ReflexioStruct>();
-      auto wrappedType = typename ReflexioStruct::PybindClassType(pybindHost, typeName.c_str());
+      static std::string_view const typeName = app_utils::typeName<ReflexioStruct>();
+      auto wrappedType = typename ReflexioStruct::PybindClassType(pybindHost, typeName.data());
       wrappedType.def(pybind11::init<>())
           .def_property_readonly_static("__doc__", [](py::object /*self*/){
             return ReflexioStruct::get_docstring();
