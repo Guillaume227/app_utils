@@ -5,6 +5,7 @@
 #include <string>
 #include <sstream>
 #include <app_utils/cond_check.hpp>
+#include <app_utils/type_name.hpp>
 
 namespace app_utils
 {

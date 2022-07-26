@@ -25,8 +25,8 @@ struct pybind_wrapper<CustomFloat<Tag>, int> {
   static void wrap_with_pybind(PybindHost& pybindHost) {
     if (not s_was_registered) {
       s_was_registered = true;
-      static std::string const class_name = app_utils::typeName<CustomFloat<Tag>>();
-      py::class_<CustomFloat<Tag>>(pybindHost, class_name.c_str())
+      static std::string_view const class_name = app_utils::typeName<CustomFloat<Tag>>();
+      py::class_<CustomFloat<Tag>>(pybindHost, class_name.data())
               .def(py::init<>())
               .def(py::init<float>())
               .def("__copy__", [](CustomFloat<Tag> const& self_) { return CustomFloat<Tag>(self_); })

@@ -62,8 +62,8 @@ struct pybind_wrapper<std::array<T, N>> {
         return i;
       };
 
-      static std::string const typeName = app_utils::typeName<ArrayType>();
-      auto cl = py::class_<ArrayType>(m, typeName.c_str());
+      static std::string_view const typeName = app_utils::typeName<ArrayType>();
+      auto cl = py::class_<ArrayType>(m, typeName.data());
       cl.def(py::init<>())
           .def(py::self == py::self)
           .def(py::self != py::self)

@@ -12,8 +12,8 @@ struct pybind_wrapper<std::future<ResultType>, int> {
 
   template<typename PybindHost>
   static void wrap_with_pybind(PybindHost& pybindHost) {
-    static std::string const typeName = app_utils::typeName<std::future<ResultType>>();
-    auto wrappedType = pybind11::class_<std::future<ResultType>>(pybindHost, typeName.c_str());
+    static std::string_view const typeName = app_utils::typeName<std::future<ResultType>>();
+    auto wrappedType = pybind11::class_<std::future<ResultType>>(pybindHost, typeName.data());
     wrappedType.def("get", &std::future<ResultType>::get);
   }
 };
@@ -67,7 +67,7 @@ struct pybind_wrapper<Awaitable<ResultType>, int> {
   template<typename PybindHost>
   static void wrap_with_pybind(PybindHost& pybindHost) {
 
-    static std::string const typeName = app_utils::typeName<Awaitable<ResultType>>();
+    static std::string_view const typeName = app_utils::typeName<Awaitable<ResultType>>();
     auto wrappedType = pybind11::class_<Awaitable<ResultType>, std::shared_ptr<Awaitable<ResultType>>>(pybindHost,
                                                                                                        typeName.c_str());
     wrappedType.def(pybind11::init<>())
@@ -82,7 +82,7 @@ struct pybind_wrapper<stop_iteration<ResultType>, int> {
 
   template<typename PybindHost>
   static void wrap_with_pybind(PybindHost& pybindHost) {
-    static std::string const typeName = app_utils::typeName<stop_iteration<ResultType>>();
+    static std::string_view const typeName = app_utils::typeName<stop_iteration<ResultType>>();
     auto wrappedType = pybind11::class_<stop_iteration<ResultType>>(pybindHost, typeName.c_str());
     wrappedType.def_property_readonly("value", &stop_iteration<ResultType>::value);
   }
