@@ -18,6 +18,7 @@ class ReflexioIterator {
   using value_type = member_descriptor_t<ReflexioStruct> const;
   using pointer = value_type*;  // or also value_type*
   using reference = value_type&;// or also value_type&
+  using const_reference = value_type const&;// or also value_type&
 
   ReflexioStruct::Mask const& m_excludeMask;
   size_t m_idx;
@@ -36,10 +37,10 @@ public:
     return idx;
   }
 
-  constexpr reference operator*() const {
+  constexpr const_reference operator*() const {
     return *ReflexioStruct::get_member_descriptors()[m_idx];
   }
-  constexpr pointer operator->() {
+  constexpr pointer operator->() const {
     return ReflexioStruct::get_member_descriptors()[m_idx];
   }
 

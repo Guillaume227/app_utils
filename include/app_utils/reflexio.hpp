@@ -39,6 +39,7 @@ struct ReflexioStructBase {
   static constexpr Mask exclude_none = {};
 
   using View = reflexio_view<ReflexioStruct>;
+  using ConstView = reflexio_view<ReflexioStruct const>;
   using FatView = reflexio_fat_view<ReflexioStruct>;
 
   // same as:
@@ -91,9 +92,9 @@ struct ReflexioStructBase {
     return include_mask.flip();
   }
 
-  struct MembersView {
+  struct MembersDescriptorView {
     Mask const& m_excludeMask;
-    constexpr MembersView(Mask const& excludeMask)
+    constexpr MembersDescriptorView(Mask const& excludeMask)
         : m_excludeMask(excludeMask) {}
 
     using Iterator = ReflexioIterator<ReflexioStruct>;
@@ -105,7 +106,7 @@ struct ReflexioStructBase {
     return ReflexioStruct::s_member_var_register;
   }
 
-  constexpr static MembersView get_member_descriptors(Mask const& excludeMask) {
+  constexpr static MembersDescriptorView get_member_descriptors(Mask const& excludeMask) {
     /*
     auto is_included =
             [&excludeMask, i=size_t{0}](member_descriptor_t const*) mutable {

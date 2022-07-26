@@ -6,6 +6,7 @@
 #include <utility>
 #include <app_utils/serial_utils.hpp>
 #include <app_utils/cond_check.hpp>
+#include "reflexio_iterator.hpp"
 
 namespace reflexio {
 
@@ -16,10 +17,14 @@ struct reflexio_view {
   Mask exclude_mask;
   ReflexioStruct& object;
 
-  reflexio_view(ReflexioStruct& object_,
+  constexpr reflexio_view(ReflexioStruct& object_,
                 Mask exclude_mask_={})
   : exclude_mask(std::move(exclude_mask_))
   , object(object_) {}
+
+  using Iterator = ReflexioIterator<std::decay_t<ReflexioStruct>>;
+  constexpr Iterator begin() const { return Iterator(0, exclude_mask); }
+  constexpr Iterator end  () const { return Iterator(ReflexioStruct::NumMemberVars); }
 
   static size_t parse_mask(std::span<std::byte const> buffer,
                            Mask& exclude_mask) {
@@ -53,12 +58,12 @@ struct reflexio_view {
                                            exclude_mask);
   }
 
-  friend size_t serial_size(reflexio_view const& view) {
+  constexpr friend size_t serial_size(reflexio_view const& view) {
     return 1 + app_utils::serial::serial_size(view.exclude_mask) +
            serial_size(view.object, view.exclude_mask);
   }
 
-  friend size_t to_bytes(std::byte* buffer,
+  constexpr friend size_t to_bytes(std::byte* buffer,
                          size_t const buffer_size,
                          reflexio_view const& instance) {
 
@@ -70,7 +75,7 @@ struct reflexio_view {
     return num_bytes;
   }
 
-  friend size_t from_bytes(std::byte const* buffer,
+  constexpr friend size_t from_bytes(std::byte const* buffer,
                            size_t const buffer_size,
                            reflexio_view& val) {
     // Note: for backward compatibility, allow a serial size smaller than buffer size.
@@ -92,7 +97,7 @@ class reflexio_fat_view : public reflexio_view<ReflexioStruct> {
 
 public:
 
-  reflexio_fat_view(typename ReflexioStruct::Mask exclude_mask={})
+  constexpr reflexio_fat_view(typename ReflexioStruct::Mask exclude_mask={})
       : reflexio_view<ReflexioStruct>(m_owned_object, std::move(exclude_mask))
       {}
 };
