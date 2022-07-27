@@ -44,8 +44,8 @@ namespace app_utils
 #define PPCAT_NX(A, B) A##B
 #define PPCAT(A, B) PPCAT_NX(A, B)
 
-#define LOG_LINE(...)   app_utils::BlockIndent PPCAT(blockIndent_, __LINE__) (app_utils::stream::StreamWriter::writeStr(__VA_ARGS__), false)
-#define LOG_INDENT(...) app_utils::BlockIndent PPCAT(blockIndent_, __LINE__) (app_utils::stream::StreamWriter::writeStr(__VA_ARGS__), true)
+#define LOG_LINE(...)   app_utils::BlockIndent PPCAT(blockIndent_, __LINE__) (app_utils::make_string(__VA_ARGS__), false)
+#define LOG_INDENT(...) app_utils::BlockIndent PPCAT(blockIndent_, __LINE__) (app_utils::make_string(__VA_ARGS__), true)
 #define LOG_LINE_FUNC(...) LOG_LINE(FUNCTION_NAME __VA_OPT__(,) __VA_ARGS__)
 #define LOG_INDENT_FUNC(...) LOG_INDENT_FUNC(FUNCTION_NAME __VA_OPT__(,) __VA_ARGS__)
 

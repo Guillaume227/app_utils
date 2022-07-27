@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string_view>
+#include <typeinfo>
 
 namespace app_utils {
 std::string_view parseTypeName(std::string_view paramName, bool minimal = false);

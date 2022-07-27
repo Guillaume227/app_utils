@@ -1,5 +1,6 @@
 #pragma once
 
+#include <app_utils/type_name.hpp>
 #include <cstddef>
 #include <cstdio>
 #include <iostream>
@@ -9,9 +10,9 @@
 #include <string_view>
 #include <type_traits>
 #include <vector>
-#include <app_utils/type_name.hpp>
 
-namespace app_utils::stream {
+namespace app_utils {
+namespace stream {
 using std::ostream;
 
 namespace details {
@@ -202,17 +203,14 @@ public:
     }
     return m_out;
   }
-
-  template<typename... Ts>
-  static std::string writeStr(Ts&&... args) {
-    std::ostringstream oss;
-    StreamWriter(oss).write(std::forward<Ts>(args)...);
-    return oss.str();
-  }
 };
+}// namespace stream
 
-template<>
-inline std::string StreamWriter::writeStr() {
-  return "";
+template<typename... Ts>
+std::string make_string(Ts&&... args) {
+  std::ostringstream oss;
+  stream::StreamWriter(oss).write(std::forward<Ts>(args)...);
+  return oss.str();
 }
-}// namespace app_utils::stream
+
+}// namespace app_utils

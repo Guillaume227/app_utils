@@ -24,5 +24,5 @@ TEST_CASE("durationToString", "[time_utils]") {
   oss << duration;
   REQUIRE(oss.str() == "475418010001us");
 
-  REQUIRE(app_utils::stream::StreamWriter::writeStr(duration) == str_value);
+  REQUIRE(app_utils::make_string(duration) == str_value);
 }

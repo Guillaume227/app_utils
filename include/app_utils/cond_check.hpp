@@ -21,7 +21,7 @@ struct Exception : public std::runtime_error {
   template <typename First, typename... Args,
             typename = std::enable_if_t<not std::is_same<std::decay_t<First>, Exception>::value>>
   Exception(First&& arg, Args&&... args)
-      : std::runtime_error(stream::StreamWriter::writeStr(std::forward<First>(arg), std::forward<Args>(args)...)) {}
+      : std::runtime_error(app_utils::make_string(std::forward<First>(arg), std::forward<Args>(args)...)) {}
 
   friend std::ostream& operator<<(std::ostream& os, Exception const& exc) { return os << exc.what(); }
 };
