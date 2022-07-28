@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#if defined(__GNUG__) && !defined(__clang__)
+#if defined(__GNUG__) && !defined(__clang__) && !defined(__WIN32__)
 #include <execinfo.h>
 #include <cxxabi.h>
 #define SUPPORTS_BACKTRACE true
@@ -171,7 +171,7 @@ return str1;
 
           
           std::string function_signature;
-#if defined(__GNUG__) && !defined(__clang__)
+#if defined(__GNUG__) && !defined(__clang__) && !defined(__WIN32__)
           int status;
           char* real_name = abi::__cxa_demangle(mangled_name, 0, 0, &status);
           // if demangling is successful, output the demangled function name
