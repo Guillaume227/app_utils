@@ -57,10 +57,12 @@ struct member_descriptor_t {
   constexpr virtual size_t type_code() const = 0;
   constexpr virtual char const* type_name() const = 0;
 
+  constexpr virtual void* get_value_ptr(ReflexioStruct& host) = 0;
+  constexpr virtual void const* get_value_ptr(ReflexioStruct const& host) const = 0;
+
   constexpr virtual std::string default_as_string() const = 0;
   constexpr virtual std::string value_as_string(ReflexioStruct const& host) const = 0;
   constexpr virtual void set_value_from_string(ReflexioStruct& host, std::string_view) const = 0;
-
   constexpr virtual void default_to_yaml(std::ostream&) const = 0;
   constexpr virtual void value_to_yaml(ReflexioStruct const& host, std::ostream&) const = 0;
   constexpr virtual void set_value_from_yaml(ReflexioStruct& host, std::istream&) const = 0;
@@ -136,6 +138,13 @@ struct member_descriptor_impl_t : public member_descriptor_t<ReflexioStruct> {
 
   // explicit definition required because of gcc bug: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93413
   constexpr ~member_descriptor_impl_t() override = default;
+
+  constexpr void* get_value_ptr(ReflexioStruct& host) final {
+    return &(host.*m_member_var_ptr);
+  }
+  constexpr void const* get_value_ptr(ReflexioStruct const& host) const final {
+    return &(host.*m_member_var_ptr);
+  }
 
   [[nodiscard]]
   constexpr MemberType const& get_value(ReflexioStruct const& host) const {

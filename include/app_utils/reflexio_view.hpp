@@ -26,6 +26,11 @@ struct reflexio_view {
   constexpr Iterator begin() const { return Iterator(0, exclude_mask); }
   constexpr Iterator end  () const { return Iterator(ReflexioStruct::NumMemberVars); }
 
+  // number of fields present in the view
+  size_t size() const {
+    return exclude_mask.size() - exclude_mask.count();
+  }
+
   static size_t parse_mask(std::span<std::byte const> buffer,
                            Mask& exclude_mask) {
 
