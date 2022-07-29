@@ -49,6 +49,9 @@ struct member_descriptor_t {
   constexpr virtual ~member_descriptor_t() = default;
 
 #ifndef REFLEXIO_MINIMAL_FEATURES
+  constexpr virtual void* get_value_ptr(ReflexioStruct& host) = 0;
+  constexpr virtual void const* get_value_ptr(ReflexioStruct const& host) const = 0;
+
   [[nodiscard]]
   constexpr std::string_view const& get_name() const { return m_name; }
   [[nodiscard]]
@@ -56,9 +59,6 @@ struct member_descriptor_t {
   // std::hash_code for the underlying type
   constexpr virtual size_t type_code() const = 0;
   constexpr virtual char const* type_name() const = 0;
-
-  constexpr virtual void* get_value_ptr(ReflexioStruct& host) = 0;
-  constexpr virtual void const* get_value_ptr(ReflexioStruct const& host) const = 0;
 
   constexpr virtual std::string default_as_string() const = 0;
   constexpr virtual std::string value_as_string(ReflexioStruct const& host) const = 0;
@@ -139,13 +139,6 @@ struct member_descriptor_impl_t : public member_descriptor_t<ReflexioStruct> {
   // explicit definition required because of gcc bug: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93413
   constexpr ~member_descriptor_impl_t() override = default;
 
-  constexpr void* get_value_ptr(ReflexioStruct& host) final {
-    return &(host.*m_member_var_ptr);
-  }
-  constexpr void const* get_value_ptr(ReflexioStruct const& host) const final {
-    return &(host.*m_member_var_ptr);
-  }
-
   [[nodiscard]]
   constexpr MemberType const& get_value(ReflexioStruct const& host) const {
     return host.*m_member_var_ptr;
@@ -161,6 +154,12 @@ struct member_descriptor_impl_t : public member_descriptor_t<ReflexioStruct> {
     return ReflexioStruct::offset_of(m_member_var_ptr);
   }
 #ifndef REFLEXIO_MINIMAL_FEATURES
+  constexpr void* get_value_ptr(ReflexioStruct& host) final {
+    return &(host.*m_member_var_ptr);
+  }
+  constexpr void const* get_value_ptr(ReflexioStruct const& host) const final {
+    return &(host.*m_member_var_ptr);
+  }
 
   constexpr size_t type_code() const final {
     return typeid(MemberType).hash_code();
