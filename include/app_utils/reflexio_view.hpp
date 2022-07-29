@@ -22,6 +22,8 @@ struct reflexio_view {
   : exclude_mask(std::move(exclude_mask_))
   , object(object_) {}
 
+  constexpr reflexio_view(reflexio_view const&) = default;
+
   using Iterator = ReflexioIterator<std::decay_t<ReflexioStruct>>;
   constexpr Iterator begin() const { return Iterator(0, exclude_mask); }
   constexpr Iterator end  () const { return Iterator(ReflexioStruct::NumMemberVars); }
@@ -105,6 +107,8 @@ public:
   constexpr reflexio_fat_view(typename ReflexioStruct::Mask exclude_mask={})
       : reflexio_view<ReflexioStruct>(m_owned_object, std::move(exclude_mask))
       {}
+
+  constexpr reflexio_fat_view(reflexio_fat_view const&) = default;
 };
 
 } // namespace reflexio

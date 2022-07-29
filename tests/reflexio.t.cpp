@@ -316,7 +316,7 @@ TEST_CASE("reflexio_view_serialization", "[reflexio]") {
                                                    &FancierStruct::var5,
                                                    &FancierStruct::var7);
   FancierStruct::FatView view {excludeMask};
-  view.object.var2 = 6.28;
+  view.object.var2 = 6.28f;
   view.object.var5 = true;
   view.object.var7 = 10.f;
   view.object.var8 = 40.f;

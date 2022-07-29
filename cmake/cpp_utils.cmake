@@ -17,7 +17,7 @@ if (MSVC)
             #"/Wall"
             /W4
             /Zc:preprocessor # by default MSVC uses a legacy preprocessor
-            /WX # treat warnings as errors
+            #/WX # treat warnings as errors
             /permissive- # so we can use alternative operators with msvc
             -D_CRT_SECURE_NO_WARNINGS # remove useless std::getenv windows warning
             )
