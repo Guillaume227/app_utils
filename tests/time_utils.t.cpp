@@ -15,8 +15,18 @@ TEST_CASE("durationFromString", "[time_utils]") {
 
 TEST_CASE("durationToString", "[time_utils]") {
 
+  REQUIRE(app_utils::time::formatDuration(3min) == "3min");
+  REQUIRE(app_utils::time::formatDuration(3ms) == "3ms");
+
+  REQUIRE(app_utils::time::formatDuration(3s) == "3s");
+  REQUIRE(app_utils::time::formatDuration(1min+3s) == "1min3s");
+  REQUIRE(app_utils::time::formatDuration(63s) == "1min3s");
+  REQUIRE(app_utils::time::formatDuration(1h+3s) == "1h3s");
+  REQUIRE(app_utils::time::formatDuration(2h+3min) == "2h3min");
+  REQUIRE(app_utils::time::formatDuration(1h+63min) == "2h3min");
+
   auto const duration = 131h + 61min + 158s + 10'001us;
-  std::string_view str_value = "132h  3min 38s 10ms  1us";
+  std::string_view str_value = "132h3min38s10ms1us";
   REQUIRE(app_utils::time::formatDuration(duration) == str_value);
 
 

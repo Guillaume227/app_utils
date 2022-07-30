@@ -66,18 +66,29 @@ namespace app_utils::time
 
   template<typename DurationIn, typename FirstDuration, typename...RestDurations>
   void formatDurationRecurse(std::ostream& out, DurationIn d, int significantLevel, bool foundNonZero) {
-    if (foundNonZero && significantLevel > 0)
+    if (foundNonZero and significantLevel > 0)
       significantLevel--;
 
     auto val = chrono::duration_cast<FirstDuration>(d);
     if (val.count()) {
-      out << std::setw(3) << val;
+      /*
+      if (foundNonZero) {
+        if constexpr(std::is_same_v<FirstDuration, std::chrono::milliseconds> or
+                     std::is_same_v<FirstDuration, std::chrono::microseconds> or
+                     std::is_same_v<FirstDuration, std::chrono::nanoseconds>) {
+          out << std::setw(3);
+        } else {
+          out << std::setw(2);
+        }
+      }
+      */
+      out << val;
       foundNonZero = true;
     }
 
     if constexpr(sizeof...(RestDurations) > 0) {
       auto rest = d - val;
-      if (rest.count() > 0 && significantLevel != 0)
+      if (rest.count() > 0 and significantLevel != 0)
         formatDurationRecurse<DurationIn, RestDurations...>(out, rest, significantLevel, foundNonZero);
     }
   }
