@@ -12,6 +12,13 @@
 #include <vector>
 
 namespace app_utils {
+
+template <typename T>
+concept HasConversionToString =
+        requires(T t) {
+          { to_string(t) } -> std::convertible_to<std::string_view>;
+        };
+
 namespace stream {
 using std::ostream;
 
@@ -29,7 +36,11 @@ using has_output_stream_operator =
 template<typename T>
 struct StreamPrinter {
   static ostream& toStream(ostream& os, T const& param) {
-    return os << param;
+    if constexpr (HasConversionToString<T>) {
+      return os << to_string(param);
+    } else {
+      return os << param;
+    }
   }
 };
 

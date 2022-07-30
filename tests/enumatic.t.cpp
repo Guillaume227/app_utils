@@ -2,6 +2,7 @@
 #include <type_traits>
 
 #include <app_utils/enumatic.hpp>
+#include <app_utils/stream_utils.hpp>
 #include <app_utils/serial_utils.hpp>
 #include <app_utils/serial_buffer.hpp>
 
@@ -133,4 +134,8 @@ TEST_CASE("enumatic_to_buffer", "[enumatic]") {
   REQUIRE(val1 == TestEnum::val1);
   REQUIRE(val2 == TestEnum::val3);
   REQUIRE(val3 == TestEnum::val2);
+}
+
+TEST_CASE("enumatic_to_stream", "[enumatic]") {
+  REQUIRE(app_utils::make_string(TestEnum::val1) == "val1");
 }
