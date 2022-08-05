@@ -49,8 +49,46 @@ struct member_descriptor_t {
   constexpr virtual ~member_descriptor_t() = default;
 
 #ifndef REFLEXIO_MINIMAL_FEATURES
-  constexpr virtual void* get_value_ptr(ReflexioStruct& host) = 0;
-  constexpr virtual void const* get_value_ptr(ReflexioStruct const& host) const = 0;
+
+  template<typename T>
+  T const& get_value_ref(ReflexioStruct const& host) const {
+    return *reinterpret_cast<T const*>(get_value_void_ptr(host));
+  }
+  template<typename T>
+  T& get_value_ref(ReflexioStruct& host) {
+    return *reinterpret_cast<T*>(get_value_void_ptr(host));
+  }
+
+  constexpr virtual void const* get_value_void_ptr(ReflexioStruct const& host) const = 0;
+  constexpr virtual void* get_value_void_ptr(ReflexioStruct& host) = 0;
+
+  template<typename T>
+  T const* get_min_value_ptr() const {
+    if (auto* value_ptr = get_min_value_void_ptr()) {
+      return reinterpret_cast<T const*>(value_ptr);
+    }
+    return nullptr;
+  }
+  template<typename T>
+  T const* get_max_value_ptr() const {
+    if (auto* value_ptr = get_max_value_void_ptr()) {
+      return reinterpret_cast<T const*>(value_ptr);
+    }
+    return nullptr;
+  }
+
+  constexpr virtual void const* get_min_value_void_ptr() const = 0;
+  constexpr virtual void const* get_max_value_void_ptr() const = 0;
+
+  template<typename T>
+  std::span<T const> const* get_values_list_ptr() const {
+    if (auto* ptr = get_values_list_void_ptr()) {
+      return reinterpret_cast<std::span<T const> const*>(ptr);
+    }
+    return nullptr;
+  }
+
+  constexpr virtual void const* get_values_list_void_ptr() const = 0;
 
   [[nodiscard]]
   constexpr std::string_view const& get_name() const { return m_name; }
@@ -116,23 +154,36 @@ struct reflexio_traits<std::string> {
 template <typename ReflexioStruct, typename MemberType>
 struct member_descriptor_impl_t : public member_descriptor_t<ReflexioStruct> {
   MemberType ReflexioStruct::*const m_member_var_ptr;
+  using MemberTypeValFunc = MemberType const& (*)();
+  using MemberTypeSpanFunc = std::span<MemberType const> const& (*)();
+
 #ifndef REFLEXIO_MINIMAL_FEATURES
   typename reflexio_traits<MemberType>::DefaultType const m_default_value;
+  MemberTypeValFunc const m_min_value_func = nullptr;
+  MemberTypeValFunc const m_max_value_func = nullptr;
+  MemberTypeSpanFunc const m_values_list_func = nullptr;
 #endif
 
-  template <typename... Args>
   constexpr member_descriptor_impl_t(
     MemberType ReflexioStruct::*member_var_ptr,
+    std::string_view name,
+    std::string_view description,
 #ifndef REFLEXIO_MINIMAL_FEATURES
-      typename reflexio_traits<MemberType>::DefaultType defaultValue,
+    typename reflexio_traits<MemberType>::DefaultType defaultValue,
+    MemberTypeValFunc min_value_func = nullptr,
+    MemberTypeValFunc max_value_func = nullptr
 #else
-      MemberType /*defaultValue*/,
+    MemberType /*defaultValue*/,
+    MemberTypeValFunc /*min_value_func*/ = nullptr,
+    MemberTypeValFunc /*max_value_func*/ = nullptr
 #endif
-    Args&& ...args)
-      : member_descriptor_t<ReflexioStruct>(std::forward<Args>(args)...)
+    )
+      : member_descriptor_t<ReflexioStruct>(name, description)
       , m_member_var_ptr(member_var_ptr)
 #ifndef REFLEXIO_MINIMAL_FEATURES
       , m_default_value(std::move(defaultValue))
+      , m_min_value_func(min_value_func)
+      , m_max_value_func(max_value_func)
 #endif
   {}
 
@@ -154,10 +205,10 @@ struct member_descriptor_impl_t : public member_descriptor_t<ReflexioStruct> {
     return ReflexioStruct::offset_of(m_member_var_ptr);
   }
 #ifndef REFLEXIO_MINIMAL_FEATURES
-  constexpr void* get_value_ptr(ReflexioStruct& host) final {
+  constexpr void* get_value_void_ptr(ReflexioStruct& host) final {
     return &(host.*m_member_var_ptr);
   }
-  constexpr void const* get_value_ptr(ReflexioStruct const& host) const final {
+  constexpr void const* get_value_void_ptr(ReflexioStruct const& host) const final {
     return &(host.*m_member_var_ptr);
   }
 
@@ -167,6 +218,18 @@ struct member_descriptor_impl_t : public member_descriptor_t<ReflexioStruct> {
 
   constexpr char const* type_name() const final {
     return app_utils::typeName<MemberType>().data();
+  }
+
+  constexpr void const* get_min_value_void_ptr() const final {
+    return m_min_value_func ? &m_min_value_func() : nullptr;
+  }
+
+  constexpr void const* get_max_value_void_ptr() const final {
+    return m_max_value_func ? &m_max_value_func() : nullptr;
+  }
+
+  constexpr void const* get_values_list_void_ptr() const final {
+    return m_values_list_func ? &m_values_list_func() : nullptr;
   }
 
   [[nodiscard]]

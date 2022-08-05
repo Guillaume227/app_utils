@@ -6,6 +6,7 @@
 #include <app_utils/cond_check.hpp>
 #include <app_utils/serial_type_utils.hpp>
 #include <app_utils/serial_utils.hpp>
+#include <app_utils/log_utils.hpp>
 
 #include "reflexio.t.hpp"
 
@@ -155,12 +156,29 @@ TEST_CASE("reflexio_constexpr", "[reflexio]") {
 }
 
 TEST_CASE("reflexio_iterator", "[reflexio]") {
-  std::ostringstream oss;
-  SingleVarStruct SingleVarStruct;
-  for (auto& descriptor : SingleVarStruct) {
-    oss << descriptor.get_name() << ";";
+  {
+    std::ostringstream oss;
+    SingleVarStruct SingleVarStruct;
+    for (auto& descriptor: SingleVarStruct) {
+      oss << descriptor.get_name() << ";";
+    }
+    REQUIRE(oss.str() == "var1;");
   }
-  REQUIRE(oss.str() == "var1;");
+  {
+    MyStruct myStruct;
+    size_t i = 0;
+    for (auto& descriptor: myStruct) {
+      LOG_LINE(i++, descriptor.get_name());
+    }
+    REQUIRE(i == MyStruct::num_registered_member_vars());
+  }
+}
+
+TEST_CASE("reflexio_get_value", "[reflexio]") {
+  MyStruct myStruct;
+  auto& descriptors = myStruct.get_member_descriptors();
+  REQUIRE(descriptors[1]->get_value_ref<float>(myStruct) == myStruct.var2);
+  REQUIRE(descriptors[2]->get_value_ref<TestEnum>(myStruct) == myStruct.var3);
 }
 
 TEST_CASE("reflexio_from_string", "[reflexio]") {

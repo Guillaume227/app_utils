@@ -469,15 +469,17 @@ using is_reflexio_struct = std::is_base_of<ReflexioStructBase<T, T::NumMemberVar
 
 } // namespace reflexio
 
-#define REFLEXIO_MEMBER_VAR_DEFINE(var_type, var_name, default_value, description)         \
+#define _REFLEXIO_MEMBER_VAR_DEFINE_BOUND_FUNC(var_type, var_name, default_value, description, boundMinFunc, boundMaxFunc) \
   var_type var_name = var_type(default_value);                                             \
                                                                                            \
   inline static constexpr auto __##var_name##_descr = [] {                                 \
-    return reflexio::member_descriptor_impl_t<ReflexioTypeName, var_type>{                 \
+    return reflexio::member_descriptor_impl_t<ReflexioTypeName, var_type>(                 \
             &ReflexioTypeName::var_name,                                                   \
-            default_value,                                                                 \
             #var_name,                                                                     \
-            description};                                                                  \
+            description,                                                                   \
+            default_value,                                                                 \
+            boundMinFunc,                                                                  \
+            boundMaxFunc);                                                                 \
   }();                                                                                     \
                                                                                            \
   static constexpr int __##var_name##_id = __COUNTER__;                                    \
@@ -494,6 +496,22 @@ using is_reflexio_struct = std::is_base_of<ReflexioStructBase<T, T::NumMemberVar
     reflexio::member_descriptor_t<ReflexioTypeName> const* descriptor =                    \
             &__##var_name##_descr;                                                         \
   }
+
+#define REFLEXIO_MEMBER_VAR_DEFINE(var_type, var_name, default_value, description) \
+  _REFLEXIO_MEMBER_VAR_DEFINE_BOUND_FUNC(var_type, var_name, default_value, description, nullptr, nullptr)
+
+#define REFLEXIO_MEMBER_VAR_DEFINE_MIN_MAX(var_type, var_name, default_value, description, minBound, maxBound) \
+  _REFLEXIO_MEMBER_VAR_DEFINE_BOUND_FUNC(var_type, var_name, default_value, description,                       \
+    []()->var_type const&{static var_type val = minBound; return val; },                                             \
+    []()->var_type const&{static var_type val = maxBound; return val; })
+
+#define REFLEXIO_MEMBER_VAR_DEFINE_MIN(var_type, var_name, default_value, description, minBound) \
+  _REFLEXIO_MEMBER_VAR_DEFINE_BOUND_FUNC(var_type, var_name, default_value, description,         \
+    []()->var_type const&{static var_type val = minBound; return val; }, nullptr)
+
+#define REFLEXIO_MEMBER_VAR_DEFINE_MAX(var_type, var_name, default_value, description, maxBound) \
+  _REFLEXIO_MEMBER_VAR_DEFINE_BOUND_FUNC(var_type, var_name, default_value, description,         \
+    nullptr, []()->var_type const&{static var_type val = maxBound; return val; })
 
 // define a member variable with a 'default default'
 #define REFLEXIO_MEMBER_VAR_DEFINE_DEF(var_type, var_name, description) \
