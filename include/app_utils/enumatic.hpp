@@ -1,11 +1,11 @@
 #pragma once
 
-#include <app_utils/rtti_check.hpp>
-
-#include <app_utils/cond_check.hpp>
-
-#include <string_view>
 #include <array>
+#include <span>
+#include <string_view>
+
+#include <app_utils/rtti_check.hpp>
+#include <app_utils/cond_check.hpp>
 
 namespace enumatic {
 
@@ -145,7 +145,12 @@ template <typename T>
 constexpr bool is_enumatic_type() noexcept {
   return is_enumatic_type((T*)nullptr);
 }
+
+template<typename T>
+concept EnumaticType = is_enumatic_type<std::decay_t<T>>();
+
 }  // namespace enumatic
+
 
 /*Enum companion class to hold the methods that can't be declared in an enum */
 template <typename EnumType>
@@ -209,12 +214,31 @@ struct Enumatic {
     }
   }
 
-  consteval static std::array<EnumType, size()> get_values() {
+  consteval static std::array<EnumType, size()> _get_values() {
     constexpr size_t num_values = size();
     std::array<EnumType, num_values> values;
     for (size_t i = 0; i < num_values; i++) {
       values[i] = static_cast<EnumType>(enum_value_details[i].int_value);
     }
+    return values;
+  }
+
+  static std::span<EnumType const> get_values() {
+    static auto const values = _get_values();
+    return values;
+  }
+
+  consteval static std::array<std::string_view, size()> _get_values_str() {
+    constexpr size_t num_values = size();
+    std::array<std::string_view, num_values> values;
+    for (size_t i = 0; i < num_values; i++) {
+      values[i] = enum_value_details[i].value_name;
+    }
+    return values;
+  }
+
+  static std::span<std::string_view const> get_values_str() {
+    static auto const values = _get_values_str();
     return values;
   }
 

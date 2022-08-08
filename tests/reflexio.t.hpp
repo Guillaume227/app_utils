@@ -1,8 +1,7 @@
 #pragma once
 
-#include <app_utils/reflexio.hpp>
+#include <app_utils/reflexio_with_enumatic.hpp>
 
-#include <app_utils/enumatic.hpp>
 #include <app_utils/cond_check.hpp>
 #include "CustomFloat.hpp"
 

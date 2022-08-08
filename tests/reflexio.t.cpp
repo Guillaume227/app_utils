@@ -1,14 +1,11 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include <app_utils/reflexio.hpp>
+#include "reflexio.t.hpp"
 
-#include <app_utils/enumatic.hpp>
 #include <app_utils/cond_check.hpp>
 #include <app_utils/serial_type_utils.hpp>
 #include <app_utils/serial_utils.hpp>
 #include <app_utils/log_utils.hpp>
-
-#include "reflexio.t.hpp"
 
 TEST_CASE("reflexio_single_var_struct", "[reflexio]") {
   SingleVarStruct singleVarStruct;
@@ -179,6 +176,11 @@ TEST_CASE("reflexio_get_value", "[reflexio]") {
   auto& descriptors = myStruct.get_member_descriptors();
   REQUIRE(descriptors[1]->get_value_ref<float>(myStruct) == myStruct.var2);
   REQUIRE(descriptors[2]->get_value_ref<TestEnum>(myStruct) == myStruct.var3);
+  std::span values_list = descriptors[2]->get_values_str();
+
+  REQUIRE(values_list.size() > 0);
+  std::span values = Enumatic<TestEnum>::get_values_str();
+  REQUIRE(values_list.size() == values.size());
 }
 
 TEST_CASE("reflexio_from_string", "[reflexio]") {

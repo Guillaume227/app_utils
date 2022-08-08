@@ -24,12 +24,15 @@
 #include <app_utils/string_utils.hpp>
 #include <app_utils/yaml_utils.hpp>
 #include <app_utils/cond_check.hpp>
+#include "reflexio_traits.hpp"
 #else
 #define checkCond(...)
 #endif
 #include <app_utils/serial_utils.hpp>
 
 namespace reflexio {
+
+typedef void (*voidfunc)(void);
 
 template<typename ReflexioStruct>
 struct member_descriptor_t {
@@ -80,15 +83,14 @@ struct member_descriptor_t {
   constexpr virtual void const* get_min_value_void_ptr() const = 0;
   constexpr virtual void const* get_max_value_void_ptr() const = 0;
 
-  template<typename T>
-  std::span<T const> const* get_values_list_ptr() const {
-    if (auto* ptr = get_values_list_void_ptr()) {
-      return reinterpret_cast<std::span<T const> const*>(ptr);
+  std::span<std::string_view const> get_values_str() const {
+    if (auto* func_ptr = get_values_list_void_ptr()) {
+      return (reinterpret_cast<std::span<std::string_view const> (*)()>(func_ptr))();
     }
-    return nullptr;
+    return {};
   }
 
-  constexpr virtual void const* get_values_list_void_ptr() const = 0;
+  constexpr virtual voidfunc get_values_list_void_ptr() const = 0;
 
   [[nodiscard]]
   constexpr std::string_view const& get_name() const { return m_name; }
@@ -132,24 +134,6 @@ struct member_descriptor_t {
   virtual bool add_numpy_descriptor(std::vector<::pybind11::detail::field_descriptor>&) const = 0;
 #endif
 };
-
-#ifndef REFLEXIO_MINIMAL_FEATURES
-/*
-  DefaultType: work around constexpr transient allocation for std::string.
-  See reply there: https://stackoverflow.com/a/69590837/4249338
-  Something similar should be done for e.g. std::vector.
-*/
-template<typename T>
-struct reflexio_traits {
-  using DefaultType = T;
-};
-
-template <>
-struct reflexio_traits<std::string> {
-  using DefaultType = std::string_view;
-};
-
-#endif
 
 template <typename ReflexioStruct, typename MemberType>
 struct member_descriptor_impl_t : public member_descriptor_t<ReflexioStruct> {
@@ -228,8 +212,8 @@ struct member_descriptor_impl_t : public member_descriptor_t<ReflexioStruct> {
     return m_max_value_func ? &m_max_value_func() : nullptr;
   }
 
-  constexpr void const* get_values_list_void_ptr() const final {
-    return m_values_list_func ? &m_values_list_func() : nullptr;
+  constexpr voidfunc get_values_list_void_ptr() const final {
+    return (voidfunc)reflexio::reflexio_traits<MemberType>::get_values;
   }
 
   [[nodiscard]]
