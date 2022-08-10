@@ -178,9 +178,12 @@ struct SeparatorRequirement<char[N]> {
 template<>
 struct SeparatorRequirement<std::string_view> {
   static constexpr bool needs_before(std::string_view val) {
-    return SeparatorRequirement<char>::needs_before(val.front());
+    return val.empty() or SeparatorRequirement<char>::needs_before(val.front());
   }
   static constexpr bool needs_after(std::string_view val) {
+    if (val.empty()) {
+      return false;
+    }
     return SeparatorRequirement<char>::needs_after(val.back());
   }
 };
@@ -199,7 +202,9 @@ public:
   template<typename TF, typename TS, typename... TR>
   ostream& write(TF const& first, TS const& second, TR&&... rest) {
     StreamPrinter<TF>::toStream(m_out, first);
-    if (m_separator and SeparatorRequirement<TF>::needs_after(first) and SeparatorRequirement<TS>::needs_before(second)) {
+    if (m_separator and
+        SeparatorRequirement<TF>::needs_after(first) and
+        SeparatorRequirement<TS>::needs_before(second)) {
       m_out << m_separator;
     }
 
