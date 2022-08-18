@@ -56,9 +56,9 @@ public:
     return tmp;
   }
 
-  constexpr friend bool operator<(ReflexioIterator const& a, ReflexioIterator const& b) { return a.m_idx < b.m_idx; };
-  constexpr friend bool operator==(ReflexioIterator const& a, ReflexioIterator const& b) { return a.m_idx == b.m_idx; };
-  constexpr friend bool operator!=(ReflexioIterator const& a, ReflexioIterator const& b) { return a.m_idx != b.m_idx; };
+  constexpr friend bool operator<(ReflexioIterator const& a, ReflexioIterator const& b) { return a.m_idx < b.m_idx; }
+  constexpr friend bool operator==(ReflexioIterator const& a, ReflexioIterator const& b) { return a.m_idx == b.m_idx; }
+  constexpr friend bool operator!=(ReflexioIterator const& a, ReflexioIterator const& b) { return a.m_idx != b.m_idx; }
 };
 
 }// namespace reflexio
