@@ -34,7 +34,7 @@ namespace app_utils {
       os << "  " << backTrace[i] << "\n";
     }
     os << "\nthrown from " << file << ":" << line << " " << functionName << "():";
-    os << "\nERROR -";
+    os << "\n";
 
     return os.str();
   }
