@@ -1,7 +1,9 @@
 #pragma once
 
 #include <string_view>
+#include <string>
 #include <typeinfo>
+#include <array>
 
 namespace app_utils {
 std::string_view parseTypeName(std::string_view paramName, bool minimal = false);
@@ -14,6 +16,13 @@ std::string_view typeName(bool minimal = false) {
 template<typename T>
 std::string_view typeName(T const& t, bool minimal = false) {
   return parseTypeName(typeid(t).name(), minimal);
+}
+
+template<typename T, size_t N>
+std::string_view typeName(std::array<T, N> const& t, bool minimal = false) {
+  static std::string const type_name =
+          "std::array<" + std::string{typeName<T>(t[0], minimal)} + ", " + std::to_string(N) + ">";
+  return type_name;
 }
 
 template<>

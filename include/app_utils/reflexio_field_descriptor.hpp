@@ -202,7 +202,7 @@ struct member_descriptor_impl_t : public member_descriptor_t<ReflexioStruct> {
 
   constexpr char const* type_name() const final {
     using namespace app_utils;
-    return typeName<MemberType>(m_default_value, true).data();
+    return typeName(m_default_value, true).data();
   }
 
   constexpr void const* get_min_value_void_ptr() const final {

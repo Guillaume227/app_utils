@@ -19,8 +19,9 @@ std::string_view parseTypeName(std::string_view paramName, bool const minimal) {
   // remove "class" prefix
   std::array<std::string_view, 2> const prefixes = {"class", "struct"};
   for (auto const& prefix: prefixes) {
-    if (paramName.find(prefix) == 0) {
+    if (paramName.starts_with(prefix)) {
       paramName = paramName.substr(prefix.size() + 1);
+      break;
     }
   }
 
@@ -28,7 +29,7 @@ std::string_view parseTypeName(std::string_view paramName, bool const minimal) {
   auto const templateBracketPos = paramName.rfind('>');
   auto const starPos = paramName.find(' ');
   // check space is beyond the last > as otherwise template types may not display correctly
-  if (starPos != std::string_view::npos && (templateBracketPos == std::string_view::npos || starPos > templateBracketPos))
+  if (starPos != std::string_view::npos and (templateBracketPos == std::string_view::npos or starPos > templateBracketPos))
     paramName = paramName.substr(0, starPos);
 
   // suppress digits from start of string to get the real class name
