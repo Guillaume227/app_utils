@@ -141,9 +141,18 @@ std::string to_string(std::array<T, N> const& val) {
   return contiguous_items_to_string(val.empty() ? nullptr : &val.front(), val.size());
 }
 
+template <size_t N>
+std::string to_string(std::array<char, N> const& val) {
+  return {&val.front(), &val.front() + N};
+}
+
 template <typename T>
 std::string to_string(std::vector<T> const& val) {
   return contiguous_items_to_string(val.empty() ? nullptr : &val.front(), val.size());
+}
+
+inline std::string to_string(std::vector<char> const& val) {
+  return {&val.front(), &val.front() + val.size()};
 }
 
 inline bool from_string(std::string& val, std::string_view val_str) {
