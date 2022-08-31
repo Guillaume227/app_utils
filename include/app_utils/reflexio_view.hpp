@@ -33,6 +33,24 @@ struct reflexio_view {
     return exclude_mask.size() - exclude_mask.count();
   }
 
+  template<typename VarPtr>
+  bool has(VarPtr const& varPtr) const {
+    return not exclude_mask.test(ReflexioStruct::index_of_var(varPtr));
+  }
+
+  // copy only the masked fields
+  reflexio_view& operator=(ReflexioStruct const& s) {
+    for (auto& descriptor: *this) {
+      descriptor.copy_value(object, s);
+    }
+    return *this;
+  }
+
+  template<typename VarPtr>
+  void set(VarPtr const& varPtr, bool value) {
+    exclude_mask.set(ReflexioStruct::index_of_var(varPtr), not value);
+  }
+
   static size_t parse_mask(std::span<std::byte const> buffer,
                            Mask& exclude_mask) {
 

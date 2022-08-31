@@ -107,6 +107,8 @@ struct member_descriptor_t {
   constexpr virtual void value_to_yaml(ReflexioStruct const& host, std::ostream&) const = 0;
   constexpr virtual void set_value_from_yaml(ReflexioStruct& host, std::istream&) const = 0;
 
+  constexpr virtual void copy_value(ReflexioStruct& host, ReflexioStruct const& other) const = 0;
+
   [[nodiscard]]
   constexpr virtual bool is_at_default(ReflexioStruct const& host) const = 0;
   constexpr virtual void set_to_default(ReflexioStruct& host) const = 0;
@@ -236,6 +238,10 @@ struct member_descriptor_impl_t : public member_descriptor_t<ReflexioStruct> {
   constexpr void set_value_from_string(ReflexioStruct& host, std::string_view val_str) const final {
     using namespace app_utils::strutils;
     from_string(get_mutable_value(host), val_str);
+  }
+
+  constexpr void copy_value(ReflexioStruct& host, ReflexioStruct const& other) const final {
+    get_mutable_value(host) = get_value(other);
   }
 
   constexpr void default_to_yaml(std::ostream& os) const final {
