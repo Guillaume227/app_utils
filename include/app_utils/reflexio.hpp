@@ -13,9 +13,14 @@
 #include <unordered_map>
 #include <sstream>
 #include <app_utils/string_utils.hpp>
+#include <stdexcept>
 #endif
 
 namespace reflexio {
+
+class PartialDeserializationException : public app_utils::Exception {
+  using app_utils::Exception::Exception;
+};
 
 template <typename ReflexioStruct, size_t NumMemberVariables>
 struct ReflexioStructBase {
@@ -433,14 +438,24 @@ struct ReflexioStructBase {
                            size_t const buffer_size,
                            ReflexioStruct& instance,
                            Mask const& excludeMask=exclude_none) {
+
     size_t res = 0;
     for (auto& descriptor: ReflexioStruct::get_member_descriptors(excludeMask)) {
-      //std::cout << "    decoded " << descriptor.get_name() << std::endl;
+      if (buffer_size <= res) {
+#ifdef RTTI_ENABLED
+        throwWithTrace(PartialDeserializationException,
+                       descriptor.get_name(), ": no data left for deserialization of", app_utils::typeName<ReflexioStruct>());
+#else
+        return res;
+#endif
+      }
+
       res += descriptor.read_from_bytes(buffer + res, buffer_size - res, instance);
+
+      checkCond(buffer_size >= res, descriptor.get_name(), ": not enough data for deserialization of",
+                app_utils::typeName<ReflexioStruct>(), "required:", buffer_size, '<', res);
     }
-    //std::cout << std::endl;
-    checkCond(buffer_size >= res, "input buffer has less data than required:", buffer_size, '<', res, 
-      ". Look for inconsistent serialization/deserialization of", app_utils::typeName<ReflexioStruct>());
+
     return res; //TODO: revisit, saw mismatch between buffer size (383) and read byte (386) buffer_size >= res ? res : 0;
   }
 
