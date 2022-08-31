@@ -17,10 +17,11 @@
 #endif
 
 namespace reflexio {
-
+#ifndef REFLEXIO_MINIMAL_FEATURES
 class PartialDeserializationException : public app_utils::Exception {
   using app_utils::Exception::Exception;
 };
+#endif
 
 template <typename ReflexioStruct, size_t NumMemberVariables>
 struct ReflexioStructBase {
