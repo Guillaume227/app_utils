@@ -3,7 +3,7 @@
 #include "enumatic.hpp"
 #include "cond_check.hpp"
 #include <bitset>
-
+#include "string_utils.hpp"
 
 namespace app_utils {
   /*
@@ -11,37 +11,39 @@ namespace app_utils {
   */
 
   template<typename EnumT>
-  class EnumBitSet {
+  class EnumBitset {
 
   public:
 
-    using BitsetT = std::bitset<Enumator<EnumT>::size()>;
+    using BitsetT = std::bitset<Enumatic<EnumT>::size()>;
 
     BitsetT m_bitset;
+
     constexpr EnumBitset(BitsetT bs) : m_bitset(std::move(bs)) {}
 
-    EnumBitset() = default;
+    constexpr EnumBitset() = default;
     template<typename ...Args>
     constexpr EnumBitset(EnumT e, Args...rest) : EnumBitset(rest...) {
       *this |= e;
     }
 
     constexpr static auto getEnumValues() {
-      return Enumator<EnumT>::get_values();
+      return Enumatic<EnumT>::get_values();
     }
 
+    [[nodiscard]]
     constexpr size_t size() const {
       return m_bitset.size();
     }
-
+    [[nodiscard]]
     constexpr bool none() const {
       return m_bitset.none();
     }
-
+    [[nodiscard]]
     constexpr bool any() const {
       return m_bitset.any();
     }
-
+    [[nodiscard]]
     constexpr bool all() const {
       return m_bitset.all();
     }
@@ -96,6 +98,14 @@ namespace app_utils {
     constexpr EnumBitset& set(EnumT e) {
       return *this |= e;
     }
+
+    constexpr void set() {
+      m_bitset.set();
+    }
+
+    constexpr void reset() {
+      m_bitset.reset();
+    }
   };
 
   template<typename EnumT, decltype(size(std::declval<EnumT>())) = 0>
@@ -112,19 +122,19 @@ namespace app_utils {
     std::getline(is, str);
     // legacy syntax: {VAL1, VAL2, VAL3}
     // new, correct syntax: VAL1|VAL2|VAL3
-    if (gqs::strutils::startswith(str, '{')) {
-      checkCond(gqs::strutils::endswith(str, '}'), "inconsistent format: opening { without a closing }");
-      std = str.substr(1, str.size() - 2);
+    if (app_utils::strutils::startswith(str, '{')) {
+      checkCond(app_utils::strutils::endswith(str, '}'), "inconsistent format: opening { without a closing }");
+      str = str.substr(1, str.size() - 2);
     }
 
     char separator = '|';
     if (str.find_first_of(',') != std::string::npos) {
       separator = ',';
     }
-    auto vals = gqs::strutils::split(separator, str);
+    auto vals = app_utils::strutils::split(separator, str);
 
     for (auto const& valStr : vals) {
-      bitset |= Enumator<EnumT>::from_string(valStr);
+      bitset |= Enumatic<EnumT>::from_string(valStr);
     }
     return is;
   }
@@ -132,8 +142,8 @@ namespace app_utils {
   template<typename EnumT>
   std::ostream& operator<<(std::ostream& os, EnumBitset<EnumT> const& bitset) {
     bool firstValue = true;
-    for (auto const& val : Enumator<EnumT>::get_values()) {
-      if (bitSet & val) {
+    for (auto const& val : Enumatic<EnumT>::get_values()) {
+      if (bitset & val) {
         if (not firstValue) {
           os << '|';
         }
