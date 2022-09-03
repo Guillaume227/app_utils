@@ -21,37 +21,49 @@
 
 
 namespace app_utils {
+
+  namespace {
+    constexpr char const * thrown_from_str = "\nthrown from ";
+  }
+
   std::string Exception::formatStackInfo(char const* file, size_t line, char const* functionName) {
     std::ostringstream os;
     std::vector<std::string> backTrace = getBackTrace(50);
 
-    for (size_t i = 0; i < backTrace.size(); i++) {
-      if (app_utils::strutils::contains(backTrace[i], __FUNCTION__)) {
+    for (auto& entry: backTrace) {
+      if (app_utils::strutils::contains(entry, __FUNCTION__)) {
         continue; // skip enclosing method
       }
       // skip the last entry in the backTrace which comes from the 
       // current function that is not adding any value to the error message
-      os << "  " << backTrace[i] << "\n";
+      os << "  " << entry << "\n";
     }
-    os << "\nthrown from " << file << ":" << line << " " << functionName << "():";
+    os << thrown_from_str << file << ":" << line << " " << functionName << "():";
     os << "\n";
 
     return os.str();
   }
 
+  std::string_view stripTrace(std::string_view exception_message) {
+    size_t thrown_from_pos = exception_message.rfind(thrown_from_str);
+    if (thrown_from_pos != std::string::npos) {
+      return exception_message.substr(exception_message.find('\n', thrown_from_pos + 1));
+    }
+    return exception_message;
+  }
 
   std::string combineTraces(std::string str1, std::string const& str2) {
     size_t const max_prefix_size = std::min(str1.size(), str2.size());
-size_t prefix_size = 0;
-for (; prefix_size < max_prefix_size; prefix_size++) {
-  if (str1[prefix_size] != str2[prefix_size]) {
-    break;
-  }
-}
-str1 += "\n";
-str1 += "  Root cause:\n";
-str1 += str2.substr(prefix_size);
-return str1;
+    size_t prefix_size = 0;
+    for (; prefix_size < max_prefix_size; prefix_size++) {
+      if (str1[prefix_size] != str2[prefix_size]) {
+        break;
+      }
+    }
+    str1 += "\n";
+    str1 += "  Root cause:\n";
+    str1 += str2.substr(prefix_size);
+    return str1;
   }
 
   namespace {

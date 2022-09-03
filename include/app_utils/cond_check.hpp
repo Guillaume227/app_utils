@@ -14,6 +14,7 @@ namespace app_utils {
 
 std::vector<std::string> getBackTrace(unsigned int max_stack_depth);
 std::string combineTraces(std::string trace1, std::string const& trace2);
+std::string_view stripTrace(std::string_view exception_message);
 
 struct Exception : public std::runtime_error {
   static std::string formatStackInfo(char const* file, size_t line, char const* functionName);
