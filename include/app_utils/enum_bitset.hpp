@@ -16,7 +16,7 @@ namespace app_utils {
   public:
 
     using BitsetT = std::bitset<Enumatic<EnumT>::size()>;
-
+    using EnumType = EnumT;
     BitsetT m_bitset;
 
     constexpr EnumBitset(BitsetT bs) : m_bitset(std::move(bs)) {}
@@ -60,12 +60,14 @@ namespace app_utils {
       return m_bitset | e.m_bitset;
     }
 
-    constexpr EnumBitset operator &=(EnumBitset const& e) {
-      return m_bitset &= e.m_bitset;
+    constexpr EnumBitset& operator &=(EnumBitset const& e) {
+      m_bitset &= e.m_bitset;
+      return *this;
     }
 
-    constexpr EnumBitset operator |=(EnumBitset const& e) {
-      return m_bitset |= e.m_bitset;
+    constexpr EnumBitset& operator |=(EnumBitset const& e) {
+      m_bitset |= e.m_bitset;
+      return *this;
     }
 
     constexpr bool operator == (EnumBitset const& e) const {
@@ -95,8 +97,17 @@ namespace app_utils {
       return *this & e;
     }
 
+    constexpr EnumBitset& set(EnumT e, bool flag) {
+      m_bitset.set(static_cast<unsigned long>(e), flag);
+      return *this;
+    }
+
     constexpr EnumBitset& set(EnumT e) {
-      return *this |= e;
+      return set(e, true);
+    }
+
+    constexpr EnumBitset& reset(EnumT e) {
+      return set(e, false);
     }
 
     constexpr void set() {
