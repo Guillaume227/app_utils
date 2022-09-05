@@ -204,6 +204,18 @@ struct ReflexioStructBase {
   }
 
   [[nodiscard]]
+  Mask diff(ReflexioStruct const& other, Mask const& excludeMask=exclude_none) const {
+    Mask res;
+    res.flip();
+    for (auto& descriptor: get_member_descriptors(excludeMask)) {
+      if (descriptor.values_differ(cast_this(), other)) {
+        res.set(descriptor.get_index(), false);
+      }
+    }
+    return res;
+  }
+
+  [[nodiscard]]
   std::vector<std::string_view> differing_members(
           ReflexioStruct const& other,
           Mask const& excludeMask=exclude_none) const
@@ -286,19 +298,21 @@ struct ReflexioStructBase {
   {
     using descriptor_map_t = std::unordered_map<std::string_view, member_descriptor_t<ReflexioStruct> const*>;
     static const descriptor_map_t descriptor_map =
-            []{
-              descriptor_map_t map;
-              for (auto& descriptor: ReflexioStruct::get_member_descriptors()) {
-                map[descriptor->get_name()] = descriptor;
-              }
-              return map;
-            }();
+      []{
+        descriptor_map_t map;
+        for (auto& descriptor: ReflexioStruct::get_member_descriptors()) {
+          map[descriptor->get_name()] = descriptor;
+        }
+        return map;
+      }();
 
     bool first_line_seen = false;
     size_t start_indent = 0;
-
-    for(std::string raw_line; std::getline(is, raw_line);) {
-
+    std::string raw_line;
+    for(size_t start_of_line=is.tellg();
+        std::getline(is, raw_line);
+        start_of_line=is.tellg())
+    {
       std::string_view line = app_utils::strutils::strip(raw_line);
       size_t indent = raw_line.find_first_not_of(' ') / yaml_utils::indent_width;
       if (line == "---") {
@@ -317,7 +331,7 @@ struct ReflexioStructBase {
         start_indent = indent;
       } else {
         if (start_indent > indent) {
-          int rewind_offset = -static_cast<int>(raw_line.size()) - 1;
+          int rewind_offset = -static_cast<int>((size_t)is.tellg() - start_of_line);
           is.seekg(rewind_offset, std::ios_base::cur);
           break;
         }
@@ -342,9 +356,18 @@ struct ReflexioStructBase {
         it->second->set_value_from_yaml(instance, is);
       } else {
         // value fits on just one line
+
+        size_t sep_pos = raw_line.find_first_of(':');
+        size_t rewind_offset;
+        if (is.eof()) {
+          is.clear();
+          rewind_offset = raw_line.size() - sep_pos - 1;
+        } else {
+          size_t cur_pos = is.tellg();
+          rewind_offset = cur_pos - start_of_line - sep_pos - 1;
+        }
+        is.seekg(-(int)rewind_offset, std::ios_base::cur);
         try {
-          int rewind_offset = -static_cast<int>(raw_line.size() - raw_line.find_first_of(':') - 1);
-          is.seekg(rewind_offset, std::ios_base::cur);
           it->second->set_value_from_yaml(instance, is);
         } catch (std::exception const& exc) {
           throwExc("Failed parsing yaml line:", raw_line, exc.what());
