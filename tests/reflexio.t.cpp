@@ -201,12 +201,42 @@ TEST_CASE("reflexio_from_string", "[reflexio]") {
 
     REQUIRE(reflexioStruct == refStruct);
   }
+  { // Selective deserialization
+    TrivialStruct reflexioStruct;
+    std::string_view val_str = R"(var1: 11
+    var2: 22.22)";
+    auto mask = TrivialStruct::make_vars_mask(&TrivialStruct::var1);
+    from_yaml(reflexioStruct, val_str, mask);
+    TrivialStruct refStruct;
+    refStruct.var1 = 11;
+    REQUIRE(reflexioStruct == refStruct);
+
+    {
+      TrivialStruct::FatView view;
+      from_yaml(view, val_str);
+      REQUIRE(view.object != refStruct);
+    }
+    {
+      TrivialStruct::FatView view(mask);
+      from_yaml(view, val_str);
+      REQUIRE(view.object == refStruct);
+    }
+  }
   {
     TrivialStruct reflexioStruct;
     std::string_view val_str = R"(   var1: 11      )";
     from_yaml(reflexioStruct, val_str);
     TrivialStruct refStruct;
     refStruct.var1 = 11;
+    REQUIRE(reflexioStruct == refStruct);
+  }
+  {
+    TrivialStruct reflexioStruct;
+    std::string_view val_str = "var1: 11\nvar2: 22";
+    from_yaml(reflexioStruct, val_str);
+    TrivialStruct refStruct;
+    refStruct.var1 = 11;
+    refStruct.var2 = 22;
     REQUIRE(reflexioStruct == refStruct);
   }
   {// with no extra new lines

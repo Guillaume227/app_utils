@@ -281,9 +281,9 @@ struct ReflexioStructBase {
 
   friend std::istream& from_yaml(
           ReflexioStruct& instance,
-          std::istream& is)
+          std::istream& is,
+          Mask const& exclude_mask=exclude_none)
   {
-
     using descriptor_map_t = std::unordered_map<std::string_view, member_descriptor_t<ReflexioStruct> const*>;
     static const descriptor_map_t descriptor_map =
             []{
@@ -334,6 +334,10 @@ struct ReflexioStructBase {
       checkCond(it != descriptor_map.end(), "unrecognized",
                 app_utils::typeName<ReflexioStruct>(), "member name", name);
 
+      if (exclude_mask.test(it->second->get_index())) {
+        continue;
+      }
+
       if (val.empty()) {
         it->second->set_value_from_yaml(instance, is);
       } else {
@@ -351,18 +355,37 @@ struct ReflexioStructBase {
     return is;
   }
 
+  friend std::istream& from_yaml(
+          View& instance,
+          std::istream& is) {
+    return from_yaml(instance.object, is, instance.exclude_mask);
+  }
+
   friend void from_yaml(
           ReflexioStruct& instance,
-          std::string_view const val_str) {
-    instance.set_to_default();
+          std::string_view const val_str,
+          Mask const& exclude_mask=exclude_none) {
     std::istringstream iss (std::string{val_str});
-    from_yaml(instance, iss);
+    from_yaml(instance, iss, exclude_mask);
+  }
+
+  friend void from_yaml(
+          View& instance,
+          std::string_view const val_str) {
+    from_yaml(instance.object, val_str, instance.exclude_mask);
   }
 
   friend void from_string(
         ReflexioStruct& instance,
-        std::string_view const val_str) {
-    return from_yaml(instance, val_str);
+        std::string_view const val_str,
+        Mask const& exclude_mask=exclude_none) {
+    from_yaml(instance, val_str, exclude_mask);
+  }
+
+  friend void from_string(
+          View& instance,
+          std::string_view const val_str) {
+    from_string(instance.object, val_str, instance.exclude_mask);
   }
 
   friend std::istream& operator>>(std::istream& is,
@@ -490,10 +513,17 @@ using is_reflexio_struct = std::is_base_of<ReflexioStructBase<T, T::NumMemberVar
 
 #define _REFLEXIO_MEMBER_VAR_DEFINE_BOUND_FUNC(var_type, var_name, default_value, description, boundMinFunc, boundMaxFunc) \
   var_type var_name = var_type(default_value);                                             \
+  static constexpr int __##var_name##_id = __COUNTER__;                                    \
+  template<class Dummy>                                                                    \
+  struct member_var_counter_t<__##var_name##_id, Dummy> {                                  \
+    static constexpr int index =                                                           \
+            member_var_counter_t<__##var_name##_id - 1, Dummy>::index + 1;                 \
+  };                                                                                       \
                                                                                            \
   inline static constexpr auto __##var_name##_descr = [] {                                 \
     return reflexio::member_descriptor_impl_t<ReflexioTypeName, var_type>(                 \
             &ReflexioTypeName::var_name,                                                   \
+            (size_t)member_var_counter_t<__##var_name##_id, int>::index,                   \
             #var_name,                                                                     \
             description,                                                                   \
             default_value,                                                                 \
@@ -501,13 +531,6 @@ using is_reflexio_struct = std::is_base_of<ReflexioStructBase<T, T::NumMemberVar
             boundMaxFunc);                                                                 \
   }();                                                                                     \
                                                                                            \
-  static constexpr int __##var_name##_id = __COUNTER__;                                    \
-                                                                                           \
-  template<class Dummy>                                                                    \
-  struct member_var_counter_t<__##var_name##_id, Dummy> {                                  \
-    static constexpr int index =                                                           \
-            member_var_counter_t<__##var_name##_id - 1, Dummy>::index + 1;                 \
-  };                                                                                       \
                                                                                            \
   template<class Dummy>                                                                    \
   struct member_var_traits_t<member_var_counter_t<__##var_name##_id, int>::index, Dummy> { \
