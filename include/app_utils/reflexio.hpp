@@ -235,7 +235,7 @@ struct ReflexioStructBase {
   }
 
   constexpr friend std::ostream& to_yaml(
-          ReflexioStruct const& instance,
+          ConstView const& view,
           std::ostream& os)
   {
     yaml_utils::indenter_t indenter;
@@ -243,28 +243,31 @@ struct ReflexioStructBase {
     if (am_i_nested) {
       os << "\n";
     }
-    auto const descriptors = ReflexioStruct::get_member_descriptors();
-    for (size_t i = 0; i < descriptors.size(); i++){
-      auto& descriptor = descriptors[i];
+
+    size_t const last_index = view.object.num_registered_member_vars() - 1;
+
+    size_t field_index = 0;
+    for (auto& descriptor: view){
       yaml_utils::print_indent(os);
-      os << descriptor->get_name() << ": ";
-      descriptor->value_to_yaml(instance, os);
-      if (i < descriptors.size() - 1 or not am_i_nested) {
+      os << descriptor.get_name() << ": ";
+      descriptor.value_to_yaml(view.object, os);
+      if (field_index < last_index or not am_i_nested) {
         os << '\n'; // avoid adding a newline
       }
+      field_index++;
     }
     return os;
   }
 
   friend std::ostream& operator<<(std::ostream& os,
-                                  ReflexioStruct const& instance) {
+                                  ConstView const& instance) {
     to_yaml(instance, os);
     return os;
   }
 
   [[nodiscard]]
   friend std::string to_yaml(
-        ReflexioStruct const& instance) {
+        ConstView const& instance) {
     std::ostringstream oss;
     oss << instance;
     return oss.str();
@@ -272,7 +275,7 @@ struct ReflexioStructBase {
 
   [[nodiscard]]
   friend std::string to_string(
-          ReflexioStruct const& instance) {
+          ConstView const& instance) {
     return to_yaml(instance);
   }
 

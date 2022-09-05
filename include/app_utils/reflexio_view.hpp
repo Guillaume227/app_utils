@@ -18,22 +18,26 @@ struct reflexio_view {
   ReflexioStruct& object;
 
   constexpr reflexio_view(ReflexioStruct& object_,
-                Mask exclude_mask_={})
+                          Mask exclude_mask_={})
   : exclude_mask(std::move(exclude_mask_))
   , object(object_) {}
 
-  constexpr reflexio_view(reflexio_view const&) = default;
+  //constexpr reflexio_view(reflexio_view const&) = default;
+  constexpr reflexio_view(reflexio_view<std::remove_const_t<ReflexioStruct>> const& other)
+  : reflexio_view(other.object, other.exclude_mask) {}
 
-  using Iterator = ReflexioIterator<std::decay_t<ReflexioStruct>>;
+  using Iterator = ReflexioIterator<std::remove_const_t<ReflexioStruct>>;
   constexpr Iterator begin() const { return Iterator(0, exclude_mask); }
   constexpr Iterator end  () const { return Iterator(ReflexioStruct::NumMemberVars); }
 
   // number of fields present in the view
+  [[nodiscard]]
   size_t size() const {
     return exclude_mask.size() - exclude_mask.count();
   }
 
   template<typename VarPtr>
+  [[nodiscard]]
   bool has(VarPtr const& varPtr) const {
     return not exclude_mask.test(ReflexioStruct::index_of_var(varPtr));
   }
