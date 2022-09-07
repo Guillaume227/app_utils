@@ -315,7 +315,11 @@ struct ReflexioStructBase {
     {
       std::string_view line = app_utils::strutils::strip(raw_line);
       size_t indent = raw_line.find_first_not_of(' ') / yaml_utils::indent_width;
-      if (line == "---") {
+
+      if (line.starts_with("#")) {
+        // it's a comment line
+        continue;
+      } else if (line == "---") {
         if (first_line_seen) {
           // signals the start of another section
           break;
