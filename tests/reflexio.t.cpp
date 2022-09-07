@@ -188,7 +188,7 @@ TEST_CASE("reflexio_from_string", "[reflexio]") {
   {
     TrivialStruct reflexioStruct;
     std::string_view val_str = R"(var1: 11 # some comment at end of line
-      asdf# Some comment line
+    # Some comment line
     var2: 22.22)";
     from_yaml(reflexioStruct, val_str);
     TrivialStruct refStruct;

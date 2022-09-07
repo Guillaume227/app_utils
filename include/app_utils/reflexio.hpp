@@ -271,6 +271,12 @@ struct ReflexioStructBase {
     return os;
   }
 
+  constexpr friend std::ostream& to_yaml(
+          ReflexioStruct const& obj,
+          std::ostream& os) {
+    return to_yaml(ConstView{obj}, os);
+  }
+
   friend std::ostream& operator<<(std::ostream& os,
                                   ConstView const& instance) {
     to_yaml(instance, os);
