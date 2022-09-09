@@ -85,6 +85,16 @@ struct StreamPrinter<std::span<T>> {
   }
 };
 
+template<typename T, size_t N>
+struct StreamPrinter<std::span<T, N>> {
+  static ostream& toStream(ostream& os, std::span<T, N> const& param) {
+    for (size_t i = 0; i < param.size(); i++) {
+      StreamPrinter<std::decay_t<T>>::toStream(os, *(param.data() + i));
+    }
+    return os;
+  }
+};
+
 template<typename T>
 struct StreamPrinter<std::vector<T>> {
   static ostream& toStream(ostream& os, std::vector<T> const& param) {
