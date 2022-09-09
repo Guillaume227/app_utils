@@ -45,8 +45,8 @@ public:
       m_idx++;
       if (m_idx == m_circ_buffer._front_index) {
         m_idx = m_circ_buffer.capacity(); // end()
-      } else if (m_idx == m_circ_buffer.capacity()) {
-        m_idx = 0;
+      } else if (m_idx == m_circ_buffer.capacity() and m_circ_buffer._front_index != 0) {
+        m_idx = 0; // wrap around
       }
       checkCond(m_idx <= m_circ_buffer.size(), "out of range access");
       return *this;
@@ -58,32 +58,30 @@ public:
       return tmp;
     }
 
-    constexpr friend bool operator<(Iterator const& a, Iterator const& b) {
-      checkCond(&a.m_circ_buffer == &b.m_circ_buffer, "inconsistent iterators");
-      return a.m_circ_buffer.unwrapped_index(a.m_idx) < a.m_circ_buffer.unwrapped_index(b.m_idx);
-    };
     constexpr friend bool operator==(Iterator const& a, Iterator const& b) {
       checkCond(&a.m_circ_buffer == &b.m_circ_buffer, "inconsistent iterators");
-      return a.m_idx == b.m_idx;
+      return a.m_idx == b.m_idx or (a.m_idx >= a.m_circ_buffer.size() and
+                                    b.m_idx >= b.m_circ_buffer.size());
     }
+
     constexpr friend bool operator!=(Iterator const& a, Iterator const& b) {
-      checkCond(&a.m_circ_buffer == &b.m_circ_buffer, "inconsistent iterators");
-      return a.m_idx != b.m_idx;
+      return not (a == b);
     }
   };
 
   circular_buffer_flex_t(size_t capacity) : _capacity(capacity){
     _buffer.reserve(capacity);
   }
-
+  [[nodiscard]]
   size_t get_front_index() const {
     return _front_index;
   }
-
+  [[nodiscard]]
   size_t get_back_index() const {
-    return (_front_index == 0 ? _buffer.size() : _front_index) - 1;
+    return (_front_index == 0 ? (_buffer.size() > 0 ? _buffer.size() - 1 : 0)
+                              : _front_index - 1);
   }
-
+  [[nodiscard]]
   size_t unwrapped_index(size_t i) const {
     if (i >= _capacity) {
       return i; // out of bound - e.g. end() iterator
@@ -93,19 +91,20 @@ public:
       return _capacity - _front_index + i;
     }
   }
-
+  [[nodiscard]]
   std::span<T const> get_values() const {
     return _buffer;
   }
 
+  [[nodiscard]]
   size_t size() const {
     return _buffer.size();
   }
-
+  [[nodiscard]]
   size_t capacity() const {
     return _capacity;
   }
-
+  [[nodiscard]]
   bool empty() const {
     return _buffer.empty();
   }
@@ -138,7 +137,7 @@ public:
   }
 
   Iterator begin() {
-    return {*this, _front_index};
+    return empty() ? end() : Iterator{*this, _front_index};
   }
 
   Iterator end() {
@@ -146,7 +145,7 @@ public:
   }
 
   Iterator begin() const {
-    return {*this, _front_index};
+    return empty() ? end() : Iterator{*this, _front_index};
   }
 
   Iterator end() const {
