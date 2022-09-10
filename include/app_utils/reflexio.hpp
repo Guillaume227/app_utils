@@ -203,8 +203,15 @@ struct ReflexioStructBase {
     return mask;
   }
 
+  /**
+   *
+   * @param other
+   * @param excludeMask fields to leave out of the diff
+   * @return a mask that is false at indexes that differ (among the fields not excluded by excludeMask)
+   */
   [[nodiscard]]
-  Mask diff(ReflexioStruct const& other, Mask const& excludeMask=exclude_none) const {
+  Mask matching_fields(ReflexioStruct const& other,
+                       Mask const& excludeMask=exclude_none) const {
     Mask res;
     res.flip();
     for (auto& descriptor: get_member_descriptors(excludeMask)) {
