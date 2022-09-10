@@ -1,0 +1,4 @@
+#pragma once
+
+#define MACRO_STRINGIFY(a) _MACRO_STRINGIFY_HELPER(a)
+#define _MACRO_STRINGIFY_HELPER(a) #a
