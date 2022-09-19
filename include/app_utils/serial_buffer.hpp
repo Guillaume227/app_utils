@@ -37,6 +37,14 @@ std::vector<std::byte> make_buffer(Args&&... args) {
 }
 
 template<typename ...Args>
+void append_to_buffer(std::vector<std::byte>& buffer, Args&&... args) {
+  size_t const num_bytes = serial_size(std::forward<Args>(args)...);
+  size_t initial_size = buffer.size();
+  buffer.resize(initial_size + num_bytes);
+  to_bytes({buffer.data() + initial_size, num_bytes}, std::forward<Args>(args)...);
+}
+
+template<typename ...Args>
 constexpr size_t fill_buffer(std::vector<std::byte>& buffer, Args&&... args) {
   using namespace app_utils::serial;
   size_t const num_bytes = serial_size(std::forward<Args>(args)...);

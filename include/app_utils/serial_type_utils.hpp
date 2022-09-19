@@ -43,6 +43,18 @@ constexpr size_t serial_size(std::vector<T> const& val) {
   return num_bytes;
 }
 
+// Note: unlike for std::vector, serialization of a span
+// doesn't keep track of the size - rationale is that you can't deserialize a span
+// as it's a view type, so only raw contents gets serialized.
+template <typename T>
+constexpr size_t serial_size(std::span<T> const& val) {
+  size_t num_bytes = 0;
+  for (auto& item : val) {
+    num_bytes += serial_size(item);
+  }
+  return num_bytes;
+}
+
 template <size_t N>
 constexpr size_t serial_size(std::bitset<N> const& /*val*/) {
   return (N + 7) / 8; // == sizeof(val) ?
@@ -211,6 +223,15 @@ size_t to_bytes(std::byte* buffer, size_t buffer_size, std::vector<T> const& val
   size_t str_size = val.size();
   buffer[0] = static_cast<std::byte>(str_size);
   size_t num_bytes = 1;
+  for (auto& item : val) {
+    num_bytes += to_bytes(buffer + num_bytes, buffer_size - num_bytes, item);
+  }
+  return num_bytes;
+}
+
+template <typename T>
+size_t to_bytes(std::byte* buffer, size_t buffer_size, std::span<T> const& val) {
+  size_t num_bytes = 0;
   for (auto& item : val) {
     num_bytes += to_bytes(buffer + num_bytes, buffer_size - num_bytes, item);
   }
