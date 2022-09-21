@@ -116,7 +116,11 @@ namespace app_utils::time
   }
 
   std::string formatDuration(std::chrono::nanoseconds duration, int significantLevel){
-    return formatDur(duration, significantLevel);
+    if (duration < std::chrono::nanoseconds{0}) {
+      return "-" + formatDur(-duration, significantLevel);
+    } else {
+      return formatDur(duration, significantLevel);
+    }
   }
 }
 
