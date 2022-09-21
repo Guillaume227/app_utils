@@ -232,7 +232,7 @@ namespace app_utils {
       }
     }
     else {
-      std::fprintf(stderr, "Terminated due to unknownn reason :(\n");
+      std::fprintf(stderr, "Terminated due to unknown reason :(\n");
     }
 
     std::exit(1);
