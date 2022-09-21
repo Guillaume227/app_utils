@@ -121,6 +121,7 @@ constexpr size_t to_bytes(std::byte* buffer, size_t buffer_size, T const& val) r
 
 /**
  * std::string
+ * NOTE: size cannot exceed 256
  */
 inline size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, std::string& val) {
   size_t str_size = std::to_integer<size_t>(buffer[0]);

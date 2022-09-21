@@ -143,7 +143,8 @@ std::string to_string(std::array<T, N> const& val) {
 
 template <size_t N>
 std::string to_string(std::array<char, N> const& val) {
-  return {&val.front(), &val.front() + N};
+  auto size = std::min(N, strlen(&val.front()));
+  return {&val.front(), &val.front() + size};
 }
 
 template <typename T>
