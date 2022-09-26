@@ -98,8 +98,11 @@ size_t split(std::string_view const str,
       outputPointer++;
     }
   }
-  *outputPointer  = str.substr(leftIndexPos + 1);
-  return ++parsedTokens;
+  if (leftIndexPos + 1 < str.size()) {
+    *outputPointer = str.substr(leftIndexPos + 1);
+    ++parsedTokens;
+  }
+  return parsedTokens;
 }
 
 std::vector<std::string_view> split(char const delim, 
