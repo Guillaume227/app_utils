@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <cstring>
 #include <vector>
 #include <app_utils/cond_check.hpp>
 #include <app_utils/type_name.hpp>
@@ -143,7 +144,7 @@ std::string to_string(std::array<T, N> const& val) {
 
 template <size_t N>
 std::string to_string(std::array<char, N> const& val) {
-  auto size = std::min(N, strlen(&val.front()));
+  auto size = std::min(N, std::strlen(&val.front()));
   return {&val.front(), &val.front() + size};
 }
 
