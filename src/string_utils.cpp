@@ -99,7 +99,7 @@ size_t split(std::string_view const str,
     }
   }
   if (leftIndexPos + 1 < str.size()) {
-    *outputPointer = str.substr(leftIndexPos + 1);
+    *outputPointer = str.substr(leftIndexPos);
     ++parsedTokens;
   }
   return parsedTokens;
