@@ -25,6 +25,20 @@ inline size_t serial_size(std::string const& str) {
   return 1 + str.size(); // 1 extra byte for holding the size
 }
 
+/**
+ * std::string_view
+ * note that it doesn't store the size, unlike the std::string specialization.
+ * It's the same behavior as char[]
+ */
+constexpr size_t serial_size(std::string_view const& val) {
+  return val.size();
+}
+
+template<size_t N>
+constexpr size_t serial_size(char const(&) [N]) {
+  return N;
+}
+
 template<typename T, size_t N>
 constexpr size_t serial_size(std::array<T, N> const& val) { 
   size_t num_bytes = 0;
@@ -135,6 +149,21 @@ inline size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, std::string co
   buffer[0] = static_cast<std::byte>(str_size);
   std::memcpy(buffer+1, val.c_str(), str_size);
   return str_size + 1;
+}
+
+/**
+ * std::string_view
+ * note that it doesn't store the size, unlike the std::string specialization
+ */
+inline size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, std::string_view const& val) {
+  size_t str_size = val.size();
+  std::memcpy(buffer, val.data(), str_size);
+  return str_size;
+}
+template<size_t N>
+constexpr size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, char const (& val) [N]) {
+  std::memcpy(buffer, val, N);
+  return N;
 }
 
 template<size_t N>

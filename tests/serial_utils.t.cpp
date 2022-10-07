@@ -2,6 +2,14 @@
 
 #include <app_utils/serial_utils.hpp>
 
+TEST_CASE("string_to_from_bytes", "[serial]") {
+  using namespace app_utils::serial;
+  REQUIRE(serial_size("echo") == 5);
+  std::string echo_str = "echo";
+  std::string_view echo_sv = echo_str;
+  REQUIRE(serial_size(echo_str) == 5);
+  REQUIRE(serial_size(echo_sv) == 4); // one additional byte for storing the size
+}
 
 TEST_CASE("bitset_to_from_bytes", "[serial]") {
 
