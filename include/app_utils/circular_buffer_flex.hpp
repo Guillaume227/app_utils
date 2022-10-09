@@ -69,6 +69,7 @@ public:
     }
   };
 
+public:
   circular_buffer_flex_t(size_t capacity) : _capacity(capacity){
     _buffer.reserve(capacity);
   }
@@ -173,14 +174,14 @@ public:
   }
 
   template<typename ...Args>
-  void emplace_back(Args&& ... args){
+  T& emplace_back(Args&& ... args){
     if (_buffer.size() < _capacity){
-      _buffer.emplace_back(std::forward<Args>(args)...);
+      return _buffer.emplace_back(std::forward<Args>(args)...);
     } else {
       _front_index++;
       _front_index %= _capacity;
       size_t index = get_back_index();
-      _buffer[index] = T{std::forward<Args>(args)...};
+      return _buffer[index] = T{std::forward<Args>(args)...};
     }
   }
 };
