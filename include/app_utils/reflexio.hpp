@@ -186,25 +186,6 @@ struct ReflexioStructBase {
 
   /**
    *
-   * @param other: another config
-   * @return a mask of members with matching values
-   */
-  [[nodiscard]]
-  Mask matching_members_mask(
-          ReflexioStruct const& other) const
-  {
-    Mask mask;
-    for (size_t i = 0; i < get_member_descriptors().size(); i++) {
-      auto& descriptor = get_member_descriptors()[i];
-      if (not descriptor.values_differ(cast_this(), other)) {
-        mask.set(i);
-      }
-    }
-    return mask;
-  }
-
-  /**
-   *
    * @param other
    * @param excludeMask fields to leave out of the diff
    * @return a mask that is false at indexes that differ (among the fields not excluded by excludeMask)
