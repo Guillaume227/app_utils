@@ -157,6 +157,11 @@ public:
     return _buffer.at((_front_index + index) % _capacity);
   }
 
+  size_t distance_from(size_t index) const {
+    auto back_index = get_back_index();
+    return back_index >= index ? back_index - index : _capacity - index + back_index;
+  }
+
   T const& operator[](size_t index) const {
     return _buffer[(_front_index + index) % _capacity];
   }
