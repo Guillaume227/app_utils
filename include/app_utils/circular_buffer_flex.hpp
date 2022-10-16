@@ -171,8 +171,11 @@ public:
     if (_buffer.size() < _capacity){
       _buffer.push_back(std::forward<U>(value));
     } else {
-      _front_index++;
-      _front_index %= _capacity;
+      if (_front_index == _capacity - 1) {
+        _front_index = 0;
+      } else {
+        _front_index++;
+      }
       size_t index = get_back_index();
       _buffer[index] = std::forward<U>(value);
     }
@@ -183,8 +186,11 @@ public:
     if (_buffer.size() < _capacity){
       return _buffer.emplace_back(std::forward<Args>(args)...);
     } else {
-      _front_index++;
-      _front_index %= _capacity;
+      if (_front_index == _capacity - 1) {
+        _front_index = 0;
+      } else {
+        _front_index++;
+      }
       size_t index = get_back_index();
       return _buffer[index] = T{std::forward<Args>(args)...};
     }
