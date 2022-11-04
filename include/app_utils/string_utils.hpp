@@ -124,14 +124,15 @@ inline std::string to_string(bool b) {
   return b ? "true" : "false";
 }
 
-template<typename T>
-std::string contiguous_items_to_string(T const* vals, size_t num_items) {
+template<typename Iterable>
+std::string range_to_string(Iterable const& iterable) {
   std::string res = "[";
-  for (size_t i = 0; i < num_items; ++i) {
-    if (i != 0) {
+  auto begin_it = std::begin(iterable);
+  for (auto it = begin_it; it != std::end(iterable); it++) {
+    if (it != begin_it) {
       res += ", ";
     }
-    res += to_string(vals[i]);
+    res += to_string(*it);
   }
   res += ']';
   return res;
@@ -139,7 +140,7 @@ std::string contiguous_items_to_string(T const* vals, size_t num_items) {
 
 template <typename T, size_t N>
 std::string to_string(std::array<T, N> const& val) {
-  return contiguous_items_to_string(val.empty() ? nullptr : &val.front(), val.size());
+  return range_to_string(val);
 }
 
 template <size_t N>
@@ -150,7 +151,7 @@ std::string to_string(std::array<char, N> const& val) {
 
 template <typename T>
 std::string to_string(std::vector<T> const& val) {
-  return contiguous_items_to_string(val.empty() ? nullptr : &val.front(), val.size());
+  return range_to_string(val);
 }
 
 inline std::string to_string(std::vector<char> const& val) {
