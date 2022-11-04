@@ -19,6 +19,12 @@ class circular_buffer_flex_t {
 public:
 
   class Iterator {
+
+    circular_buffer_flex_t const* m_circ_buffer = nullptr;
+
+  public:
+    size_t m_idx = 0;
+
     using iterator_category = std::forward_iterator_tag;
     using difference_type = std::ptrdiff_t;
     using value_type = T const;
@@ -26,29 +32,27 @@ public:
     using reference = T&;            // or also value_type&
     using const_reference = T const&;// or also value_type&
 
-    circular_buffer_flex_t const& m_circ_buffer;
-    size_t m_idx;
-
-  public:
+    Iterator() = default; // past the end operator required by LegacyForwardIterator concept
     Iterator(circular_buffer_flex_t const& _buffer, size_t index)
-        : m_circ_buffer(_buffer)
+        : m_circ_buffer(&_buffer)
         , m_idx(index){}
 
     constexpr const_reference operator*() const {
-      return m_circ_buffer.at(m_idx);
+      return m_circ_buffer->at(m_idx);
     }
     constexpr pointer operator->() const {
       return &(*this);
     }
 
     constexpr Iterator& operator++() {
+      checkCond(m_circ_buffer != nullptr, "out of range access");
       m_idx++;
-      if (m_idx == m_circ_buffer._front_index) {
-        m_idx = m_circ_buffer.capacity(); // end()
-      } else if (m_idx == m_circ_buffer.capacity() and m_circ_buffer._front_index != 0) {
+      if (m_idx == m_circ_buffer->_front_index) {
+        m_idx = m_circ_buffer->capacity(); // end()
+      } else if (m_idx == m_circ_buffer->capacity() and m_circ_buffer->_front_index != 0) {
         m_idx = 0; // wrap around
       }
-      checkCond(m_idx <= m_circ_buffer.size(), "out of range access");
+      checkCond(m_idx <= m_circ_buffer->size(), "out of range access");
       return *this;
     }
 
@@ -59,9 +63,9 @@ public:
     }
 
     constexpr friend bool operator==(Iterator const& a, Iterator const& b) {
-      checkCond(&a.m_circ_buffer == &b.m_circ_buffer, "inconsistent iterators");
-      return a.m_idx == b.m_idx or (a.m_idx >= a.m_circ_buffer.size() and
-                                    b.m_idx >= b.m_circ_buffer.size());
+      checkCond(a.m_circ_buffer == b.m_circ_buffer, "inconsistent iterators");
+      return a.m_idx == b.m_idx or (a.m_idx >= a.m_circ_buffer->size() and
+                                    b.m_idx >= b.m_circ_buffer->size());
     }
 
     constexpr friend bool operator!=(Iterator const& a, Iterator const& b) {
@@ -70,9 +74,20 @@ public:
   };
 
 public:
-  circular_buffer_flex_t(size_t capacity) : _capacity(capacity){
+  using value_type = std::vector<T>::value_type;
+  using size_type = std::vector<T>::size_type;
+  using difference_type = std::vector<T>::difference_type;
+  using iterator = Iterator;
+  using const_iterator = Iterator;
+
+  circular_buffer_flex_t(size_t capacity=0) : _capacity(capacity){
     _buffer.reserve(capacity);
   }
+
+  bool operator==(circular_buffer_flex_t const& other) const {
+    return  _front_index == other._front_index and _buffer == other._buffer;
+  }
+
   [[nodiscard]]
   size_t get_front_index() const {
     return _front_index;
@@ -98,6 +113,22 @@ public:
   }
 
   [[nodiscard]]
+  T const* data() const {
+    return _buffer.data();
+  }
+
+  [[nodiscard]]
+  bool has_wrapped_around() const {
+    return _front_index != 0;
+  }
+
+  [[nodiscard]]
+  std::vector<T> const& as_vector() const {
+    checkCond(not has_wrapped_around(), "circular vector cannot be interpreted as a vector once it started wrapping around");
+    return _buffer;
+  }
+
+  [[nodiscard]]
   size_t size() const {
     return _buffer.size();
   }
@@ -117,6 +148,10 @@ public:
 
   void reset(size_t capacity) {
     clear();
+    reserve(capacity);
+  }
+
+  void reserve(size_t capacity) {
     _capacity = capacity;
     _buffer.reserve(capacity);
   }
@@ -163,6 +198,10 @@ public:
   }
 
   T const& operator[](size_t index) const {
+    return _buffer[(_front_index + index) % _capacity];
+  }
+
+  T& operator[](size_t index) {
     return _buffer[(_front_index + index) % _capacity];
   }
 

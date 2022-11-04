@@ -4,6 +4,14 @@
 #include <app_utils/circular_buffer.hpp>
 #include <app_utils/circular_buffer_flex.hpp>
 
+#include <type_traits>
+
+// LegacyForwardIterator requirements
+static_assert(std::is_copy_constructible_v<circular_buffer_flex_t<int>::Iterator>);
+static_assert(std::is_default_constructible_v<circular_buffer_flex_t<int>::Iterator>);
+static_assert(std::is_copy_assignable_v<circular_buffer_flex_t<int>::Iterator>);
+static_assert(std::is_swappable_v<circular_buffer_flex_t<int>::Iterator>);
+static_assert(std::is_same_v<circular_buffer_flex_t<int>::Iterator::difference_type, std::ptrdiff_t>);
 
 TEST_CASE("circular_buffer", "[container]") {
 
@@ -58,6 +66,7 @@ TEST_CASE("circular_buffer_flex", "[container]") {
   };
 
   REQUIRE(buff.size() == 0);
+  REQUIRE(std::count(buff.begin(), buff.end(), 0) == 0);
   REQUIRE(buff.empty());
   REQUIRE(calc_avg(buff) == 0);
 
