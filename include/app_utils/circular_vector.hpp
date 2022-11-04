@@ -10,7 +10,7 @@
  */
 
 template<typename T>
-class circular_buffer_flex_t {
+class circular_vector_t {
 
   size_t _capacity;
   size_t _front_index = 0;
@@ -20,7 +20,7 @@ public:
 
   class Iterator {
 
-    circular_buffer_flex_t const* m_circ_buffer = nullptr;
+    circular_vector_t const* m_circ_buffer = nullptr;
 
   public:
     size_t m_idx = 0;
@@ -33,7 +33,7 @@ public:
     using const_reference = T const&;// or also value_type&
 
     Iterator() = default; // past the end operator required by LegacyForwardIterator concept
-    Iterator(circular_buffer_flex_t const& _buffer, size_t index)
+    Iterator(circular_vector_t const& _buffer, size_t index)
         : m_circ_buffer(&_buffer)
         , m_idx(index){}
 
@@ -80,11 +80,11 @@ public:
   using iterator = Iterator;
   using const_iterator = Iterator;
 
-  circular_buffer_flex_t(size_t capacity=0) : _capacity(capacity){
+  circular_vector_t(size_t capacity=0) : _capacity(capacity){
     _buffer.reserve(capacity);
   }
 
-  bool operator==(circular_buffer_flex_t const& other) const {
+  bool operator==(circular_vector_t const& other) const {
     return  _front_index == other._front_index and _buffer == other._buffer;
   }
 

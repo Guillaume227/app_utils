@@ -6,7 +6,7 @@
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
 
-#include <app_utils/circular_buffer_flex.hpp>
+#include <app_utils/circular_vector.hpp>
 #include <app_utils/stream_utils.hpp>
 #include <app_utils/string_utils.hpp>
 
@@ -15,9 +15,9 @@ namespace app_utils::pybind {
 namespace py = pybind11;
 
 template <typename T>
-struct pybind_wrapper<circular_buffer_flex_t<T>> {
+struct pybind_wrapper<circular_vector_t<T>> {
   
-  using WrappedType = circular_buffer_flex_t<T>;
+  using WrappedType = circular_vector_t<T>;
 
   inline static bool s_registered_once = false;
 

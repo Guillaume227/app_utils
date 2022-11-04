@@ -6,7 +6,7 @@
 namespace app_utils {
 
 template <typename T, size_t capacity_>
-class circular_buffer_t {
+class circular_array_t {
   std::array<T, capacity_> m_array;
   size_t m_index = 0;
 
@@ -27,7 +27,7 @@ class circular_buffer_t {
 
   class iterator {
    public:
-    constexpr iterator(circular_buffer_t& buffer, size_t state) 
+    constexpr iterator(circular_array_t& buffer, size_t state)
       : m_buffer(buffer)
       , m_state(state) {}
 
@@ -40,13 +40,13 @@ class circular_buffer_t {
     constexpr T& operator*() { return m_buffer.m_array[m_state % capacity_]; }
 
    private:
-    circular_buffer_t& m_buffer;
+    circular_array_t& m_buffer;
     size_t m_state = 0;
   };
 
   class const_iterator {
   public:
-    constexpr const_iterator(circular_buffer_t const& buffer, size_t state)
+    constexpr const_iterator(circular_array_t const& buffer, size_t state)
             : m_buffer(buffer)
             , m_state(state) {}
 
@@ -58,7 +58,7 @@ class circular_buffer_t {
     constexpr T const& operator*() const { return m_buffer.m_array[m_state % capacity_]; }
 
   private:
-    circular_buffer_t const& m_buffer;
+    circular_array_t const& m_buffer;
     size_t m_state = 0;
   };
 
