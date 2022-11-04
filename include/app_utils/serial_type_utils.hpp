@@ -79,7 +79,7 @@ constexpr size_t serial_size(std::bitset<N> const& /*val*/) {
  */
 template<typename T>
 requires std::is_arithmetic_v<T>
-size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, T& val) {
+constexpr size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, T& val) {
   size_t num_bytes = serial_size(val);
   std::memcpy(&val, buffer, num_bytes);
   return num_bytes;
@@ -87,7 +87,7 @@ size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, T& val) {
 
 template <typename T>
 requires std::is_arithmetic_v<T>
-size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, T const& val) {
+constexpr size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, T const& val) {
   size_t num_bytes = serial_size(val);
   std::memcpy(buffer, &val, num_bytes);
   return num_bytes;
