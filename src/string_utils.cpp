@@ -278,6 +278,9 @@ std::vector<std::string_view> splitParse(std::string_view const valStr,
       res.back() = strip(res.back());
     }
   }
+  if (res.empty()) {
+    res.push_back(valStr);
+  }
   return res;
 }
 
