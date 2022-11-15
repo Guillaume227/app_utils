@@ -93,6 +93,10 @@ PYBIND11_MODULE(app_utils_test_pybind, m) {
   pybind_wrapper<NestedStruct>::wrap_with_pybind(m);
   pybind_wrapper<SimpleStruct>::wrap_with_pybind(m);
 
+  m.def("make_my_struct_view", []() {
+    MyStruct::FatView f({});
+    return f;
+  });
 
   pybind_wrapper<std::future<SimpleStruct>>::wrap_with_pybind(m);
 

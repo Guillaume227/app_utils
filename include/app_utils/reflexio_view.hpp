@@ -126,11 +126,14 @@ class reflexio_fat_view : public reflexio_view<ReflexioStruct> {
 
 public:
 
-  constexpr reflexio_fat_view(typename ReflexioStruct::Mask exclude_mask={})
-      : reflexio_view<ReflexioStruct>(m_owned_object, std::move(exclude_mask))
-      {}
+  constexpr reflexio_fat_view(typename ReflexioStruct::Mask const& exclude_mask=ReflexioStruct::exclude_none)
+    : reflexio_view<ReflexioStruct>(m_owned_object, exclude_mask)
+  {}
 
-  constexpr reflexio_fat_view(reflexio_fat_view const&) = default;
+  constexpr reflexio_fat_view(reflexio_fat_view const& obj)
+    : reflexio_view<ReflexioStruct>(m_owned_object, obj.exclude_mask)
+    , m_owned_object(obj.object)
+  {}
 };
 
 } // namespace reflexio
