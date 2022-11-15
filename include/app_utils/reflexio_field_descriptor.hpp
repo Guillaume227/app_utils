@@ -137,7 +137,7 @@ struct member_descriptor_t {
 
 #ifdef DO_PYBIND_WRAPPING
   virtual void wrap_with_pybind(::pybind11::module& pybindmodule_, void* pybindhost_) const = 0;
-  virtual ::pybind11::object get_py_value(ReflexioStruct const& host) const = 0;
+  virtual ::pybind11::object get_py_value(ReflexioStruct const& host, pybind11::return_value_policy rvp) const = 0;
   virtual void set_py_value(ReflexioStruct& host, pybind11::object const&) const = 0;
   virtual bool add_numpy_descriptor(std::vector<::pybind11::detail::field_descriptor>&) const = 0;
 #endif
@@ -300,8 +300,8 @@ struct member_descriptor_impl_t : public member_descriptor_t<ReflexioStruct> {
     py_class->def_readwrite(this->get_name().data(), m_member_var_ptr, pybind_wrapper_traits<MemberType>::def_readwrite_rvp);
   }
 
-  pybind11::object get_py_value(ReflexioStruct const& host) const final {
-    return pybind11::cast(&get_value(host));
+  pybind11::object get_py_value(ReflexioStruct const& host, pybind11::return_value_policy rvp) const final {
+    return pybind11::cast(&get_value(host), rvp);
   }
 
   void set_py_value(ReflexioStruct& host, pybind11::object const& obj) const final {

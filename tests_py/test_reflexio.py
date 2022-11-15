@@ -101,6 +101,25 @@ def test_reflexio_as_dict():
     #    print(label)
 
 
+def test_reflexio_view():
+    view = make_my_struct_view()
+    sub_view = make_my_struct_subview()
+
+    print('view:\n', view)
+    print('sub_view:\n', sub_view)
+
+    assert(len(view) == 8)
+    assert(len(sub_view) == 2)
+
+    assert(hasattr(view, 'var1'))
+    assert(hasattr(view, 'var2'))
+    assert(hasattr(view, 'var8'))
+
+    assert(hasattr(sub_view, 'var1'))
+    assert(not hasattr(sub_view, 'var2'))
+    assert(hasattr(sub_view, 'var8'))
+
+
 def test_doc_string():
     """auto-generated docstring"""
     from app_utils_test_pybind import SimpleStruct

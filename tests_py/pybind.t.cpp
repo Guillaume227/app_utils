@@ -94,8 +94,11 @@ PYBIND11_MODULE(app_utils_test_pybind, m) {
   pybind_wrapper<SimpleStruct>::wrap_with_pybind(m);
 
   m.def("make_my_struct_view", []() {
-    MyStruct::FatView f({});
-    return f;
+    return MyStruct::FatView{};
+  });
+
+  m.def("make_my_struct_subview", []() {
+    return MyStruct::FatView{MyStruct::make_vars_mask(&MyStruct::var1, &MyStruct::var8)};
   });
 
   pybind_wrapper<std::future<SimpleStruct>>::wrap_with_pybind(m);

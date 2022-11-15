@@ -120,20 +120,26 @@ struct reflexio_view {
 // a version of reflexio_view that holds its own ReflexioStruct value
 template <typename ReflexioStruct>
 class reflexio_fat_view : public reflexio_view<ReflexioStruct> {
-  // Note: that private member is referenced by object member
+  // Note: that private member is referenced by parent member reflexio_view::object
   // which is part of the public interface
   ReflexioStruct m_owned_object;
 
 public:
 
-  constexpr reflexio_fat_view(typename ReflexioStruct::Mask const& exclude_mask=ReflexioStruct::exclude_none)
-    : reflexio_view<ReflexioStruct>(m_owned_object, exclude_mask)
+  constexpr reflexio_fat_view(typename ReflexioStruct::Mask const& mask=ReflexioStruct::exclude_none)
+    : reflexio_view<ReflexioStruct>(m_owned_object, mask)
   {}
 
   constexpr reflexio_fat_view(reflexio_fat_view const& obj)
     : reflexio_view<ReflexioStruct>(m_owned_object, obj.exclude_mask)
     , m_owned_object(obj.object)
   {}
+
+  constexpr reflexio_fat_view& operator=(reflexio_fat_view const& obj) {
+    m_owned_object = obj.m_owned_object;
+    this->exclude_mask = obj.exclude_mask;
+    return *this;
+  }
 };
 
 } // namespace reflexio
