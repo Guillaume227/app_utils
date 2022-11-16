@@ -79,7 +79,13 @@ template<typename T>
 struct StreamPrinter<std::span<T>> {
   static ostream& toStream(ostream& os, std::span<T> const& param) {
     for (size_t i = 0; i < param.size(); i++) {
-      StreamPrinter<std::decay_t<T>>::toStream(os, *(param.data() + i));
+      using decayed_T = std::decay_t<T>;
+      if constexpr(not (std::is_same_v<decayed_T, std::byte> or std::is_same_v<decayed_T, char>)) {
+        if (i > 0) {
+          os << ", ";
+        }
+      }
+      StreamPrinter<decayed_T>::toStream(os, *(param.data() + i));
     }
     return os;
   }
@@ -89,7 +95,13 @@ template<typename T, size_t N>
 struct StreamPrinter<std::span<T, N>> {
   static ostream& toStream(ostream& os, std::span<T, N> const& param) {
     for (size_t i = 0; i < param.size(); i++) {
-      StreamPrinter<std::decay_t<T>>::toStream(os, *(param.data() + i));
+      using decayed_T = std::decay_t<T>;
+      if constexpr(not (std::is_same_v<decayed_T, std::byte> or std::is_same_v<decayed_T, char>)) {
+        if (i > 0) {
+          os << ", ";
+        }
+      }
+      StreamPrinter<decayed_T>::toStream(os, *(param.data() + i));
     }
     return os;
   }
