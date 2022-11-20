@@ -29,6 +29,9 @@ if (UNIX)
             -Wdouble-promotion
             -Wall
             -Wextra
+            -Wshadow
+            -Wconversion
+            -Wpedantic
             -Wundef
             -Werror
             -Wfatal-error)
