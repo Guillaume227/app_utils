@@ -13,12 +13,12 @@ struct timeval;  // Windows-specific: forward declaration to fix compilation err
 #include "../tests/reflexio.t.hpp"
 
 
-PYBIND11_MAKE_OPAQUE(ArrayFloat8_t);
-PYBIND11_MAKE_OPAQUE(std::vector<int>);
-PYBIND11_MAKE_OPAQUE(std::vector<float>);
-PYBIND11_MAKE_OPAQUE(std::vector<double>);
-PYBIND11_MAKE_OPAQUE(std::vector<std::string>);
-PYBIND11_MAKE_OPAQUE(std::vector<std::string_view>);
+PYBIND11_MAKE_OPAQUE(ArrayFloat8_t)
+PYBIND11_MAKE_OPAQUE(std::vector<int>)
+PYBIND11_MAKE_OPAQUE(std::vector<float>)
+PYBIND11_MAKE_OPAQUE(std::vector<double>)
+PYBIND11_MAKE_OPAQUE(std::vector<std::string>)
+PYBIND11_MAKE_OPAQUE(std::vector<std::string_view>)
 
 // test different return value policies for different CustomFloat tags
 namespace app_utils::pybind {
