@@ -42,7 +42,7 @@ set_target_properties(app_utils_test_pybind PROPERTIES
 #endif()
 
 add_test (NAME app_utils-pybind-tests
-  COMMAND ${PYTHON_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR} -rs --verbose --capture=no
+  COMMAND ${PYTHON_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR} -rs --verbose --capture=no --durations=0
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
 )
 
