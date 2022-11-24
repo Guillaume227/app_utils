@@ -88,8 +88,8 @@ struct reflexio_view {
   }
 
   constexpr friend size_t serial_size(reflexio_view const& view) {
-    return 1 + app_utils::serial::serial_size(view.exclude_mask) +
-           serial_size(view.object, view.exclude_mask);
+    return (view.exclude_mask.none() ? 2 : (1 + app_utils::serial::serial_size(view.exclude_mask))) +
+            serial_size(view.object, view.exclude_mask);
   }
 
   constexpr friend size_t to_bytes(std::byte* buffer,

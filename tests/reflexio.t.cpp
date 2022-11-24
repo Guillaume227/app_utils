@@ -376,6 +376,9 @@ TEST_CASE("reflexio_view_serialization", "[reflexio]") {
   app_utils::serial::to_bytes(buffer, view);
 
   REQUIRE(buffer.size() < serial_size(view.object));
+  REQUIRE(buffer.size() == serial_size(view));
+
+  REQUIRE(serial_size(FancierStruct::View(view.object)) == 2 + serial_size(view.object));
 
   FancierStruct myStruct2;
   FancierStruct::View view2 {myStruct2, excludeMask};
