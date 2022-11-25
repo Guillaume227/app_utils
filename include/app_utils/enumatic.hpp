@@ -343,3 +343,6 @@ struct Enumatic {
 #define ENUMATIC_DEFINE(EnumName, ...) ENUM_CLASS_DEFINE(EnumName, /*allowFromIdx*/ false, __VA_ARGS__)
 #define ENUMATIC_DEFINE_WITH_STORAGE_TYPE(EnumName, StorageType, ...) ENUMATIC_DEFINE_IMPL(enum class, : StorageType, EnumName, /*allowFromIdx*/ false, __VA_ARGS__)
 #define ENUMATIC_DEFINE_idx(EnumName, ...) ENUM_CLASS_DEFINE(EnumName, true, __VA_ARGS__)
+
+// Defines an enum with uint8_t underlying type
+#define ENUMATIC_DEFINE_SINGLE_BYTE(EnumName, ...) ENUMATIC_DEFINE_IMPL(enum class, : uint8_t, EnumName, /*allowFromIdx*/ false, __VA_ARGS__)
