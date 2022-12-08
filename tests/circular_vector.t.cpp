@@ -31,30 +31,69 @@ TEST_CASE("circular_vector", "[container]") {
   REQUIRE(calc_avg(buff) == 0);
 
   buff.push_back(2);
+
+  REQUIRE(buff.size() == 1);
+  REQUIRE(buff.get_front_index() == 0);
+  REQUIRE(buff.get_back_index() == 0);
+
   buff.push_back(4);
 
   REQUIRE(buff.size() == 2);
   REQUIRE(buff.get_front_index() == 0);
+  REQUIRE(buff.get_back_index() == 1);
 
   REQUIRE(calc_avg(buff) == 3);
 
   buff.push_back(6);
   REQUIRE(buff.size() == 3);
   REQUIRE(buff.get_front_index() == 0);
+  REQUIRE(buff.get_back_index() == 2);
   REQUIRE(calc_avg(buff) == 4);
 
   buff.push_back(8);
   REQUIRE(buff.size() == 3);
   REQUIRE(buff.get_front_index() == 1);
+  REQUIRE(buff.get_back_index() == 0);
   REQUIRE(calc_avg(buff) == 6);
 
   buff.push_back(6);
   REQUIRE(buff.size() == 3);
   REQUIRE(buff.get_front_index() == 2);
+  REQUIRE(buff.get_back_index() == 1);
   REQUIRE(calc_avg(buff) == 6); // 20 / 3 rounds down to 6
 
   buff.push_back(4);
   REQUIRE(buff.size() == 3);
   REQUIRE(buff.get_front_index() == 0);
+  REQUIRE(buff.get_back_index() == 2);
   REQUIRE(calc_avg(buff) == 6);
+
+
+  buff.push_back(4);
+  REQUIRE(buff.size() == 3);
+  REQUIRE(buff.get_front_index() == 1);
+  REQUIRE(buff.get_back_index() == 0);
+
+  buff.pop_back();
+  REQUIRE(buff.size() == 2);
+  REQUIRE(buff.get_front_index() == 1);
+  REQUIRE(buff.get_back_index() == 2);
+
+  buff.pop_back();
+  REQUIRE(buff.size() == 1);
+  REQUIRE(buff.get_front_index() == 1);
+  REQUIRE(buff.get_back_index() == 1);
+
+  buff.pop_back();
+  REQUIRE(buff.size() == 0);
+  REQUIRE(buff.empty());
+  REQUIRE(buff.get_front_index() == 0);
+  REQUIRE(buff.get_back_index() == 0);
+
+  // pop back on an empty buffer
+  buff.pop_back();
+  REQUIRE(buff.size() == 0);
+  REQUIRE(buff.empty());
+  REQUIRE(buff.get_front_index() == 0);
+  REQUIRE(buff.get_back_index() == 0);
 }

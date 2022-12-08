@@ -14,6 +14,7 @@ class circular_vector_t {
 
   size_t _capacity;
   size_t _front_index = 0;
+  size_t _back_index = 0;
   std::vector<T> _buffer;
 
 public:
@@ -94,8 +95,7 @@ public:
   }
   [[nodiscard]]
   size_t get_back_index() const {
-    return (_front_index == 0 ? (_buffer.size() > 0 ? _buffer.size() - 1 : 0)
-                              : _front_index - 1);
+    return _back_index;
   }
   [[nodiscard]]
   size_t unwrapped_index(size_t i) const {
@@ -119,7 +119,7 @@ public:
 
   [[nodiscard]]
   bool has_wrapped_around() const {
-    return _front_index != 0;
+    return _back_index < _front_index;
   }
 
   [[nodiscard]]
@@ -130,7 +130,12 @@ public:
 
   [[nodiscard]]
   size_t size() const {
-    return _buffer.size();
+    if (_buffer.empty()) {
+      return 0;
+    }
+    return _back_index >= _front_index
+      ? _back_index - _front_index + 1
+      : _back_index + _buffer.size() - _front_index + 1;
   }
   [[nodiscard]]
   size_t capacity() const {
@@ -142,6 +147,7 @@ public:
   }
 
   void clear() {
+    _back_index = 0;
     _front_index = 0;
     _buffer.clear();
   }
@@ -157,19 +163,23 @@ public:
   }
 
   T const& front() const {
+    checkCond(not empty(), "empty buffer");
     return _buffer[_front_index];
   }
 
   T const& back() const {
-    return _buffer[get_back_index()];
+    checkCond(not empty(), "empty buffer");
+    return _buffer[_back_index];
   }
 
   T& front() {
+    checkCond(not empty(), "empty buffer");
     return _buffer[_front_index];
   }
 
   T& back() {
-    return _buffer[get_back_index()];
+    checkCond(not empty(), "empty buffer");
+    return _buffer[_back_index];
   }
 
   Iterator begin() {
@@ -193,8 +203,7 @@ public:
   }
 
   size_t distance_from(size_t index) const {
-    auto back_index = get_back_index();
-    return back_index >= index ? back_index - index : _capacity - index + back_index;
+    return _back_index >= index ? _back_index - index : _capacity - index + _back_index;
   }
 
   T const& operator[](size_t index) const {
@@ -208,30 +217,49 @@ public:
   template<typename U>
   void push_back(U&& value){
     if (_buffer.size() < _capacity){
+      if (not _buffer.empty()) {
+        _back_index++;
+      }
       _buffer.push_back(std::forward<U>(value));
     } else {
-      if (_front_index == _capacity - 1) {
-        _front_index = 0;
-      } else {
-        _front_index++;
+      _back_index = (_back_index + 1) % _capacity;
+      _buffer[_back_index] = std::forward<U>(value);
+      if (_front_index == _back_index) {
+        // the new element is taking the place of the oldest element
+        // so we push front index forward.
+        _front_index = (_back_index + 1) % _capacity;
       }
-      size_t index = get_back_index();
-      _buffer[index] = std::forward<U>(value);
     }
   }
 
   template<typename ...Args>
   T& emplace_back(Args&& ... args){
-    if (_buffer.size() < _capacity){
-      return _buffer.emplace_back(std::forward<Args>(args)...);
-    } else {
-      if (_front_index == _capacity - 1) {
-        _front_index = 0;
+    push_back(T{std::forward<Args>(args)...});
+    return _buffer[_back_index];
+  }
+
+  void pop_back(size_t N = 1) {
+    for (size_t i = 0; i < N; i++) {
+      if (_front_index != _back_index) {
+        if (_back_index == 0) {
+          _back_index = _buffer.size();
+        }
+        _back_index--;
       } else {
-        _front_index++;
+        clear();
+        break;
       }
-      size_t index = get_back_index();
-      return _buffer[index] = T{std::forward<Args>(args)...};
+    }
+  }
+
+  void pop_front(size_t N = 1) {
+    for (size_t i = 0; i < N; i++) {
+      if (_front_index != _back_index) {
+        _front_index = (_front_index + 1) % _capacity;
+      } else {
+        clear();
+        break;
+      }
     }
   }
 };
