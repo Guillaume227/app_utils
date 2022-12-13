@@ -34,11 +34,12 @@ public:
     using const_reference = T const&;// or also value_type&
 
     Iterator() = default; // past the end operator required by LegacyForwardIterator concept
-    Iterator(circular_vector_t const& _buffer, size_t index)
+    Iterator(circular_vector_t const& _buffer, size_t index=0)
         : m_circ_buffer(&_buffer)
         , m_idx(index){}
 
     constexpr const_reference operator*() const {
+      checkCond(m_idx <= m_circ_buffer->size(), "out of range access");
       return m_circ_buffer->at(m_idx);
     }
     constexpr pointer operator->() const {
@@ -48,12 +49,6 @@ public:
     constexpr Iterator& operator++() {
       checkCond(m_circ_buffer != nullptr, "out of range access");
       m_idx++;
-      if (m_idx == m_circ_buffer->_front_index) {
-        m_idx = m_circ_buffer->capacity(); // end()
-      } else if (m_idx == m_circ_buffer->capacity() and m_circ_buffer->_front_index != 0) {
-        m_idx = 0; // wrap around
-      }
-      checkCond(m_idx <= m_circ_buffer->size(), "out of range access");
       return *this;
     }
 
@@ -183,19 +178,19 @@ public:
   }
 
   Iterator begin() {
-    return empty() ? end() : Iterator{*this, _front_index};
+    return empty() ? end() : Iterator{*this};
   }
 
   Iterator end() {
-    return {*this, _capacity};
+    return {*this, size()};
   }
 
   Iterator begin() const {
-    return empty() ? end() : Iterator{*this, _front_index};
+    return empty() ? end() : Iterator{*this};
   }
 
   Iterator end() const {
-    return {*this, _capacity};
+    return {*this, size()};
   }
 
   T const& at(size_t index) const {

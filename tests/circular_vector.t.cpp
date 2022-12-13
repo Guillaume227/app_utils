@@ -25,6 +25,14 @@ TEST_CASE("circular_vector", "[container]") {
     return sum / (int)buffer.size();
   };
 
+  auto to_vector = [](auto const& buffer) {
+    std::vector<int> res;
+    for (auto elem: buffer) {
+      res.push_back(elem);
+    }
+    return res;
+  };
+
   REQUIRE(buff.size() == 0);
   REQUIRE(std::count(buff.begin(), buff.end(), 0) == 0);
   REQUIRE(buff.empty());
@@ -35,12 +43,14 @@ TEST_CASE("circular_vector", "[container]") {
   REQUIRE(buff.size() == 1);
   REQUIRE(buff.get_front_index() == 0);
   REQUIRE(buff.get_back_index() == 0);
+  REQUIRE(to_vector(buff) == std::vector<int>{2});
 
   buff.push_back(4);
 
   REQUIRE(buff.size() == 2);
   REQUIRE(buff.get_front_index() == 0);
   REQUIRE(buff.get_back_index() == 1);
+  REQUIRE(to_vector(buff) == std::vector<int>{2, 4});
 
   REQUIRE(calc_avg(buff) == 3);
 
@@ -49,40 +59,53 @@ TEST_CASE("circular_vector", "[container]") {
   REQUIRE(buff.get_front_index() == 0);
   REQUIRE(buff.get_back_index() == 2);
   REQUIRE(calc_avg(buff) == 4);
+  REQUIRE(to_vector(buff) == std::vector<int>{2, 4, 6});
 
   buff.push_back(8);
   REQUIRE(buff.size() == 3);
   REQUIRE(buff.get_front_index() == 1);
   REQUIRE(buff.get_back_index() == 0);
   REQUIRE(calc_avg(buff) == 6);
+  REQUIRE(to_vector(buff) == std::vector<int>{4, 6, 8});
 
   buff.push_back(6);
   REQUIRE(buff.size() == 3);
   REQUIRE(buff.get_front_index() == 2);
   REQUIRE(buff.get_back_index() == 1);
   REQUIRE(calc_avg(buff) == 6); // 20 / 3 rounds down to 6
+  REQUIRE(to_vector(buff) == std::vector<int>{6, 8, 6});
 
   buff.push_back(4);
   REQUIRE(buff.size() == 3);
   REQUIRE(buff.get_front_index() == 0);
   REQUIRE(buff.get_back_index() == 2);
   REQUIRE(calc_avg(buff) == 6);
-
+  REQUIRE(to_vector(buff) == std::vector<int>{8, 6, 4});
 
   buff.push_back(4);
   REQUIRE(buff.size() == 3);
   REQUIRE(buff.get_front_index() == 1);
   REQUIRE(buff.get_back_index() == 0);
+  REQUIRE(to_vector(buff) == std::vector<int>{6, 4, 4});
 
   buff.pop_back();
   REQUIRE(buff.size() == 2);
   REQUIRE(buff.get_front_index() == 1);
   REQUIRE(buff.get_back_index() == 2);
+  REQUIRE(to_vector(buff) == std::vector<int>{6, 4});
+
+  auto buff2 = buff;
+  buff2.pop_front();
+  REQUIRE(buff2.size() == 1);
+  REQUIRE(buff2.get_front_index() == 2);
+  REQUIRE(buff2.get_back_index() == 2);
+  REQUIRE(to_vector(buff2) == std::vector<int>{4});
 
   buff.pop_back();
   REQUIRE(buff.size() == 1);
   REQUIRE(buff.get_front_index() == 1);
   REQUIRE(buff.get_back_index() == 1);
+  REQUIRE(to_vector(buff) == std::vector<int>{6});
 
   buff.pop_back();
   REQUIRE(buff.size() == 0);
@@ -96,4 +119,17 @@ TEST_CASE("circular_vector", "[container]") {
   REQUIRE(buff.empty());
   REQUIRE(buff.get_front_index() == 0);
   REQUIRE(buff.get_back_index() == 0);
+
+  // pop front on an empty buffer
+  buff.pop_front();
+  REQUIRE(buff.size() == 0);
+  REQUIRE(buff.empty());
+  REQUIRE(buff.get_front_index() == 0);
+  REQUIRE(buff.get_back_index() == 0);
+
+  buff2.pop_front();
+  REQUIRE(buff2.size() == 0);
+  REQUIRE(buff2.empty());
+  REQUIRE(buff2.get_front_index() == 0);
+  REQUIRE(buff2.get_back_index() == 0);
 }
