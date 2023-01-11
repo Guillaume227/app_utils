@@ -68,6 +68,22 @@ TEST_CASE("strutils::split_parse", "[string_utils]") {
   }
 }
 
+TEST_CASE("strutils::to_from_string", "[string_utils]") {
+  {
+    float real = 3.f;
+    float imag = 2.f;
+    std::complex<float> val{real, imag};
+    std::string val_str = to_string(val);
+    auto const expected_str = to_string(real) + "+" + to_string(imag) + "i";
+    REQUIRE(val_str == expected_str);
+
+    std::complex<float> val2;
+    from_string(val2, val_str);
+    REQUIRE(val == val2);
+  }
+}
+
+
 TEST_CASE("strutils::from_string", "[string_utils]") {
   using namespace app_utils::strutils;
   float f;

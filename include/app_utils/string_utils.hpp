@@ -6,6 +6,7 @@
 #include <string>
 #include <cstring>
 #include <vector>
+#include <complex>
 #include <app_utils/cond_check.hpp>
 #include <app_utils/type_name.hpp>
 
@@ -106,6 +107,12 @@ std::string to_string(T const& val) {
 
 std::string to_string(double val);
 std::string to_string(float val);
+
+template<typename T>
+std::string to_string(std::complex<T> const& val) {
+  auto& tab = reinterpret_cast<T const(&)[2]>(val);
+  return to_string(tab[0]) + "+" + to_string(tab[1]) + "i";
+}
 
 inline std::string to_string(std::string const& val) {
   return val;
@@ -210,6 +217,19 @@ inline bool from_string(int& val, std::string_view val_str) {
   size_t last_converted_pos = 0;
   val = std::stoi(val_str.data(), &last_converted_pos);
   checkCond(last_converted_pos == val_str.size(), "failed converting", val_str, "to int");
+  return true;
+}
+
+template<typename T>
+bool from_string(std::complex<T>& val, std::string_view val_str) {
+  auto mid_pos = val_str.find('+');
+  checkCond(mid_pos != std::string::npos, "bad std::complex format");
+  checkCond(val_str.back() == 'i');
+  std::string_view real_str = val_str.substr(0, mid_pos);
+  auto& tab = reinterpret_cast<T(&)[2]>(val);
+  from_string(tab[0], real_str);
+  std::string_view imag_str = val_str.substr(mid_pos + 1, val_str.size() - mid_pos - 2);
+  from_string(tab[1], imag_str);
   return true;
 }
 

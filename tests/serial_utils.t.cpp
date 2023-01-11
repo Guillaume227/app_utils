@@ -11,6 +11,20 @@ TEST_CASE("string_to_from_bytes", "[serial]") {
   REQUIRE(serial_size(echo_sv) == 4); // one additional byte for storing the size
 }
 
+TEST_CASE("complex_to_from_bytes", "[serial]") {
+  using namespace app_utils::serial;
+  std::complex<float> val{3, 2};
+
+  REQUIRE(serial_size(val) == 2 * serial_size(val.real()));
+  std::vector<std::byte> buffer(10);
+  size_t num_bytes_read = to_bytes(buffer, val);
+
+  std::complex<float> val2;
+  size_t num_bytes_written = from_bytes(buffer, val2);
+  REQUIRE(num_bytes_written == num_bytes_read);
+  REQUIRE(val == val2);
+}
+
 TEST_CASE("bitset_to_from_bytes", "[serial]") {
 
   {

@@ -8,6 +8,7 @@
 #include <vector>
 #include <bitset>
 #include <array>
+#include <complex>
 #include <span>
 #include <bit>
 
@@ -19,6 +20,11 @@ namespace app_utils::serial {
 template<typename T>
 constexpr size_t serial_size(T const&) requires std::is_arithmetic_v<T> or std::is_enum_v<T> {
   return sizeof(T);
+}
+
+template<typename T>
+constexpr size_t serial_size(std::complex<T> const&) {
+  return 2 * sizeof(T);
 }
 
 inline size_t serial_size(std::string const& str) {
@@ -88,6 +94,23 @@ constexpr size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, T& 
 template <typename T>
 requires std::is_arithmetic_v<T>
 constexpr size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, T const& val) {
+  size_t num_bytes = serial_size(val);
+  std::memcpy(buffer, &val, num_bytes);
+  return num_bytes;
+}
+
+
+template<typename T>
+requires std::is_arithmetic_v<T>
+constexpr size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, std::complex<T>& val) {
+  size_t num_bytes = serial_size(val);
+  std::memcpy(&val, buffer, num_bytes);
+  return num_bytes;
+}
+
+template <typename T>
+requires std::is_arithmetic_v<T>
+constexpr size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, std::complex<T> const& val) {
   size_t num_bytes = serial_size(val);
   std::memcpy(buffer, &val, num_bytes);
   return num_bytes;
