@@ -118,8 +118,8 @@ public:
   }
 
   [[nodiscard]]
-  std::vector<T> const& as_vector() const {
-    checkCond(not has_wrapped_around(), "circular vector cannot be interpreted as a vector once it started wrapping around");
+  std::vector<T> const& as_vector(bool ignore_wrap_around) const {
+    checkCond(ignore_wrap_around or not has_wrapped_around(), "circular vector cannot be interpreted as a vector once it started wrapping around");
     return _buffer;
   }
 
