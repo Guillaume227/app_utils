@@ -13,6 +13,7 @@ namespace reflexio {
 template <typename ReflexioStruct>
 struct reflexio_view {
 
+  using ReflexioT = ReflexioStruct;
   using Mask = typename ReflexioStruct::Mask;
   Mask exclude_mask;
   ReflexioStruct& object;
