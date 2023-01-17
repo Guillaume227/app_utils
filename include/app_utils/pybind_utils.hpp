@@ -4,6 +4,7 @@
 #include <pybind11/cast.h>
 #include <pybind11/functional.h>
 #include <pybind11/operators.h>
+#include <pybind11/complex.h>
 #include <pybind11/stl.h>
 #include <pybind11/stl_bind.h>
 #include <pybind11/numpy.h>
@@ -29,7 +30,9 @@ struct pybind_wrapper {
   template <class PybindHost>
   static void wrap_with_pybind(PybindHost&) requires std::is_arithmetic_v<T> or 
                                                      std::is_same_v<T, std::string> or
-                                                     std::is_same_v<T, std::string_view> {}
+                                                     std::is_same_v<T, std::string_view> or
+                                                     std::is_same_v<T, std::complex<float>> or
+                                                     std::is_same_v<T, std::complex<double>>{}
 };
 
 template <typename T>
