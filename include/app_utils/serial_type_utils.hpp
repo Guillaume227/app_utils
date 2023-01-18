@@ -104,7 +104,8 @@ template<typename T>
 requires std::is_arithmetic_v<T>
 constexpr size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, std::complex<T>& val) {
   size_t num_bytes = serial_size(val);
-  std::memcpy(&val, buffer, num_bytes);
+  // see standard: that reinterpret_cast is legit for std::complex and is needed to silence a gcc warning ([-Werror=class-memaccess)
+  std::memcpy(reinterpret_cast<T(&)[2]>(val), buffer, num_bytes);
   return num_bytes;
 }
 
