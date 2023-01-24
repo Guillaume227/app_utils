@@ -288,7 +288,8 @@ struct ReflexioStructBase {
   friend std::istream& from_yaml(
           ReflexioStruct& instance,
           std::istream& is,
-          Mask const& exclude_mask=exclude_none)
+          Mask const& exclude_mask=exclude_none,
+          int const line_offset = 0)
   {
     using descriptor_map_t = std::unordered_map<std::string_view, member_descriptor_t<ReflexioStruct> const*>;
     static const descriptor_map_t descriptor_map =
@@ -303,10 +304,12 @@ struct ReflexioStructBase {
     bool first_line_seen = false;
     size_t start_indent = 0;
     std::string raw_line;
+    int line_num = line_offset;
     for(size_t start_of_line=is.tellg();
         std::getline(is, raw_line);
         start_of_line=is.tellg())
     {
+      line_num++;
       std::string_view line = app_utils::strutils::strip(raw_line);
       size_t indent = raw_line.find_first_not_of(' ') / yaml_utils::indent_width;
 
@@ -339,19 +342,32 @@ struct ReflexioStructBase {
 
       size_t separator_pos = line.find_first_of(':');
 
-      checkCond(separator_pos != std::string::npos, "bad name value pair:", raw_line);
+      if (separator_pos == std::string::npos) {
+        if (line.find_first_not_of(" \t\n\r") == std::string::npos) {
+          throwExc("unexpected empty line found at line", line_num);
+        } else {
+          throwExc("cannot parse a 'name: value' pair at line", line_num, ':', raw_line);
+        }
+      }
+
       auto const name = line.substr(0, separator_pos);
       auto const val = line.substr(separator_pos + 1);
       auto it = descriptor_map.find(name);
       checkCond(it != descriptor_map.end(), "unrecognized",
-                app_utils::typeName<ReflexioStruct>(), "member name", name);
+                app_utils::typeName<ReflexioStruct>(), "member name", name, "at line", line_num, ':', raw_line);
 
       if (exclude_mask.test(it->second->get_index())) {
         continue;
       }
 
       if (val.empty()) {
-        it->second->set_value_from_yaml(instance, is);
+        // nested reflexio struct
+        try {
+          it->second->set_value_from_yaml(instance, is);
+        } catch (std::exception const& exc) {
+          throwExc("error found:", exc.what(),
+                   "\nwhen parsing", it->second->get_name(), "at line", line_num);
+        }
       } else {
         // value fits on just one line
 
@@ -368,7 +384,7 @@ struct ReflexioStructBase {
         try {
           it->second->set_value_from_yaml(instance, is);
         } catch (std::exception const& exc) {
-          throwExc("Failed parsing yaml line:", raw_line, exc.what());
+          throwExc("Failed parsing line", line_num, ":", raw_line, exc.what());
         }
       }
     }
