@@ -66,7 +66,7 @@ struct pybind_wrapper<ReflexioStruct,
   static void wrap_view(PybindHost& pybindHost) {
 
     using View = reflexio::reflexio_fat_view<ReflexioStruct>;
-    static std::string_view const typeName = app_utils::typeName<View>();
+    static std::string_view const typeName = app_utils::typeName<View>(/*strip namespace*/true);
 
     // 'Base' python type (what we can wrap at compile time) for a reflexio view.
     // Actual visible fields need to be inserted at runtime, see custom type caster logic above.
@@ -108,7 +108,7 @@ struct pybind_wrapper<ReflexioStruct,
     if (not s_registered_once) {
       s_registered_once = true;
 
-      static std::string_view const typeName = app_utils::typeName<ReflexioStruct>();
+      static std::string_view const typeName = app_utils::typeName<ReflexioStruct>(/*strip namespace*/true);
       auto wrappedType = typename ReflexioStruct::PybindClassType(pybindHost, typeName.data());
       wrappedType.def(pybind11::init<>())
           .def_property_readonly_static("__doc__", [](py::object /*self*/){
