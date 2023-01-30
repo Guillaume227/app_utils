@@ -10,9 +10,7 @@
 #include "reflexio_view.hpp"
 
 #ifndef REFLEXIO_MINIMAL_FEATURES
-#include <unordered_map>
-#include <sstream>
-#include <app_utils/string_utils.hpp>
+#include "reflexio_utils.hpp"
 #include <stdexcept>
 #endif
 
@@ -212,43 +210,23 @@ struct ReflexioStructBase {
   [[nodiscard]]
   std::string differences(
           ReflexioStruct const& other,
-          Mask const& excludeMask=exclude_none) const {
-    std::ostringstream out;
-    for (auto& descriptor: get_member_descriptors(excludeMask)) {
-      if (descriptor.values_differ(this, &other)) {
-        out << descriptor.get_name() << ": ";
-        descriptor.value_to_yaml(this, out);
-        out << " vs ";
-        descriptor.value_to_yaml(&other, out);
-        out << '\n';
-      }
-    }
-    return out.str();
+          Mask const& exclude_mask=exclude_none) const {
+    return details::differences(
+            this,
+            &other,
+            ReflexioStruct::get_member_descriptors(),
+            [&exclude_mask](size_t idx){ return exclude_mask.test(idx); });
   }
 
   constexpr friend std::ostream& to_yaml(
           ConstView const& view,
           std::ostream& os)
   {
-    yaml_utils::indenter_t indenter;
-    bool const am_i_nested = yaml_utils::get_indent_depth() > 0;
-    if (am_i_nested) {
-      os << "\n";
-    }
-
-    size_t const last_index = view.object.num_registered_member_vars() - 1;
-
-    size_t field_index = 0;
-    for (auto& descriptor: view){
-      yaml_utils::print_indent(os);
-      os << descriptor.get_name() << ": ";
-      descriptor.value_to_yaml(&view.object, os);
-      if (field_index < last_index or not am_i_nested) {
-        os << '\n'; // avoid adding a newline
-      }
-      field_index++;
-    }
-    return os;
+    return details::to_yaml(
+            &view.object,
+            ReflexioStruct::get_member_descriptors(),
+            [&view](size_t idx){ return view.exclude_mask.test(idx); },
+            os);
   }
 
   constexpr friend std::ostream& to_yaml(
@@ -283,105 +261,12 @@ struct ReflexioStructBase {
           Mask const& exclude_mask=exclude_none,
           int const line_offset = 0)
   {
-    using descriptor_map_t = std::unordered_map<std::string_view, member_descriptor_t const*>;
-    static const descriptor_map_t descriptor_map =
-      []{
-        descriptor_map_t map;
-        for (auto& descriptor: ReflexioStruct::get_member_descriptors()) {
-          map[descriptor->get_name()] = descriptor;
-        }
-        return map;
-      }();
-
-    bool first_line_seen = false;
-    size_t start_indent = 0;
-    std::string raw_line;
-    int line_num = line_offset;
-    for(size_t start_of_line=is.tellg();
-        std::getline(is, raw_line);
-        start_of_line=is.tellg())
-    {
-      line_num++;
-      std::string_view line = app_utils::strutils::strip(raw_line);
-      size_t indent = raw_line.find_first_not_of(' ') / yaml_utils::indent_width;
-
-      if (line.starts_with("#")) {
-        // it's a comment line
-        continue;
-      } else if (line == "---") {
-        if (first_line_seen) {
-          // signals the start of another section
-          break;
-        } else {
-          checkCond(indent == 0);
-          start_indent = 0;
-        }
-        continue;
-      } else if (line == "...") {
-        // end of section
-        break;
-      } else if (not first_line_seen) {
-        start_indent = indent;
-      } else {
-        if (start_indent > indent) {
-          int rewind_offset = -static_cast<int>((size_t)is.tellg() - start_of_line);
-          is.seekg(rewind_offset, std::ios_base::cur);
-          break;
-        }
-      }
-
-      first_line_seen = true;
-
-      size_t separator_pos = line.find_first_of(':');
-
-      if (separator_pos == std::string::npos) {
-        if (line.find_first_not_of(" \t\n\r") == std::string::npos) {
-          throwExc("unexpected empty line found at line", line_num);
-        } else {
-          throwExc("cannot parse a 'name: value' pair at line", line_num, ':', raw_line);
-        }
-      }
-
-      auto const name = line.substr(0, separator_pos);
-      auto const val = line.substr(separator_pos + 1);
-      auto it = descriptor_map.find(name);
-      checkCond(it != descriptor_map.end(), "unrecognized",
-                app_utils::typeName<ReflexioStruct>(), "member name", name, "at line", line_num, ':', raw_line);
-
-      if (exclude_mask.test(it->second->get_index())) {
-        continue;
-      }
-
-      if (val.empty()) {
-        // nested reflexio struct
-        try {
-          it->second->set_value_from_yaml(&instance, is);
-        } catch (std::exception const& exc) {
-          throwExc("error found:", exc.what(),
-                   "\nwhen parsing", it->second->get_name(), "at line", line_num);
-        }
-      } else {
-        // value fits on just one line
-
-        size_t sep_pos = raw_line.find_first_of(':');
-        size_t rewind_offset;
-        if (is.eof()) {
-          is.clear();
-          rewind_offset = raw_line.size() - sep_pos - 1;
-        } else {
-          size_t cur_pos = is.tellg();
-          rewind_offset = cur_pos - start_of_line - sep_pos - 1;
-        }
-        is.seekg(-(int)rewind_offset, std::ios_base::cur);
-        try {
-          it->second->set_value_from_yaml(&instance, is);
-        } catch (std::exception const& exc) {
-          throwExc("Failed parsing line", line_num, ":", raw_line, exc.what());
-        }
-      }
-    }
-
-    return is;
+    return details::from_yaml(
+            &instance,
+            ReflexioStruct::get_member_descriptors(),
+            is,
+            [&exclude_mask](size_t idx){ return exclude_mask.test(idx); },
+            line_offset);
   }
 
   friend std::istream& from_yaml(
@@ -423,16 +308,9 @@ struct ReflexioStructBase {
     return is;
   }
 
-  static std::string const& get_docstring(Mask const& excludeMask=exclude_none) {
-    static std::string const docstring = [&excludeMask] {
-      std::ostringstream oss;
-      for (auto& descriptor: ReflexioStruct::get_member_descriptors(excludeMask)) {
-        oss << descriptor.get_name() << ": "
-            << descriptor.get_description() << "\n";
-      }
-      return oss.str();
-    }();
-    return docstring;
+  static std::string const& get_docstring() {
+    static auto const doc_string = details::get_docstring(ReflexioStruct::get_member_descriptors());
+    return doc_string;
   }
 
 #endif
@@ -479,7 +357,7 @@ struct ReflexioStructBase {
       res += descriptor.write_to_bytes(buffer + res, buffer_size - res, &instance);
     }
     //std::cout << std::endl;
-    checkCond(buffer_size >= res, "output buffer is not big enough to accomodate object", buffer_size, '<', res);
+    checkCond(buffer_size >= res, "output buffer is not big enough to accommodate object", buffer_size, '<', res);
     return res;
   }
 
@@ -512,7 +390,7 @@ struct ReflexioStructBase {
                 app_utils::typeName<ReflexioStruct>(), "required:", buffer_size, '<', res);
     }
 
-    return res; //TODO: revisit, saw mismatch between buffer size (383) and read byte (386) buffer_size >= res ? res : 0;
+    return res;
   }
 
   friend size_t from_bytes(std::span<std::byte const> buffer,
@@ -522,6 +400,7 @@ struct ReflexioStructBase {
   }
 };
 
+namespace details {
 consteval size_t count_member_var_declarations(std::string_view const text) {
   size_t count = 0;
 
@@ -533,6 +412,7 @@ consteval size_t count_member_var_declarations(std::string_view const text) {
     }
   }
   return count;
+}
 }
 
 template <typename T>
@@ -591,7 +471,7 @@ using is_reflexio_struct = std::is_base_of<ReflexioStructBase<T, T::NumMemberVar
   struct StructName                                                                     \
         : reflexio::ReflexioStructBase<                                                 \
               StructName,                                                               \
-              reflexio::count_member_var_declarations(#__VA_ARGS__)> {                  \
+              reflexio::details::count_member_var_declarations(#__VA_ARGS__)> {         \
                                                                                         \
     template<size_t N, class dummy>                                                     \
     struct member_var_traits_t {};                                                      \
