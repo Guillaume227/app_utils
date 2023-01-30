@@ -46,7 +46,7 @@ struct reflexio_view {
   // copy only the masked fields
   reflexio_view& operator=(ReflexioStruct const& s) {
     for (auto& descriptor: *this) {
-      descriptor.copy_value(object, s);
+      descriptor.copy_value(&object, &s);
     }
     return *this;
   }

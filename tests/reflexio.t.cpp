@@ -174,8 +174,8 @@ TEST_CASE("reflexio_iterator", "[reflexio]") {
 TEST_CASE("reflexio_get_value", "[reflexio]") {
   MyStruct myStruct;
   auto& descriptors = myStruct.get_member_descriptors();
-  REQUIRE(descriptors[1]->get_value_ref<float>(myStruct) == myStruct.var2);
-  REQUIRE(descriptors[2]->get_value_ref<TestEnum>(myStruct) == myStruct.var3);
+  REQUIRE(descriptors[1]->get_value_ref<float>(&myStruct) == myStruct.var2);
+  REQUIRE(descriptors[2]->get_value_ref<TestEnum>(&myStruct) == myStruct.var3);
   std::span values_list = descriptors[2]->get_values_str();
 
   REQUIRE(values_list.size() > 0);

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <array>
 #include <bitset>
 #include <cstddef>// std::byte
 #include <utility>
@@ -15,7 +14,7 @@ template<typename ReflexioStruct>
 class ReflexioIterator {
   using iterator_category = std::forward_iterator_tag;
   using difference_type = std::ptrdiff_t;
-  using value_type = member_descriptor_t<ReflexioStruct> const;
+  using value_type = member_descriptor_t const;
   using pointer = value_type*;  // or also value_type*
   using reference = value_type&;// or also value_type&
   using const_reference = value_type const&;// or also value_type&
@@ -41,6 +40,7 @@ public:
   constexpr const_reference operator*() const {
     return *ReflexioStruct::get_member_descriptors()[m_idx];
   }
+
   constexpr pointer operator->() const {
     return ReflexioStruct::get_member_descriptors()[m_idx];
   }

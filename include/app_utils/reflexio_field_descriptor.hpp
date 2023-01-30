@@ -34,7 +34,6 @@ namespace reflexio {
 
 typedef void (*voidfunc)(void);
 
-template<typename ReflexioStruct>
 struct member_descriptor_t {
 #ifndef REFLEXIO_MINIMAL_FEATURES
   size_t const m_index;
@@ -57,16 +56,16 @@ struct member_descriptor_t {
 #ifndef REFLEXIO_MINIMAL_FEATURES
 
   template<typename T>
-  T const& get_value_ref(ReflexioStruct const& host) const {
+  T const& get_value_ref(void const* host) const {
     return *reinterpret_cast<T const*>(get_value_void_ptr(host));
   }
   template<typename T>
-  T& get_value_ref(ReflexioStruct& host) {
+  T& get_value_ref(void* host) {
     return *reinterpret_cast<T*>(get_value_void_ptr(host));
   }
 
-  constexpr virtual void const* get_value_void_ptr(ReflexioStruct const& host) const = 0;
-  constexpr virtual void* get_value_void_ptr(ReflexioStruct& host) = 0;
+  constexpr virtual void const* get_value_void_ptr(void const* host) const = 0;
+  constexpr virtual void* get_value_void_ptr(void* host) = 0;
 
   template<typename T>
   T const* get_min_value_ptr() const {
@@ -107,17 +106,17 @@ struct member_descriptor_t {
   constexpr virtual char const* type_name() const = 0;
 
   constexpr virtual std::string default_as_string() const = 0;
-  constexpr virtual std::string value_as_string(ReflexioStruct const& host) const = 0;
-  constexpr virtual void set_value_from_string(ReflexioStruct& host, std::string_view) const = 0;
+  constexpr virtual std::string value_as_string(void const* host) const = 0;
+  constexpr virtual void set_value_from_string(void* host, std::string_view) const = 0;
   constexpr virtual void default_to_yaml(std::ostream&) const = 0;
-  constexpr virtual void value_to_yaml(ReflexioStruct const& host, std::ostream&) const = 0;
-  constexpr virtual void set_value_from_yaml(ReflexioStruct& host, std::istream&) const = 0;
+  constexpr virtual void value_to_yaml(void const* host, std::ostream&) const = 0;
+  constexpr virtual void set_value_from_yaml(void* host, std::istream&) const = 0;
 
-  constexpr virtual void copy_value(ReflexioStruct& host, ReflexioStruct const& other) const = 0;
+  constexpr virtual void copy_value(void* host, void const* other) const = 0;
 
   [[nodiscard]]
-  constexpr virtual bool is_at_default(ReflexioStruct const& host) const = 0;
-  constexpr virtual void set_to_default(ReflexioStruct& host) const = 0;
+  constexpr virtual bool is_at_default(void const* host) const = 0;
+  constexpr virtual void set_to_default(void* host) const = 0;
 #endif
   [[nodiscard]]
   constexpr virtual size_t get_var_offset() const = 0;
@@ -125,35 +124,33 @@ struct member_descriptor_t {
 
 #ifndef REFLEXIO_NO_COMPARISON_OPERATORS
   [[nodiscard]]
-  constexpr virtual bool values_differ(ReflexioStruct const& host1, ReflexioStruct const& host2) const = 0;
+  constexpr virtual bool values_differ(void const* host1, void const* host2) const = 0;
 #endif
   [[nodiscard]]
-  constexpr virtual size_t get_serial_size(ReflexioStruct const& host) const = 0;
+  constexpr virtual size_t get_serial_size(void const* host) const = 0;
 
   // returns number of bytes written
-  constexpr virtual size_t write_to_bytes(std::byte* buffer, size_t buffer_size, ReflexioStruct const& host) const = 0;
+  constexpr virtual size_t write_to_bytes(std::byte* buffer, size_t buffer_size, void const* host) const = 0;
   // returns number of bytes read
-  constexpr virtual size_t read_from_bytes(std::byte const* buffer, size_t buffer_size, ReflexioStruct& host) const = 0;
+  constexpr virtual size_t read_from_bytes(std::byte const* buffer, size_t buffer_size, void* host) const = 0;
 
 #ifdef DO_PYBIND_WRAPPING
   virtual void wrap_with_pybind(::pybind11::module& pybindmodule_, void* pybindhost_) const = 0;
-  virtual ::pybind11::object get_py_value(ReflexioStruct const& host, pybind11::return_value_policy rvp) const = 0;
-  virtual void set_py_value(ReflexioStruct& host, pybind11::object const&) const = 0;
+  virtual ::pybind11::object get_py_value(void const* host, pybind11::return_value_policy rvp) const = 0;
+  virtual void set_py_value(void* host, pybind11::object const&) const = 0;
   virtual bool add_numpy_descriptor(std::vector<::pybind11::detail::field_descriptor>&) const = 0;
 #endif
 };
 
 template <typename ReflexioStruct, typename MemberType>
-struct member_descriptor_impl_t : public member_descriptor_t<ReflexioStruct> {
+struct member_descriptor_impl_t : public member_descriptor_t {
   MemberType ReflexioStruct::*const m_member_var_ptr;
   using MemberTypeValFunc = MemberType const& (*)();
-  using MemberTypeSpanFunc = std::span<MemberType const> const& (*)();
 
 #ifndef REFLEXIO_MINIMAL_FEATURES
   typename reflexio_traits<MemberType>::DefaultType const m_default_value;
   MemberTypeValFunc const m_min_value_func = nullptr;
   MemberTypeValFunc const m_max_value_func = nullptr;
-  MemberTypeSpanFunc const m_values_list_func = nullptr;
 #endif
 
   constexpr member_descriptor_impl_t(
@@ -168,10 +165,9 @@ struct member_descriptor_impl_t : public member_descriptor_t<ReflexioStruct> {
 #else
     MemberType /*defaultValue*/,
     MemberTypeValFunc /*min_value_func*/ = nullptr,
-    MemberTypeValFunc /*max_value_func*/ = nullptr
 #endif
     )
-      : member_descriptor_t<ReflexioStruct>(index, name, description)
+      : member_descriptor_t(index, name, description)
       , m_member_var_ptr(member_var_ptr)
 #ifndef REFLEXIO_MINIMAL_FEATURES
       , m_default_value(std::move(defaultValue))
@@ -184,13 +180,13 @@ struct member_descriptor_impl_t : public member_descriptor_t<ReflexioStruct> {
   constexpr ~member_descriptor_impl_t() override = default;
 
   [[nodiscard]]
-  constexpr MemberType const& get_value(ReflexioStruct const& host) const {
-    return host.*m_member_var_ptr;
+  constexpr MemberType const& get_value(void const* host) const {
+    return *reinterpret_cast<ReflexioStruct const*>(host).*m_member_var_ptr;
   }
 
   [[nodiscard]]
-  constexpr MemberType& get_mutable_value(ReflexioStruct& host) const {
-    return host.*m_member_var_ptr;
+  constexpr MemberType& get_mutable_value(void* host) const {
+    return *reinterpret_cast<ReflexioStruct*>(host).*m_member_var_ptr;
   }
 
   [[nodiscard]]
@@ -198,11 +194,11 @@ struct member_descriptor_impl_t : public member_descriptor_t<ReflexioStruct> {
     return ReflexioStruct::offset_of(m_member_var_ptr);
   }
 #ifndef REFLEXIO_MINIMAL_FEATURES
-  constexpr void* get_value_void_ptr(ReflexioStruct& host) final {
-    return &(host.*m_member_var_ptr);
+  constexpr void* get_value_void_ptr(void* host) final {
+    return &(reinterpret_cast<ReflexioStruct*>(host)->*m_member_var_ptr);
   }
-  constexpr void const* get_value_void_ptr(ReflexioStruct const& host) const final {
-    return &(host.*m_member_var_ptr);
+  constexpr void const* get_value_void_ptr(void const* host) const final {
+    return &(reinterpret_cast<ReflexioStruct const*>(host)->*m_member_var_ptr);
   }
 
   constexpr size_t type_code() const final {
@@ -227,10 +223,10 @@ struct member_descriptor_impl_t : public member_descriptor_t<ReflexioStruct> {
   }
 
   [[nodiscard]]
-  constexpr bool is_at_default(ReflexioStruct const& host) const final {
+  constexpr bool is_at_default(void const* host) const final {
     return get_value(host) == m_default_value;
   }
-  constexpr void set_to_default(ReflexioStruct& host) const final {
+  constexpr void set_to_default(void* host) const final {
     get_mutable_value(host) = m_default_value;
   }
 
@@ -238,16 +234,16 @@ struct member_descriptor_impl_t : public member_descriptor_t<ReflexioStruct> {
     using namespace app_utils::strutils;
     return std::string{to_string(m_default_value)};
   }
-  constexpr std::string value_as_string(ReflexioStruct const& host) const final {
+  constexpr std::string value_as_string(void const* host) const final {
     using namespace app_utils::strutils;
     return std::string{to_string(get_value(host))};
   }
-  constexpr void set_value_from_string(ReflexioStruct& host, std::string_view val_str) const final {
+  constexpr void set_value_from_string(void* host, std::string_view val_str) const final {
     using namespace app_utils::strutils;
     from_string(get_mutable_value(host), val_str);
   }
 
-  constexpr void copy_value(ReflexioStruct& host, ReflexioStruct const& other) const final {
+  constexpr void copy_value(void* host, void const* other) const final {
     get_mutable_value(host) = get_value(other);
   }
 
@@ -255,11 +251,11 @@ struct member_descriptor_impl_t : public member_descriptor_t<ReflexioStruct> {
     using namespace yaml_utils;
     to_yaml(m_default_value, os);
   }
-  constexpr void value_to_yaml(ReflexioStruct const& host, std::ostream& os) const final {
+  constexpr void value_to_yaml(void const* host, std::ostream& os) const final {
     using namespace yaml_utils;
     to_yaml(get_value(host), os);
   }
-  constexpr void set_value_from_yaml(ReflexioStruct& host, std::istream& stream) const final {
+  constexpr void set_value_from_yaml(void* host, std::istream& stream) const final {
     using namespace yaml_utils;
     from_yaml(get_mutable_value(host), stream);
   }
@@ -267,23 +263,23 @@ struct member_descriptor_impl_t : public member_descriptor_t<ReflexioStruct> {
 #endif
 #ifndef REFLEXIO_NO_COMPARISON_OPERATORS
   [[nodiscard]]
-  constexpr bool values_differ(ReflexioStruct const& host1, ReflexioStruct const& host2) const final {
+  constexpr bool values_differ(void const* host1, void const* host2) const final {
     return get_value(host1) != get_value(host2);
   }
 #endif
   // returns number of bytes written
-  constexpr size_t write_to_bytes(std::byte* buffer, size_t buffer_size, ReflexioStruct const& host) const final {
+  constexpr size_t write_to_bytes(std::byte* buffer, size_t buffer_size, void const* host) const final {
     using namespace app_utils::serial;
     return to_bytes(buffer, buffer_size, get_value(host));
   }
   // return number of bytes read
-  constexpr size_t read_from_bytes(std::byte const* buffer, size_t buffer_size, ReflexioStruct& host) const final {
+  constexpr size_t read_from_bytes(std::byte const* buffer, size_t buffer_size, void* host) const final {
     using namespace app_utils::serial;
     return from_bytes(buffer, buffer_size, get_mutable_value(host));
   }
 
   [[nodiscard]]
-  constexpr size_t get_serial_size(ReflexioStruct const& host) const final {
+  constexpr size_t get_serial_size(void const* host) const final {
     using namespace app_utils::serial;
     if constexpr (std::is_standard_layout<MemberType>()) {
       return serial_size(MemberType{});
@@ -300,11 +296,11 @@ struct member_descriptor_impl_t : public member_descriptor_t<ReflexioStruct> {
     py_class->def_readwrite(this->get_name().data(), m_member_var_ptr, pybind_wrapper_traits<MemberType>::def_readwrite_rvp);
   }
 
-  pybind11::object get_py_value(ReflexioStruct const& host, pybind11::return_value_policy rvp) const final {
+  pybind11::object get_py_value(void const* host, pybind11::return_value_policy rvp) const final {
     return pybind11::cast(&get_value(host), rvp);
   }
 
-  void set_py_value(ReflexioStruct& host, pybind11::object const& obj) const final {
+  void set_py_value(void* host, pybind11::object const& obj) const final {
       get_mutable_value(host) = obj.cast<MemberType>();
   }
 

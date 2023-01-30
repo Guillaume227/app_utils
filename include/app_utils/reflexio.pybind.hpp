@@ -17,7 +17,7 @@ void inject_view_attributes(auto& pyobject,
                             pybind11::return_value_policy rvp = pybind11::return_value_policy::reference) {
   //auto ns = py::cast(view, rvp);//py::module_::import("types").attr("SimpleNamespace")();
   for (auto& member_descriptor: view) {
-    py::setattr(pyobject, member_descriptor.get_name().data(), member_descriptor.get_py_value(view.object, rvp));
+    py::setattr(pyobject, member_descriptor.get_name().data(), member_descriptor.get_py_value(&view.object, rvp));
   }
 }
 } // namespace app_utils::pybind
@@ -84,7 +84,7 @@ struct pybind_wrapper<ReflexioStruct,
       .def("__getitem__", [](View const& self_, std::string_view name) {
         for (auto& member_descriptor : ReflexioStruct::get_member_descriptors(self_.exclude_mask)) {
           if (name == member_descriptor.get_name()) {
-            return member_descriptor.get_py_value(self_.object, pybind11::return_value_policy::reference);
+            return member_descriptor.get_py_value(&self_.object, pybind11::return_value_policy::reference);
           }
         }
         throw py::key_error("key '" + std::string{name} + "' does not exist");
@@ -93,7 +93,7 @@ struct pybind_wrapper<ReflexioStruct,
            [](View& self_, std::string_view name, py::object const& value) {
              for (auto& member_descriptor : ReflexioStruct::get_member_descriptors(self_.exclude_mask)) {
                if (name == member_descriptor.get_name()) {
-                 member_descriptor.set_py_value(self_.object, value);
+                 member_descriptor.set_py_value(&self_.object, value);
                  return;
                }
              }
@@ -123,7 +123,7 @@ struct pybind_wrapper<ReflexioStruct,
                  py::dict dico;
                  for (auto member_descriptor : ReflexioStruct::get_member_descriptors()) {                   
                    dico[member_descriptor->get_name().data()] =
-                           member_descriptor->get_py_value(self_, pybind11::return_value_policy::reference);
+                           member_descriptor->get_py_value(&self_, pybind11::return_value_policy::reference);
                         // note the return_value_policy::reference here - gives non owning semantics. Should we switch to ::copy?
                  }
                  return dico;
@@ -135,7 +135,7 @@ struct pybind_wrapper<ReflexioStruct,
           .def("__getitem__", [](ReflexioStruct const& self_, std::string_view name) {
                   for (auto member_descriptor : ReflexioStruct::get_member_descriptors()) {
                    if (name == member_descriptor->get_name()) {
-                     return member_descriptor->get_py_value(self_, pybind11::return_value_policy::reference);
+                     return member_descriptor->get_py_value(&self_, pybind11::return_value_policy::reference);
                    }
                  }
                  throw py::key_error("key '" + std::string{name} + "' does not exist");
@@ -144,7 +144,7 @@ struct pybind_wrapper<ReflexioStruct,
                [](ReflexioStruct& self_, std::string_view name, py::object const& value) {
                  for (auto member_descriptor : ReflexioStruct::get_member_descriptors()) {
                    if (name == member_descriptor->get_name()) {
-                     member_descriptor->set_py_value(self_, value);
+                     member_descriptor->set_py_value(&self_, value);
                      return;
                    }
                  }
@@ -158,7 +158,7 @@ struct pybind_wrapper<ReflexioStruct,
               throw py::key_error("key '" + std::to_string(index) + "' does not exist");
             }
             auto member_descriptor = ReflexioStruct::get_member_descriptors()[index];
-            return member_descriptor->get_py_value(self_, pybind11::return_value_policy::reference);
+            return member_descriptor->get_py_value(&self_, pybind11::return_value_policy::reference);
           })
           .def("__setitem__",
            [](ReflexioStruct& self_, size_t index, py::object const& value) {
@@ -166,7 +166,7 @@ struct pybind_wrapper<ReflexioStruct,
                 throw py::key_error("key '" + std::to_string(index) + "' does not exist");
               }
               auto member_descriptor = ReflexioStruct::get_member_descriptors()[index];
-              return member_descriptor->set_py_value(self_, value);
+              return member_descriptor->set_py_value(&self_, value);
            })
           .def("get_serial_size", static_cast<size_t(ReflexioStruct::*)() const>(&ReflexioStruct::get_serial_size))
           .def("deserialize",

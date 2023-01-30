@@ -32,7 +32,7 @@ struct ReflexioStructBase {
 
  protected:
   using member_var_register_t =
-          std::array<member_descriptor_t<ReflexioStruct> const*, NumMemberVariables>;
+          std::array<member_descriptor_t const*, NumMemberVariables>;
 
  public:
   static constexpr size_t NumMemberVars = NumMemberVariables;
@@ -122,19 +122,11 @@ struct ReflexioStructBase {
     return {excludeMask};
   }
 
-  constexpr ReflexioStruct const& cast_this() const {
-    return static_cast<ReflexioStruct const&>(*this);
-  }
-
-  constexpr ReflexioStruct& cast_this() {
-    return static_cast<ReflexioStruct&>(*this);
-  }
-
 #ifndef REFLEXIO_NO_COMPARISON_OPERATORS
   [[nodiscard]]
   friend constexpr bool operator==(ReflexioStruct const& self, ReflexioStruct const& other) {
     for (auto& descriptor : self.get_member_descriptors()) {
-      if (descriptor->values_differ(self, other)) {
+      if (descriptor->values_differ(&self, &other)) {
         return false;
       }
     }
@@ -157,7 +149,7 @@ struct ReflexioStructBase {
           Mask const& excludeMask=exclude_none) const
   {
     for (auto& descriptor: get_member_descriptors(excludeMask)) {
-      if (not descriptor.is_at_default(cast_this())) {
+      if (not descriptor.is_at_default(this)) {
         return false;
       }
     }
@@ -167,7 +159,7 @@ struct ReflexioStructBase {
   constexpr void set_to_default(
           Mask const& excludeMask=exclude_none) {
     for (auto& descriptor: get_member_descriptors(excludeMask)) {
-      descriptor.set_to_default(cast_this());
+      descriptor.set_to_default(this);
     }
   }
 
@@ -177,7 +169,7 @@ struct ReflexioStructBase {
   {
     std::vector<std::string_view> res;
     for (auto& descriptor: get_member_descriptors(excludeMask)) {
-      if (not descriptor.is_at_default(cast_this())) {
+      if (not descriptor.is_at_default(this)) {
         res.push_back(descriptor.get_name());
       }
     }
@@ -196,7 +188,7 @@ struct ReflexioStructBase {
     Mask res;
     res.flip();
     for (auto& descriptor: get_member_descriptors(excludeMask)) {
-      if (descriptor.values_differ(cast_this(), other)) {
+      if (descriptor.values_differ(this, &other)) {
         res.set(descriptor.get_index(), false);
       }
     }
@@ -210,7 +202,7 @@ struct ReflexioStructBase {
   {
     std::vector<std::string_view> res;
     for (auto& descriptor: get_member_descriptors(excludeMask)) {
-      if (descriptor.values_differ(cast_this(), other)) {
+      if (descriptor.values_differ(this, &other)) {
         res.push_back(descriptor.get_name());
       }
     }
@@ -223,11 +215,11 @@ struct ReflexioStructBase {
           Mask const& excludeMask=exclude_none) const {
     std::ostringstream out;
     for (auto& descriptor: get_member_descriptors(excludeMask)) {
-      if (descriptor.values_differ(cast_this(), other)) {
+      if (descriptor.values_differ(this, &other)) {
         out << descriptor.get_name() << ": ";
-        descriptor.value_to_yaml(cast_this(), out);
+        descriptor.value_to_yaml(this, out);
         out << " vs ";
-        descriptor.value_to_yaml(other.cast_this(), out);
+        descriptor.value_to_yaml(&other, out);
         out << '\n';
       }
     }
@@ -250,7 +242,7 @@ struct ReflexioStructBase {
     for (auto& descriptor: view){
       yaml_utils::print_indent(os);
       os << descriptor.get_name() << ": ";
-      descriptor.value_to_yaml(view.object, os);
+      descriptor.value_to_yaml(&view.object, os);
       if (field_index < last_index or not am_i_nested) {
         os << '\n'; // avoid adding a newline
       }
@@ -291,7 +283,7 @@ struct ReflexioStructBase {
           Mask const& exclude_mask=exclude_none,
           int const line_offset = 0)
   {
-    using descriptor_map_t = std::unordered_map<std::string_view, member_descriptor_t<ReflexioStruct> const*>;
+    using descriptor_map_t = std::unordered_map<std::string_view, member_descriptor_t const*>;
     static const descriptor_map_t descriptor_map =
       []{
         descriptor_map_t map;
@@ -363,7 +355,7 @@ struct ReflexioStructBase {
       if (val.empty()) {
         // nested reflexio struct
         try {
-          it->second->set_value_from_yaml(instance, is);
+          it->second->set_value_from_yaml(&instance, is);
         } catch (std::exception const& exc) {
           throwExc("error found:", exc.what(),
                    "\nwhen parsing", it->second->get_name(), "at line", line_num);
@@ -382,7 +374,7 @@ struct ReflexioStructBase {
         }
         is.seekg(-(int)rewind_offset, std::ios_base::cur);
         try {
-          it->second->set_value_from_yaml(instance, is);
+          it->second->set_value_from_yaml(&instance, is);
         } catch (std::exception const& exc) {
           throwExc("Failed parsing line", line_num, ":", raw_line, exc.what());
         }
@@ -462,7 +454,7 @@ struct ReflexioStructBase {
   constexpr size_t get_serial_size(Mask const& excludeMask) const {
     size_t res = 0;
     for (auto& descriptor: ReflexioStruct::get_member_descriptors(excludeMask)) {
-      res += descriptor.get_serial_size(cast_this());
+      res += descriptor.get_serial_size(this);
     }
     return res;
   }
@@ -471,7 +463,7 @@ struct ReflexioStructBase {
   constexpr size_t get_serial_size() const {
     size_t res = 0;
     for (auto& descriptor : ReflexioStruct::get_member_descriptors()) {
-      res += descriptor->get_serial_size(cast_this());
+      res += descriptor->get_serial_size(this);
     }
     return res;
   }
@@ -484,7 +476,7 @@ struct ReflexioStructBase {
     size_t res = 0;
     for (auto& descriptor: ReflexioStruct::get_member_descriptors(excludeMask)) {
       //std::cout << "    encoded " << descriptor.get_name() << std::endl;
-      res += descriptor.write_to_bytes(buffer + res, buffer_size - res, instance);
+      res += descriptor.write_to_bytes(buffer + res, buffer_size - res, &instance);
     }
     //std::cout << std::endl;
     checkCond(buffer_size >= res, "output buffer is not big enough to accomodate object", buffer_size, '<', res);
@@ -514,7 +506,7 @@ struct ReflexioStructBase {
 #endif
       }
 
-      res += descriptor.read_from_bytes(buffer + res, buffer_size - res, instance);
+      res += descriptor.read_from_bytes(buffer + res, buffer_size - res, &instance);
 
       checkCond(buffer_size >= res, descriptor.get_name(), ": not enough data for deserialization of",
                 app_utils::typeName<ReflexioStruct>(), "required:", buffer_size, '<', res);
@@ -572,8 +564,7 @@ using is_reflexio_struct = std::is_base_of<ReflexioStructBase<T, T::NumMemberVar
   template<class Dummy>                                                                    \
   struct member_var_traits_t<member_var_counter_t<__##var_name##_id, int>::index, Dummy> { \
     static constexpr                                                                       \
-    reflexio::member_descriptor_t<ReflexioTypeName> const* descriptor =                    \
-            &__##var_name##_descr;                                                         \
+    reflexio::member_descriptor_t const* descriptor = &__##var_name##_descr;               \
   }
 
 #define REFLEXIO_MEMBER_VAR_DEFINE(var_type, var_name, default_value, description) \
@@ -581,7 +572,7 @@ using is_reflexio_struct = std::is_base_of<ReflexioStructBase<T, T::NumMemberVar
 
 #define REFLEXIO_MEMBER_VAR_DEFINE_MIN_MAX(var_type, var_name, default_value, description, minBound, maxBound) \
   _REFLEXIO_MEMBER_VAR_DEFINE_BOUND_FUNC(var_type, var_name, default_value, description,                       \
-    []()->var_type const&{static var_type val = minBound; return val; },                                             \
+    []()->var_type const&{static var_type val = minBound; return val; },                                       \
     []()->var_type const&{static var_type val = maxBound; return val; })
 
 #define REFLEXIO_MEMBER_VAR_DEFINE_MIN(var_type, var_name, default_value, description, minBound) \
