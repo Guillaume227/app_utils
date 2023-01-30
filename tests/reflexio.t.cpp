@@ -6,6 +6,8 @@
 #include <app_utils/serial_type_utils.hpp>
 #include <app_utils/serial_utils.hpp>
 #include <app_utils/log_utils.hpp>
+#include <fstream>
+#include <filesystem>
 
 TEST_CASE("reflexio_single_var_struct", "[reflexio]") {
   SingleVarStruct singleVarStruct;
@@ -288,6 +290,35 @@ TEST_CASE("reflexio_composite", "[reflexio]") {
   from_yaml(myStructCopy, val_str);
 
   REQUIRE(myStructCopy == myStruct);
+}
+
+TEST_CASE("reflexio_to_yaml_file", "[reflexio]") {
+
+  NestedStruct myStruct;
+  REQUIRE(myStruct.has_all_default_values());
+  myStruct.struct1.var1 = 2;
+
+  REQUIRE(not myStruct.has_all_default_values());
+
+  auto myStructCopy = myStruct;
+  REQUIRE(myStructCopy == myStruct);
+  auto& subStruct = myStructCopy.struct1;
+  subStruct.var2 = 22.f;
+
+  REQUIRE(myStructCopy != myStruct);
+
+  char const* file_name = "test_output.deleteme.yaml";
+  {
+    std::ofstream ofs(file_name);
+    to_yaml(myStruct, ofs);
+  }
+  {
+    std::ifstream ifs(file_name);
+    from_yaml(myStructCopy, ifs);
+  }
+
+  REQUIRE(myStructCopy == myStruct);
+  std::filesystem::remove(file_name);
 }
 
 TEST_CASE("reflexio_yaml_sections", "[reflexio]") {

@@ -43,7 +43,15 @@ std::string_view parseTypeName(std::string_view paramName, bool const minimal) {
     paramName = paramName.substr(i);
 
   if (minimal) {
-    paramName = paramName.substr(paramName.rfind(':') + 1);
+    auto remove_namespace = [](std::string_view type_name) {
+      auto template_start_pos = type_name.find('<');
+      auto namespace_end_pos = type_name.rfind("::", template_start_pos);
+      if (namespace_end_pos != std::string::npos) {
+        type_name.remove_prefix(namespace_end_pos + 2);
+      }
+      return type_name;
+    };
+    paramName = remove_namespace(paramName);
   }
   return paramName;
 }

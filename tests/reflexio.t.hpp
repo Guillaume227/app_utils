@@ -40,9 +40,10 @@ static_assert(std::is_trivially_copy_assignable_v<TrivialStruct>);
 static_assert(std::is_trivially_copy_constructible_v<TrivialStruct>);
 //static_assert(std::is_trivially_constructible_v<TrivialStruct>); // NO: because of in-line initialization
 
-REFLEXIO_STRUCT_DEFINE(NestedStruct, 
-  REFLEXIO_MEMBER_VAR_DEFINE(MyOtherStruct, struct1, {}, "var1 doc");
-  REFLEXIO_MEMBER_VAR_DEFINE(TrivialStruct, struct2, {}, "var2 doc"););
+REFLEXIO_STRUCT_DEFINE(NestedStruct,
+  REFLEXIO_MEMBER_VAR_DEFINE(int, field_top, 22, "var1 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(MyOtherStruct, struct1, {}, "var2 doc");
+  REFLEXIO_MEMBER_VAR_DEFINE(TrivialStruct, struct2, {}, "var3 doc"););
 
 ENUMATIC_DEFINE(MyEnum,
                 EnumVal1 = 1,

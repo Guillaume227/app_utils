@@ -9,7 +9,7 @@ namespace yaml_utils {
 
 constexpr char const* indent_str = "  ";
 constexpr size_t indent_width = 2;
-inline static thread_local int _indent_depth = -1;
+inline thread_local int _indent_depth = -1;
 inline int get_indent_depth() {
   return _indent_depth;
 }
@@ -40,7 +40,7 @@ std::ostream& to_yaml(T const& value, std::ostream& os) {
 
 template<typename T>
 std::ostream& sequence_to_yaml(T const* vals, size_t num_items, std::ostream& os) {
-  os << "[";
+  os << '[';
   for (size_t i = 0; i < num_items; ++i) {
     if (i != 0) {
       os << ", ";
@@ -48,7 +48,7 @@ std::ostream& sequence_to_yaml(T const* vals, size_t num_items, std::ostream& os
     using namespace app_utils::strutils;
     os << to_string(vals[i]);
   }
-  os << "]";
+  os << ']';
   return os;
 }
 
