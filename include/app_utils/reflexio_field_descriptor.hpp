@@ -165,6 +165,7 @@ struct member_descriptor_impl_t : public member_descriptor_t {
 #else
     MemberType /*defaultValue*/,
     MemberTypeValFunc /*min_value_func*/ = nullptr,
+    MemberTypeValFunc /*max_value_func*/ = nullptr
 #endif
     )
       : member_descriptor_t(index, name, description)
