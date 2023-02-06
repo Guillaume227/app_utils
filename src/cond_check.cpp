@@ -133,12 +133,12 @@ namespace app_utils {
     int size = 0;
     #endif
     int skippedStackLines = 0;
-
+    (void) skippedStackLines;
     std::vector<std::string> stackTrace;
     stackTrace.reserve(max_stack_depth);
 
     if (char** messages = 
-    #if SUPPORTS_BACKTRACE
+      #if SUPPORTS_BACKTRACE
             backtrace_symbols(&*std::begin(array), size)
       #else
       nullptr
