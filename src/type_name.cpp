@@ -1,16 +1,16 @@
 #include <app_utils/stream_utils.hpp>
 #include <array>
 
-#if defined(__GNUG__) && !defined(__clang__)
+#if defined(__GNUG__) || defined(__clang__)
 #include <cxxabi.h>
 #endif
 
 namespace app_utils {
 
 std::string_view parseTypeName(std::string_view paramName, bool const minimal) {
-#if defined(__GNUG__) && !defined(__clang__)
+#if defined(__GNUG__) || defined(__clang__)
   int status;
-  char* demangled = abi::__cxa_demangle(paramName.data(), 0, 0, &status);
+  char* demangled = abi::__cxa_demangle(paramName.data(), nullptr, nullptr, &status);
   if (!status)
     paramName = demangled;
     //free(demangled);
