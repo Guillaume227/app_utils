@@ -16,8 +16,14 @@
 
 namespace reflexio {
 #ifndef REFLEXIO_MINIMAL_FEATURES
-class PartialDeserializationException : public app_utils::Exception {
+class DeserializationException : public app_utils::Exception {
   using app_utils::Exception::Exception;
+};
+class PartialDeserializationException : public DeserializationException {
+  using DeserializationException::DeserializationException;
+};
+class CorruptedDeserializationException : public DeserializationException {
+  using DeserializationException::DeserializationException;
 };
 #endif
 
@@ -385,9 +391,12 @@ struct ReflexioStructBase {
       }
 
       res += descriptor.read_from_bytes(buffer + res, buffer_size - res, &instance);
-
-      checkCond(buffer_size >= res, descriptor.get_name(), ": not enough data for deserialization of",
-                app_utils::typeName<ReflexioStruct>(), "required:", buffer_size, '<', res);
+#ifdef RTTI_ENABLED
+      if (buffer_size < res) {
+        throwWithTrace(CorruptedDeserializationException, descriptor.get_name(), ": not enough data for deserialization of",
+                  app_utils::typeName<ReflexioStruct>(), "required", res, "bytes, found", buffer_size);
+      }
+#endif
     }
 
     return res;

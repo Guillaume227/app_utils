@@ -27,6 +27,7 @@ TEST_CASE("complex_to_from_bytes", "[serial]") {
 
 TEST_CASE("bitset_to_from_bytes", "[serial]") {
 
+  // to-from string for a bitset that fits on more than 1 byte
   {
     std::bitset<10> u;
     u.set(3);
@@ -43,6 +44,7 @@ TEST_CASE("bitset_to_from_bytes", "[serial]") {
     REQUIRE(u == v);
   }
 
+  // to-from string for a bitset that fits on exactly 1 byte
   {
     std::bitset<8> u;
     u.set(3);
@@ -59,6 +61,7 @@ TEST_CASE("bitset_to_from_bytes", "[serial]") {
     REQUIRE(u == v);
   }
 
+  // to-from string for a single bit bitset
   {
     std::bitset<1> u;
     u.set(0);
@@ -72,5 +75,52 @@ TEST_CASE("bitset_to_from_bytes", "[serial]") {
     REQUIRE(u != v);
     from_bytes(buffer, v);
     REQUIRE(u == v);
+  }
+
+  // check deserializing to a larger bitset - the intersection should match
+  // important for e.g. backward compatibility
+  {
+    std::bitset<18> u;
+    u.set(1);
+    u.set(9);
+    u.set(17);
+
+    std::vector<std::byte> buffer(10);
+    using namespace app_utils::serial;
+    REQUIRE(serial_size(u) == 3);
+    size_t num_bytes_written = to_bytes(buffer, u);
+    buffer.resize(num_bytes_written);
+    std::bitset<25> v;
+    //v.set();
+    size_t num_bytes_read = from_bytes(buffer, v);
+    REQUIRE(num_bytes_read == num_bytes_written);
+    for(size_t i = 0; i < v.size(); i++) {
+      if (i < u.size()) {
+        REQUIRE(u.test(i) == v.test(i));
+      } else {
+        REQUIRE(not v.test(i));
+      }
+    }
+  }
+
+  // check deserializing to a smaller bitset - the intersection should match
+  // important for e.g. backward compatibility
+  {
+    std::bitset<18> u;
+    u.set(1);
+    u.set(9);
+    u.set(17);
+
+    std::vector<std::byte> buffer(10);
+    using namespace app_utils::serial;
+    REQUIRE(serial_size(u) == 3);
+    size_t num_bytes_written = to_bytes(buffer, u);
+    buffer.resize(num_bytes_written);
+    std::bitset<12> v;
+    size_t num_bytes_read = from_bytes(buffer, v);
+    REQUIRE(num_bytes_read == 2);
+    for(size_t i = 0; i < v.size(); i++) {
+      REQUIRE(u.test(i) == v.test(i));
+    }
   }
 }

@@ -77,7 +77,7 @@ constexpr size_t serial_size(std::span<T> const& val) {
 
 template <size_t N>
 constexpr size_t serial_size(std::bitset<N> const& /*val*/) {
-  return (N + 7) / 8; // == sizeof(val) ?
+  return (N + 7) / 8; // round up to the nearest number of bytes // == sizeof(val) ?
 }
 
 /**
