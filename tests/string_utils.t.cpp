@@ -81,8 +81,18 @@ TEST_CASE("strutils::to_from_string", "[string_utils]") {
     from_string(val2, val_str);
     REQUIRE(val == val2);
   }
-}
 
+  {
+    std::bitset<12> b = 0b111100001010;
+    std::string val_str = to_string(b);
+    REQUIRE(val_str == "111100001010");
+
+    std::bitset<12> b2;
+    REQUIRE(b2 != b);
+    from_string(b2, val_str);
+    REQUIRE(b2 == b);
+  }
+}
 
 TEST_CASE("strutils::from_string", "[string_utils]") {
   using namespace app_utils::strutils;
@@ -97,4 +107,9 @@ TEST_CASE("strutils::from_string", "[string_utils]") {
   double d;
   from_string(d, "11.11");
   REQUIRE(d == 11.11);
+
+  // check partial deserialization
+  std::bitset<12> b;
+  from_string(b, "01110");
+  REQUIRE(b == 0b1110);
 }

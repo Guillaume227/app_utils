@@ -6,6 +6,7 @@
 #include <string>
 #include <cstring>
 #include <vector>
+#include <bitset>
 #include <complex>
 #include <app_utils/cond_check.hpp>
 #include <app_utils/type_name.hpp>
@@ -161,6 +162,15 @@ std::string to_string(std::vector<T> const& val) {
   return range_to_string(val);
 }
 
+template <size_t N>
+std::string to_string(std::bitset<N> const& val) {
+  std::string out(N, '0');
+  for (size_t i = 0; i < N; i++) {
+    out[i] = val.test(N-1-i) ? '1' : '0'; // note the convention: left to right
+  }
+  return out;
+}
+
 inline std::string to_string(std::vector<char> const& val) {
   return {&val.front(), &val.front() + val.size()};
 }
@@ -255,6 +265,24 @@ bool from_string(std::vector<T>& val, std::string_view val_str) {
     success &= from_string(val[i], vals_str[i]);
   }
   return success;
+}
+
+template <size_t N>
+bool from_string(std::bitset<N>& val, std::string_view val_str) {
+  checkCond(val_str.size() <= N);
+  val.reset();
+  // allow partial deserialization from the low index bits
+  // (right-most bits in string representation).
+  size_t str_size = val_str.size();
+  for(size_t i = 0; i < str_size; i++) {
+    char c = val_str[str_size-1-i];
+    if (c == '1') {
+      val.set(i);
+    } else if (c != '0') {
+      return false;
+    }
+  }
+  return true;
 }
 
 }  // namespace strutils
