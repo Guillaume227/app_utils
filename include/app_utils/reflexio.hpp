@@ -71,10 +71,11 @@ struct ReflexioStructBase {
 
   template <typename T2>
   static size_t index_of_var(T2 ReflexioStruct::* const varPtr) {
-    static const auto member_var_offsets = get_member_var_offsets();
+    // do not use static as it leads to extra code size in embedded setting (gcc)
+    //static const auto member_var_offsets = get_member_var_offsets();
     size_t offset = offset_of(varPtr);
     for (size_t i = 0; i < NumMemberVariables; i++) {
-      if (member_var_offsets[i] == offset) {
+      if (ReflexioStruct::s_member_var_register[i]->get_var_offset() == offset) {
         return i;
       }
     }

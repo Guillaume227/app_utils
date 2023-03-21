@@ -56,6 +56,22 @@ struct reflexio_view {
     exclude_mask.set(ReflexioStruct::index_of_var(varPtr), not value);
   }
 
+  template<typename ...VarPtr>
+  void include(VarPtr const& ... varPtr) {
+    (set(varPtr, false), ...);
+  }
+
+  template<typename ...VarPtr>
+  void include_only(VarPtr const& ... varPtr) {
+    exclude_mask.set(true);
+    include(varPtr...);
+  }
+
+  template<typename VarPtr>
+  void exclude(VarPtr const& varPtr, bool value) {
+    set(varPtr, true);
+  }
+
   static size_t parse_mask(std::span<std::byte const> buffer,
                            Mask& exclude_mask) {
 
