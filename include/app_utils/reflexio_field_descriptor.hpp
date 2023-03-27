@@ -10,9 +10,9 @@
 #ifndef REFLEXIO_MINIMAL_FEATURES
 #ifdef __arm__
 #define REFLEXIO_MINIMAL_FEATURES
-#ifndef REFLEXIO_WITH_COMPARISON_OPERATORS
-#define REFLEXIO_NO_COMPARISON_OPERATORS
-#endif
+//#ifndef REFLEXIO_WITH_COMPARISON_OPERATORS
+//#define REFLEXIO_NO_COMPARISON_OPERATORS // results in a smaller binary
+//#endif
 #endif
 #endif
 
@@ -178,7 +178,7 @@ struct member_descriptor_impl_t : public member_descriptor_t {
   {}
 
   // explicit definition required because of gcc bug: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93413
-  constexpr ~member_descriptor_impl_t() override = default;
+  constexpr ~member_descriptor_impl_t() final = default;
 
   [[nodiscard]]
   constexpr MemberType const& get_value(void const* host) const {
@@ -196,10 +196,10 @@ struct member_descriptor_impl_t : public member_descriptor_t {
   }
 #ifndef REFLEXIO_MINIMAL_FEATURES
   constexpr void* get_value_void_ptr(void* host) final {
-    return &(reinterpret_cast<ReflexioStruct*>(host)->*m_member_var_ptr);
+    return &get_mutable_value(host);
   }
   constexpr void const* get_value_void_ptr(void const* host) const final {
-    return &(reinterpret_cast<ReflexioStruct const*>(host)->*m_member_var_ptr);
+    return &get_value(host);
   }
 
   constexpr size_t type_code() const final {
