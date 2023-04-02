@@ -16,6 +16,11 @@ class circular_array_t {
 
   constexpr size_t size() const { return m_index < capacity_ ? m_index : capacity_; }
 
+  // get most recent entry (if not empty)
+  constexpr T const& back() const {
+    return m_array[m_index % capacity_];
+  }
+
   constexpr T& get_next_slot() {
     auto& next_slot = m_array[m_index % capacity_];
     ++m_index;
