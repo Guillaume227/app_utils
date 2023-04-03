@@ -2,13 +2,14 @@
 
 #include <array>
 #include <cstddef>
+#include <app_utils/cond_check.hpp>
 
 namespace app_utils {
 
 template <typename T, size_t capacity_>
 class circular_array_t {
   std::array<T, capacity_> m_array;
-  size_t m_index = 0;
+  size_t m_index = 0; // index ranges from 0 to 2 * capacity_ as a trick to handle wrap-around.
 
  public:
   static constexpr size_t capacity() { return capacity_; }
@@ -16,9 +17,15 @@ class circular_array_t {
 
   constexpr size_t size() const { return m_index < capacity_ ? m_index : capacity_; }
 
-  // get most recent entry (if not empty)
+  // get the oldest entry (if not empty)
+  constexpr T const& front() const {
+    return m_array[m_index < capacity_ ? 0 : (m_index % capacity_)];
+  }
+
+  // get the most recent entry (if not empty)
   constexpr T const& back() const {
-    return m_array[m_index % capacity_];
+    checkCond(m_index > 0, "out of bound access");
+    return m_array[(m_index - 1) % capacity_];
   }
 
   constexpr T& get_next_slot() {
@@ -37,7 +44,7 @@ class circular_array_t {
       , m_state(state) {}
 
     constexpr iterator& operator++() {
-      ++m_state;      
+      ++m_state;
       return *this;
     }
     constexpr bool operator!=(iterator const& other) const { return m_state != other.m_state; }

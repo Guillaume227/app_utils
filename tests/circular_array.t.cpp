@@ -17,7 +17,11 @@ TEST_CASE("circular_array", "[container]") {
   REQUIRE(test_vec.size() == 0);
 
   buffer.get_next_slot() = 1;
+  REQUIRE(buffer.front() == 1);
+  REQUIRE(buffer.back() == 1);
   buffer.get_next_slot() = 2;
+  REQUIRE(buffer.front() == 1);
+  REQUIRE(buffer.back() == 2);
   REQUIRE(buffer.size() == 2);
   for (auto& item : buffer) {
     test_vec.push_back(item);
@@ -28,7 +32,13 @@ TEST_CASE("circular_array", "[container]") {
   test_vec.clear();
 
   buffer.get_next_slot() = 3;
+  REQUIRE(buffer.front() == 1);
+  REQUIRE(buffer.back() == 3);
+
+  // Wrap around after this point
   buffer.get_next_slot() = 4;
+  REQUIRE(buffer.front() == 2);
+  REQUIRE(buffer.back() == 4);
 
   REQUIRE(buffer.size() == 3);
   for (auto& item : buffer) {
