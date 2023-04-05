@@ -49,6 +49,12 @@ struct Exception : public std::runtime_error {
     }                             \
   } while (false)
 
+#ifdef NDEBUG
+#define checkCondDebugOnly(...)
+#else
+#define checkCondDebugOnly(...) checkCond(__VA_ARGS__)
+#endif
+
 // Checks two values compare equal using operator==
 #define checkCompareEqual(val1, val2) \
   do {                                \
