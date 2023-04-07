@@ -68,7 +68,7 @@ struct reflexio_view {
   }
 
   template<typename VarPtr>
-  void exclude(VarPtr const& varPtr, bool value) {
+  void exclude(VarPtr const& varPtr) {
     set(varPtr, true);
   }
 

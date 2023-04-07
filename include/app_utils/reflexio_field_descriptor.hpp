@@ -143,7 +143,7 @@ struct member_descriptor_t {
 };
 
 template <typename ReflexioStruct, typename MemberType>
-struct member_descriptor_impl_t : public member_descriptor_t {
+struct member_descriptor_impl_t final : public member_descriptor_t {
   MemberType ReflexioStruct::*const m_member_var_ptr;
   using MemberTypeValFunc = MemberType const& (*)();
 
