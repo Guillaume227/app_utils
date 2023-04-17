@@ -163,7 +163,7 @@ public:
   }
 
   T const& back() const {
-    checkCond(not empty(), "empty buffer");
+    checkCond(not empty() and _back_index < _buffer.size(), "empty buffer");
     return _buffer[_back_index];
   }
 
@@ -212,10 +212,8 @@ public:
   template<typename U>
   void push_back(U&& value){
     if (_buffer.size() < _capacity){
-      if (not _buffer.empty()) {
-        _back_index++;
-      }
       _buffer.push_back(std::forward<U>(value));
+      _back_index = _buffer.size() - 1;
     } else {
       _back_index = (_back_index + 1) % _capacity;
       _buffer[_back_index] = std::forward<U>(value);
