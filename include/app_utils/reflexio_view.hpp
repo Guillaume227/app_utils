@@ -10,6 +10,16 @@
 
 namespace reflexio {
 
+template <typename ReflexioStruct, typename ...T>
+void set(typename ReflexioStruct::Mask& mask, T ReflexioStruct::* ...varPtr) {
+  (mask.set(ReflexioStruct::index_of_var(varPtr), true), ...);
+}
+
+template <typename ReflexioStruct, typename ...T>
+void test(typename ReflexioStruct::Mask& mask, T ReflexioStruct::* ...varPtrs) {
+  return (mask.test(ReflexioStruct::index_of_var(varPtrs)) || ...);
+}
+
 template <typename ReflexioStruct>
 struct reflexio_view {
 
@@ -51,24 +61,24 @@ struct reflexio_view {
     return *this;
   }
 
-  template<typename VarPtr>
-  void set(VarPtr const& varPtr, bool value) {
+  template<typename T>
+  void set(T ReflexioStruct::* varPtr, bool value) {
     exclude_mask.set(ReflexioStruct::index_of_var(varPtr), not value);
   }
 
-  template<typename ...VarPtr>
-  void include(VarPtr const& ... varPtr) {
+  template<typename ...T>
+  void include(T ReflexioStruct::* ... varPtr) {
     (set(varPtr, false), ...);
   }
 
-  template<typename ...VarPtr>
-  void include_only(VarPtr const& ... varPtr) {
+  template<typename ...T>
+  void include_only(T ReflexioStruct::* ... varPtr) {
     exclude_mask.set(true);
     include(varPtr...);
   }
 
-  template<typename VarPtr>
-  void exclude(VarPtr const& varPtr) {
+  template<typename T>
+  void exclude(T ReflexioStruct::* varPtr) {
     set(varPtr, true);
   }
 
