@@ -192,9 +192,11 @@ struct ReflexioStructBase {
                        Mask const& excludeMask=exclude_none) const {
     Mask res;
     res.flip();
-    for (auto& descriptor: get_member_descriptors(excludeMask)) {
-      if (descriptor.values_differ(this, &other)) {
-        res.set(descriptor.get_index(), false);
+
+    auto descriptor_view = get_member_descriptors(excludeMask);
+    for (auto it = descriptor_view.begin(); it != descriptor_view.end(); it++) {
+      if (it->values_differ(this, &other)) {
+        res.set(it.m_idx, false);
       }
     }
     return res;
@@ -347,7 +349,7 @@ struct ReflexioStructBase {
   [[nodiscard]]
   constexpr size_t get_serial_size() const {
     size_t res = 0;
-    for (auto& descriptor : ReflexioStruct::get_member_descriptors()) {
+    for (auto& descriptor: ReflexioStruct::get_member_descriptors()) {
       res += descriptor->get_serial_size(this);
     }
     return res;
@@ -442,7 +444,6 @@ using is_reflexio_struct = std::is_base_of<ReflexioStructBase<T, T::NumMemberVar
   inline static constexpr auto __##var_name##_descr = [] {                                 \
     return reflexio::member_descriptor_impl_t<ReflexioTypeName, var_type>(                 \
             &ReflexioTypeName::var_name,                                                   \
-            (size_t)member_var_counter_t<__##var_name##_id, int>::index,                   \
             #var_name,                                                                     \
             description,                                                                   \
             default_value,                                                                 \

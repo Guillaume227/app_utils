@@ -19,13 +19,15 @@ class ReflexioIterator {
   using reference = value_type&;// or also value_type&
   using const_reference = value_type const&;// or also value_type&
 
-  static constexpr ReflexioStruct::Mask no_exclusion_mask = {};
   ReflexioStruct::Mask const& m_excludeMask;
-  size_t m_idx;
 
 public:
+
+  size_t m_idx; // index of the field in the ReflexioStruct descriptors list
+                // (matches the member variable declaration order)
+
   constexpr ReflexioIterator(size_t idx = 0,
-                             ReflexioStruct::Mask const& excludeMask = no_exclusion_mask)
+                             ReflexioStruct::Mask const& excludeMask = ReflexioStruct::exclude_none)
       : m_excludeMask(excludeMask)
       , m_idx(calc_next_index(idx)) {
   }

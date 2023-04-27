@@ -36,19 +36,16 @@ typedef void (*voidfunc)(void);
 
 struct member_descriptor_t {
 #ifndef REFLEXIO_MINIMAL_FEATURES
-  size_t const m_index;
   std::string_view const m_name;
   std::string_view const m_description;
 
-  constexpr member_descriptor_t(size_t index,
-                                std::string_view name,
+  constexpr member_descriptor_t(std::string_view name,
                                 std::string_view description)
-    : m_index(index)
-    , m_name(name)
+    : m_name(name)
     , m_description(description)
   {}
 #else
-  constexpr member_descriptor_t(size_t, std::string_view, std::string_view) {}
+  constexpr member_descriptor_t(std::string_view, std::string_view) {}
 #endif
 
   constexpr virtual ~member_descriptor_t() = default;
@@ -93,9 +90,6 @@ struct member_descriptor_t {
   }
 
   constexpr virtual voidfunc get_values_list_void_ptr() const = 0;
-
-  [[nodiscard]]
-  constexpr size_t get_index() const { return m_index; }
 
   [[nodiscard]]
   constexpr std::string_view const& get_name() const { return m_name; }
@@ -155,7 +149,6 @@ struct member_descriptor_impl_t final : public member_descriptor_t {
 
   constexpr member_descriptor_impl_t(
     MemberType ReflexioStruct::*member_var_ptr,
-    size_t index,
     std::string_view name,
     std::string_view description,
 #ifndef REFLEXIO_MINIMAL_FEATURES
@@ -168,7 +161,7 @@ struct member_descriptor_impl_t final : public member_descriptor_t {
     MemberTypeValFunc /*max_value_func*/ = nullptr
 #endif
     )
-      : member_descriptor_t(index, name, description)
+      : member_descriptor_t(name, description)
       , m_member_var_ptr(member_var_ptr)
 #ifndef REFLEXIO_MINIMAL_FEATURES
       , m_default_value(std::move(defaultValue))

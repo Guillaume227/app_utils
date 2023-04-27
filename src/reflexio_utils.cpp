@@ -24,8 +24,10 @@ std::string differences(
         std::span<member_descriptor_t const* const> descriptors,
         std::function<bool(size_t)> const& should_skip) {
   std::ostringstream out;
+  size_t descriptor_counter = 0;
   for (auto& descriptor: descriptors) {
-    if (should_skip and should_skip(descriptor->get_index())) {
+    size_t const descriptor_index = descriptor_counter++;
+    if (should_skip and should_skip(descriptor_index)) {
       continue;
     }
     if (descriptor->values_differ(instance1, instance2)) {
@@ -54,8 +56,10 @@ std::ostream& to_yaml(
   size_t const last_index = descriptors.size() - 1;
 
   size_t field_index = 0;
+  size_t descriptor_counter = 0;
   for (auto& descriptor: descriptors) {
-    if (not should_skip(descriptor->get_index())) {
+    size_t const descriptor_index = descriptor_counter++;
+    if (not should_skip(descriptor_index)) {
       yaml_utils::print_indent(os);
       os << descriptor->get_name() << ": ";
       descriptor->value_to_yaml(instance, os);
@@ -76,12 +80,13 @@ std::istream& from_yaml(
         int const line_offset) {
 
   using descriptor_map_t = std::unordered_map<std::string_view,
-                                              member_descriptor_t const*>;
+                                              std::pair<size_t, member_descriptor_t const*>>;
   descriptor_map_t const descriptor_map =
           [&]{
             descriptor_map_t map;
+            size_t descriptor_index = 0;
             for (auto& descriptor: descriptors) {
-              map[descriptor->get_name()] = descriptor;
+              map[descriptor->get_name()] = {descriptor_index++, descriptor};
             }
             return map;
           }();
@@ -140,19 +145,20 @@ std::istream& from_yaml(
 
     auto it = descriptor_map.find(name);
 
-    checkCond(it != descriptor_map.end(), "unrecognized", "member name", name, "at line", line_num, ':', raw_line);
+    checkCond(it != descriptor_map.end(), "unrecognized",
+              "member name", name, "at line", line_num, ':', raw_line);
 
-    if (should_skip(it->second->get_index())) {
+    if (should_skip(it->second.first)) {
       continue;
     }
 
     if (val.empty()) {
       // nested reflexio struct
       try {
-        it->second->set_value_from_yaml(instance, is);
+        it->second.second->set_value_from_yaml(instance, is);
       } catch (std::exception const& exc) {
         throwExc("error found:", exc.what(),
-                 "\nwhen parsing", it->second->get_name(), "at line", line_num);
+                 "\nwhen parsing", it->second.second->get_name(), "at line", line_num);
       }
     } else {
       // value fits on just one line
@@ -168,7 +174,7 @@ std::istream& from_yaml(
       }
       is.seekg(-(int)rewind_offset, std::ios_base::cur);
       try {
-        it->second->set_value_from_yaml(instance, is);
+        it->second.second->set_value_from_yaml(instance, is);
       } catch (std::exception const& exc) {
         throwExc("Failed parsing line", line_num, ":", raw_line, exc.what());
       }
