@@ -168,7 +168,7 @@ struct pybind_wrapper<ReflexioStruct,
               auto member_descriptor = ReflexioStruct::get_member_descriptors()[index];
               return member_descriptor->set_py_value(&self_, value);
            })
-          .def("get_serial_size", static_cast<size_t(ReflexioStruct::*)() const>(&ReflexioStruct::get_serial_size))
+          .def_static("get_serial_size", static_cast<size_t(*)()>(&ReflexioStruct::get_serial_size))
           .def("deserialize",
                [&](ReflexioStruct& self, pybind11::bytes const& data) {
                  std::string dataStr(data);

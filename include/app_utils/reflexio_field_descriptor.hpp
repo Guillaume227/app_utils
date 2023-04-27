@@ -121,7 +121,7 @@ struct member_descriptor_t {
   constexpr virtual bool values_differ(void const* host1, void const* host2) const = 0;
 #endif
   [[nodiscard]]
-  constexpr virtual size_t get_serial_size(void const* host) const = 0;
+   constexpr virtual size_t get_serial_size() const = 0;
 
   // returns number of bytes written
   constexpr virtual size_t write_to_bytes(std::byte* buffer, size_t buffer_size, void const* host) const = 0;
@@ -273,13 +273,9 @@ struct member_descriptor_impl_t final : public member_descriptor_t {
   }
 
   [[nodiscard]]
-  constexpr size_t get_serial_size(void const* host) const final {
+  constexpr size_t get_serial_size() const final {
     using namespace app_utils::serial;
-    if constexpr (std::is_standard_layout<MemberType>()) {
-      return serial_size(MemberType{});
-    } else {
-      return serial_size(get_value(host));
-    }
+    return serial_size((MemberType const*)nullptr);
   }
 
 #ifdef DO_PYBIND_WRAPPING

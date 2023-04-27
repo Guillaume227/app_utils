@@ -54,8 +54,8 @@ struct CustomFloat {
     return app_utils::strutils::from_string(val.m_arg, items[0]);
   }
 
-  friend constexpr size_t serial_size(CustomFloat const& val) {
-    return app_utils::serial::serial_size(val.m_arg);
+  friend constexpr size_t serial_size(CustomFloat const*) {
+    return sizeof(underlying_type);
   }
 
   friend constexpr size_t from_bytes(std::byte const* buffer, size_t buffer_size, CustomFloat& val) {

@@ -3,28 +3,65 @@
 #include <cstddef> // std::byte
 #include <cstring> // std::memcpy
 #include <type_traits>
-
 #include <string>
 #include <vector>
 #include <bitset>
 #include <array>
-#include <complex>
 #include <span>
 #include <bit>
 
 namespace app_utils::serial {
 
+static_assert(std::endian::native == std::endian::little, "serialization logic assumes little-endian format");
 
-  static_assert(std::endian::native == std::endian::little);
-
+/**
+ * serial_size(...) exists in different flavors:
+ *  - a set of overloads that take a pointer, so that ADL can be used for custom types that do not require actual instance details
+ *      as that pointer can be nullptr.
+ *  - a set of overloads that take a const& for types whose serialization size depend on the instance (e.g. vector, string, string_view)
+ */
 template<typename T>
-constexpr size_t serial_size(T const&) requires std::is_arithmetic_v<T> or std::is_enum_v<T> {
+  requires (std::is_trivially_copyable_v<T> and not std::is_same_v<T, char>)
+constexpr size_t serial_size(T const*) {
   return sizeof(T);
 }
 
+constexpr size_t serial_size(char const&) {
+  return 1;
+}
+
+template<size_t N>
+constexpr size_t serial_size(char const(&) [N]) {
+  return N;
+}
+
+template<typename T, size_t N>
+constexpr size_t serial_size(std::array<T, N> const*) {
+  if constexpr(std::is_same_v<T, char>) {
+    return N;
+  } else {
+    return N * serial_size((T const*) nullptr);
+  }
+}
+
+template <size_t N>
+constexpr size_t serial_size(std::bitset<N> const*) {
+  return (N + 7) / 8; // round up to the nearest number of bytes // == sizeof(val) ?
+}
+
 template<typename T>
-constexpr size_t serial_size(std::complex<T> const&) {
-  return 2 * sizeof(T);
+  requires (not std::is_pointer_v<T>)
+constexpr size_t serial_size(T const& val) {
+  return serial_size(&val);
+}
+
+template <typename T>
+constexpr size_t serial_size(std::vector<T> const& val) {
+  size_t num_bytes = 1; // 1 byte for holding the size
+  for (auto& item : val) {
+    num_bytes += serial_size(item);
+  }
+  return num_bytes;
 }
 
 inline size_t serial_size(std::string const& str) {
@@ -40,29 +77,6 @@ constexpr size_t serial_size(std::string_view const& val) {
   return val.size();
 }
 
-template<size_t N>
-constexpr size_t serial_size(char const(&) [N]) {
-  return N;
-}
-
-template<typename T, size_t N>
-constexpr size_t serial_size(std::array<T, N> const& val) { 
-  size_t num_bytes = 0;
-  for (auto& item : val) {
-    num_bytes += serial_size(item);
-  }
-  return num_bytes;
-}
-
-template <typename T>
-constexpr size_t serial_size(std::vector<T> const& val) {
-  size_t num_bytes = 1; // 1 byte for holding the size
-  for (auto& item : val) {
-    num_bytes += serial_size(item);
-  }
-  return num_bytes;
-}
-
 // Note: unlike for std::vector, serialization of a span
 // doesn't keep track of the size - rationale is that you can't deserialize a span
 // as it's a view type, so only raw contents gets serialized.
@@ -75,43 +89,27 @@ constexpr size_t serial_size(std::span<T> const& val) {
   return num_bytes;
 }
 
-template <size_t N>
-constexpr size_t serial_size(std::bitset<N> const& /*val*/) {
-  return (N + 7) / 8; // round up to the nearest number of bytes // == sizeof(val) ?
-}
-
 /**
  *  arithmetic types
  */
 template<typename T>
-requires std::is_arithmetic_v<T>
+  requires (std::is_trivially_copyable_v<T> and not std::is_enum_v<T>)
 constexpr size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, T& val) {
   size_t num_bytes = serial_size(val);
+#if defined(__GNUC__) // || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wclass-memaccess"
+#endif
   std::memcpy(&val, buffer, num_bytes);
+#if defined(__GNUC__) // || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
   return num_bytes;
 }
 
 template <typename T>
-requires std::is_arithmetic_v<T>
+  requires (std::is_trivially_copyable_v<T> and not std::is_enum_v<T>)
 constexpr size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, T const& val) {
-  size_t num_bytes = serial_size(val);
-  std::memcpy(buffer, &val, num_bytes);
-  return num_bytes;
-}
-
-
-template<typename T>
-requires std::is_arithmetic_v<T>
-constexpr size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, std::complex<T>& val) {
-  size_t num_bytes = serial_size(val);
-  // see standard: that reinterpret_cast is legit for std::complex and is needed to silence a gcc warning ([-Werror=class-memaccess)
-  std::memcpy(reinterpret_cast<T(&)[2]>(val), buffer, num_bytes);
-  return num_bytes;
-}
-
-template <typename T>
-requires std::is_arithmetic_v<T>
-constexpr size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, std::complex<T> const& val) {
   size_t num_bytes = serial_size(val);
   std::memcpy(buffer, &val, num_bytes);
   return num_bytes;
@@ -134,7 +132,8 @@ constexpr size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, bool const&
  * enum
  */
 template <typename T>
-constexpr size_t from_bytes(std::byte const* buffer, size_t buffer_size, T& val) requires std::is_enum_v<T> {
+  requires std::is_enum_v<T>
+constexpr size_t from_bytes(std::byte const* buffer, size_t buffer_size, T& val) {
   constexpr size_t num_bytes = serial_size(T{});
   if constexpr (num_bytes == 1) {
     val = static_cast<T>(std::to_integer<std::underlying_type_t<T>>(buffer[0]));
@@ -147,7 +146,8 @@ constexpr size_t from_bytes(std::byte const* buffer, size_t buffer_size, T& val)
 }
 
 template <typename T>
-constexpr size_t to_bytes(std::byte* buffer, size_t buffer_size, T const& val) requires std::is_enum_v<T> {
+  requires std::is_enum_v<T>
+constexpr size_t to_bytes(std::byte* buffer, size_t buffer_size, T const& val) {
   constexpr size_t num_bytes = serial_size(T{});
   if constexpr (num_bytes == 1) {
     buffer[0] = static_cast<std::byte>(val);
@@ -224,13 +224,15 @@ size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, std::bitset<N> const&
  * C-style array
  */
 template <typename T, size_t N>
-constexpr size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, T (&val)[N]) requires std::is_arithmetic_v<T> {
+  requires std::is_arithmetic_v<T>
+constexpr size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, T (&val)[N]) {
   std::memcpy(val, buffer, N);
   return 1;
 }
 
 template <typename T, size_t N>
-constexpr size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, T const (&val) [N]) requires std::is_arithmetic_v<T> {
+  requires std::is_arithmetic_v<T>
+constexpr size_t to_bytes(std::byte* buffer, size_t /*buffer_size*/, T const (&val) [N]) {
   std::memcpy(buffer, val, N);
   return N;
 }

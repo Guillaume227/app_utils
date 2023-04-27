@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <app_utils/serial_utils.hpp>
+#include <complex>
 
 TEST_CASE("string_to_from_bytes", "[serial]") {
   using namespace app_utils::serial;

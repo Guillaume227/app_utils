@@ -319,14 +319,14 @@ struct Enumatic {
     consteval size_t size(EnumType) { return enumatic::details::num_comma_separated_items(#__VA_ARGS__); }         \
     constexpr std::string_view to_string(EnumType arg) { return Enumatic<EnumType>::to_string(arg); }              \
     constexpr bool from_string(EnumType& arg, std::string_view valStr) {                                           \
-      return Enumatic<EnumType>::from_string(arg, valStr);                                                                \
+      return Enumatic<EnumType>::from_string(arg, valStr);                                                         \
     }                                                                                                              \
     constexpr size_t get_index(EnumType arg) { return Enumatic<EnumType>::get_index(arg); }                        \
     constexpr bool is_enumatic_type(EnumType*) noexcept { return true; }                                           \
                                                                                                                    \
     consteval bool allow_conversion_from_underlying(EnumType) { return allowFromIdx; }                             \
                                                                                                                    \
-    constexpr size_t serial_size(EnumType) {                                                                       \
+    constexpr size_t serial_size(EnumType const*) {                                                                \
       if constexpr (Enumatic<EnumType>::min_value() < 0 or 255 < Enumatic<EnumType>::max_value()) {                \
         return sizeof(EnumType);                                                                                   \
       } else {                                                                                                     \

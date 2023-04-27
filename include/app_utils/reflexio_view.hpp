@@ -167,6 +167,10 @@ public:
     this->exclude_mask = obj.exclude_mask;
     return *this;
   }
+
+  constexpr friend size_t serial_size(reflexio_fat_view const& view) {
+    return serial_size(static_cast<reflexio_view<ReflexioStruct> const&>(view));
+  }
 };
 
 } // namespace reflexio

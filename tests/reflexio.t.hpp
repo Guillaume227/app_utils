@@ -6,13 +6,16 @@
 #include "CustomFloat.hpp"
 
 #if defined(_MSC_VER) && _MSC_VER >= 1929
+// meant to add support for std::string and std::vector reflexio members
+// but currently a requirement is for member types to be standard layout
+// (i.e. serialization size depends on the type only, not on the instance).
 //#define CONSTEXPR_STRING_AND_VECTOR
 #endif
 
 ENUMATIC_DEFINE(TestEnum, EnumVal1, EnumVal2);
 
 static_assert(sizeof(TestEnum) == 4);
-static_assert(serial_size(TestEnum{}) == 1);
+static_assert(serial_size((TestEnum*) nullptr) == 1);
 
 REFLEXIO_STRUCT_DEFINE(SingleVarStruct,
   REFLEXIO_MEMBER_VAR_DEFINE(int, var1, 14, "var1 doc");

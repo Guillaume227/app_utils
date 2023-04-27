@@ -326,31 +326,37 @@ struct ReflexioStructBase {
 
   [[nodiscard]]
   friend constexpr size_t serial_size(
-          ReflexioStruct const& val) {
-    return val.get_serial_size();
+          ReflexioStruct const*) {
+    return ReflexioStruct::get_serial_size();
   }
 
   [[nodiscard]]
   friend constexpr size_t serial_size(
-          ReflexioStruct const& val,
-          Mask const& excludeMask) {
-    return val.get_serial_size(excludeMask);
+          ReflexioStruct const&) {
+    return ReflexioStruct::get_serial_size();
   }
 
   [[nodiscard]]
-  constexpr size_t get_serial_size(Mask const& excludeMask) const {
+  friend constexpr size_t serial_size(
+          ReflexioStruct const&,
+          Mask const& excludeMask) {
+    return ReflexioStruct::get_serial_size(excludeMask);
+  }
+
+  [[nodiscard]]
+  static constexpr size_t get_serial_size(Mask const& excludeMask) {
     size_t res = 0;
     for (auto& descriptor: ReflexioStruct::get_member_descriptors(excludeMask)) {
-      res += descriptor.get_serial_size(this);
+      res += descriptor.get_serial_size();
     }
     return res;
   }
 
   [[nodiscard]]
-  constexpr size_t get_serial_size() const {
+  static constexpr size_t get_serial_size() {
     size_t res = 0;
     for (auto& descriptor: ReflexioStruct::get_member_descriptors()) {
-      res += descriptor->get_serial_size(this);
+      res += descriptor->get_serial_size();
     }
     return res;
   }
