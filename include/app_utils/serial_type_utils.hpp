@@ -96,12 +96,12 @@ template<typename T>
   requires (std::is_trivially_copyable_v<T> and not std::is_enum_v<T>)
 constexpr size_t from_bytes(std::byte const* buffer, size_t /*buffer_size*/, T& val) {
   size_t num_bytes = serial_size(val);
-#if defined(__GNUC__) // || defined(__clang__)
+#if defined(__GNUC__)  && !defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wclass-memaccess"
 #endif
   std::memcpy(&val, buffer, num_bytes);
-#if defined(__GNUC__) // || defined(__clang__)
+#if defined(__GNUC__)  && !defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
   return num_bytes;
