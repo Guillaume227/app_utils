@@ -111,9 +111,27 @@ constexpr std::array<enum_value_detail_t, N> parse_enum_definition(std::string_v
         } else if (c == '=') {
           token_type = TokenType::value;
         }
+
         left_index = i + 1;
         break;
 
+        // technically '_' char is allowed in an enum name.
+        // However, we strip it when it's used to escape enum values starting with numerical digits
+        // so that e.g. _123 has string value 123 (prettier).
+      case '0':
+      case '1':
+      case '2':
+      case '3':
+      case '4':
+      case '5':
+      case '6':
+      case '7':
+      case '8':
+      case '9':
+        if (num_token_chars == 1 and enum_vals_as_str[i-1] == '_') {
+          left_index = i;
+          break;
+        } // fall-through
       default:
         num_token_chars++;
         break;

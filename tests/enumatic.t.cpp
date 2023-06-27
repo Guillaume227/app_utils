@@ -8,21 +8,26 @@
 
 namespace {
 ENUMATIC_DEFINE(TestEnum, valneg = -1, val1 = 1, val2 = 2, val3, val4 = -3, val5,);
+
+ENUMATIC_DEFINE(TestEnumDigits, _1 = 1, _2 = 2, _3, _3_1, _4_, _A_1, A_2, A_3_,);
 }
 static_assert(std::is_standard_layout<TestEnum>());
 static_assert(std::is_enum<TestEnum>());
 
-TEST_CASE("parse_enum", "[enumatic]") { 
-  auto enum_details = enumatic::details::parse_enum_definition<4>("valneg [[deprecated]]=  -1, val1 = 1, val2 [[deprecated]], val3  , "); 
+TEST_CASE("parse_enum", "[enumatic]") {
+
+  auto enum_details = enumatic::details::parse_enum_definition<5>("valneg [[deprecated]]=  -1, val1 = 1, val2 [[deprecated]], val3  , _44=44");
   REQUIRE(enum_details[0].value_name == "valneg");
   REQUIRE(enum_details[1].value_name == "val1");
   REQUIRE(enum_details[2].value_name == "val2");
   REQUIRE(enum_details[3].value_name == "val3");
+  REQUIRE(enum_details[4].value_name == "44");
 
   REQUIRE(enum_details[0].int_value == -1);
-  REQUIRE(enum_details[1].int_value == 1);  
+  REQUIRE(enum_details[1].int_value == 1);
   REQUIRE(enum_details[2].int_value == 2);
   REQUIRE(enum_details[3].int_value == 3);
+  REQUIRE(enum_details[4].int_value == 44);
 }
 
 TEST_CASE("enumatic_static_cast", "[enumatic]") {
@@ -95,6 +100,23 @@ TEST_CASE("enumatic_to_from_string", "[enumatic]") {
   REQUIRE(to_string(TestEnum::val1) == "val1");
   REQUIRE(to_string(TestEnum::val2) == "val2");
   REQUIRE(to_string(TestEnum::val5) == "val5");
+
+  {
+    auto val = Enumatic<TestEnumDigits>::from_string("TestEnumDigits.1");
+    REQUIRE(val == TestEnumDigits::_1);
+  }
+  {
+    auto val = Enumatic<TestEnumDigits>::from_string("TestEnumDigits::1");
+    REQUIRE(val == TestEnumDigits::_1);
+  }
+  {
+    auto val = Enumatic<TestEnumDigits>::from_string("TestEnumDigits::3_1");
+    REQUIRE(val == TestEnumDigits::_3_1);
+  }
+  {
+    auto val = Enumatic<TestEnumDigits>::from_string("TestEnumDigits::_A_1");
+    REQUIRE(val == TestEnumDigits::_A_1);
+  }
 }
 namespace {
 ENUMATIC_DEFINE(ShortEnum, val1 = 0, val2);
@@ -138,4 +160,11 @@ TEST_CASE("enumatic_to_buffer", "[enumatic]") {
 
 TEST_CASE("enumatic_to_stream", "[enumatic]") {
   REQUIRE(app_utils::make_string(TestEnum::val1) == "val1");
+  REQUIRE(app_utils::make_string(TestEnumDigits::_1) == "1");
+  REQUIRE(app_utils::make_string(TestEnumDigits::_3) == "3");
+  REQUIRE(app_utils::make_string(TestEnumDigits::_4_) == "4_");
+  REQUIRE(app_utils::make_string(TestEnumDigits::_3_1) == "3_1");
+  REQUIRE(app_utils::make_string(TestEnumDigits::_A_1) == "_A_1");
+  REQUIRE(app_utils::make_string(TestEnumDigits::A_2) == "A_2");
+  REQUIRE(app_utils::make_string(TestEnumDigits::A_3_) == "A_3_");
 }
