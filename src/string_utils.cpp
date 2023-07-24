@@ -109,7 +109,7 @@ std::vector<std::string_view> split(char const delim,
                                     std::string_view const str, 
                                     bool const stripWhiteSpace,
                                     int const nSplits) {
-  if (str.empty()) return {};
+  if (str.empty()) return {str};
 
   if (nSplits == 0) return {stripWhiteSpace ? strip(str) : str};
 

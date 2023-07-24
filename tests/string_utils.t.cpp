@@ -7,6 +7,12 @@ using namespace app_utils::strutils;
 
 TEST_CASE("strutils::split", "[string_utils]") {
   {
+    std::string_view valStr = " Bonjour ";
+    auto res = split(',', valStr);
+    REQUIRE(res.size() == 1);
+    REQUIRE(res[0] == "Bonjour");
+  }
+  {
     std::string_view valStr = " Bonjour, tristesse ";
     auto res = split(',', valStr);
     REQUIRE(res.size() == 2);
