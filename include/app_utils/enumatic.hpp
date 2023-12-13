@@ -4,8 +4,8 @@
 #include <span>
 #include <string_view>
 
-#include <app_utils/rtti_check.hpp>
-#include <app_utils/cond_check.hpp>
+#include "rtti_check.hpp"
+#include "cond_check.hpp"
 
 namespace enumatic {
 

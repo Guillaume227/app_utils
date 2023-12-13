@@ -1,6 +1,6 @@
 #pragma once
 
-#include <app_utils/type_name.hpp>
+#include "type_name.hpp"
 #include <cstddef>
 #include <cstdio>
 #include <iostream>

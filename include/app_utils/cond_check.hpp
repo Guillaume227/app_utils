@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include <app_utils/rtti_check.hpp>
+#include "rtti_check.hpp"
 
 #ifdef RTTI_ENABLED
 
@@ -8,7 +8,7 @@
 #include <string>
 #include <type_traits>
 #include <vector>
-#include <app_utils/stream_utils.hpp>
+#include "stream_utils.hpp"
 
 namespace app_utils {
 

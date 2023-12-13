@@ -1,7 +1,7 @@
 #pragma once
 
-#include <app_utils/pybind_utils.hpp>
-#include <app_utils/enumatic.hpp>
+#include "pybind_utils.hpp"
+#include "enumatic.hpp"
 
 namespace app_utils::pybind {
 template <typename EnumaticT>

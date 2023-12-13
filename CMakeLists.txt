@@ -19,6 +19,7 @@ add_library(app_utils STATIC ${HEADER_FILES} ${SOURCE_FILES})
 set_target_properties(app_utils PROPERTIES CXX_STANDARD 20)
 
 target_include_directories(app_utils PUBLIC ./include)
+target_include_directories(app_utils PRIVATE ./include/app_utils)
 
 # All users of this library will need at least C++20
 target_compile_features(app_utils PUBLIC cxx_std_20)

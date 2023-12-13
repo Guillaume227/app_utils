@@ -9,8 +9,8 @@
 #include <pybind11/stl_bind.h>
 #include <pybind11/numpy.h>
 
-#include <app_utils/stream_utils.hpp>
-#include <app_utils/string_utils.hpp>
+#include "stream_utils.hpp"
+#include "string_utils.hpp"
 
 namespace app_utils::pybind {
 

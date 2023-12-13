@@ -2,7 +2,7 @@
 
 #include <array>
 #include <cstddef>
-#include <app_utils/cond_check.hpp>
+#include "cond_check.hpp"
 
 namespace app_utils {
 

@@ -4,8 +4,8 @@
 #include <bitset>
 #include <cstddef> // std::byte
 #include <utility>
-#include <app_utils/serial_utils.hpp>
-#include <app_utils/cond_check.hpp>
+#include "serial_utils.hpp"
+#include "cond_check.hpp"
 #include "reflexio_iterator.hpp"
 
 namespace reflexio {

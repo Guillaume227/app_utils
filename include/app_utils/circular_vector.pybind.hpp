@@ -6,9 +6,9 @@
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
 
-#include <app_utils/circular_vector.hpp>
-#include <app_utils/stream_utils.hpp>
-#include <app_utils/string_utils.hpp>
+#include "circular_vector.hpp"
+#include "stream_utils.hpp"
+#include "string_utils.hpp"
 
 namespace app_utils::pybind {
 

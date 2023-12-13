@@ -8,8 +8,8 @@
 #include <vector>
 #include <bitset>
 #include <complex>
-#include <app_utils/cond_check.hpp>
-#include <app_utils/type_name.hpp>
+#include "cond_check.hpp"
+#include "type_name.hpp"
 
 namespace app_utils {
 

@@ -21,14 +21,14 @@
 #include <string_view>
 #include <typeinfo>
 #include <sstream>
-#include <app_utils/string_utils.hpp>
-#include <app_utils/yaml_utils.hpp>
-#include <app_utils/cond_check.hpp>
+#include "string_utils.hpp"
+#include "yaml_utils.hpp"
+#include "cond_check.hpp"
 #include "reflexio_traits.hpp"
 #else
 #define checkCond(...)
 #endif
-#include <app_utils/serial_utils.hpp>
+#include "serial_utils.hpp"
 
 namespace reflexio {
 
