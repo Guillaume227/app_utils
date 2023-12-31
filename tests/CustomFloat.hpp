@@ -65,4 +65,8 @@ struct CustomFloat {
   friend constexpr size_t to_bytes(std::byte* buffer, size_t buffer_size, CustomFloat const& val) {
     return app_utils::serial::to_bytes(buffer, buffer_size, val.m_arg);
   }
+
+  friend bool isnan(CustomFloat const& val) {
+    return std::isnan(val.m_arg);
+  }
 };

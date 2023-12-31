@@ -1,5 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
-
+#include <cmath>
 #include "reflexio.t.hpp"
 
 #include <app_utils/cond_check.hpp>
@@ -30,6 +30,14 @@ REFLEXIO_STRUCT_DEFINE(MyStruct,
 
 static_assert(std::is_standard_layout<MyStruct>());
 static_assert(std::is_trivially_copyable<MyStruct>());
+
+static_assert(reflexio::details::has_nan_values<float>());
+static_assert(not reflexio::details::has_nan_values<int>());
+static_assert(not reflexio::details::has_nan_values<std::string>());
+static_assert(not reflexio::details::has_nan_values<TestEnum>());
+static_assert(not reflexio::details::has_nan_values<bool>());
+static_assert(reflexio::details::has_nan_values<CustomFloat<float>>());
+static_assert(reflexio::details::has_nan_values<CustomFloat<double>>());
 
 TEST_CASE("reflexio_default_values", "[reflexio]") {
   TrivialStruct myStruct;

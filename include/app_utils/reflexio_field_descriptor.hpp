@@ -32,7 +32,18 @@
 
 namespace reflexio {
 
-typedef void (*voidfunc)(void);
+using voidfunc = void (*)(void);
+
+#ifndef REFLEXIO_NO_COMPARISON_OPERATORS
+namespace details {
+template<class F, class = int>
+struct has_nan_values : std::false_type {};
+
+using std::isnan;
+template<class F>
+struct has_nan_values<F, std::enable_if_t<not std::is_integral_v<F> and std::is_same_v<bool, decltype(isnan(std::declval<F>()))>, int>> : std::true_type {};
+}
+#endif
 
 struct member_descriptor_t {
 #ifndef REFLEXIO_MINIMAL_FEATURES
@@ -82,6 +93,7 @@ struct member_descriptor_t {
   constexpr virtual void const* get_min_value_void_ptr() const = 0;
   constexpr virtual void const* get_max_value_void_ptr() const = 0;
 
+  [[nodiscard]]
   std::span<std::string_view const> get_values_str() const {
     if (auto* func_ptr = get_values_list_void_ptr()) {
       return (reinterpret_cast<std::span<std::string_view const> (*)()>(func_ptr))();
@@ -258,7 +270,16 @@ struct member_descriptor_impl_t final : public member_descriptor_t {
 #ifndef REFLEXIO_NO_COMPARISON_OPERATORS
   [[nodiscard]]
   constexpr bool values_differ(void const* host1, void const* host2) const final {
-    return get_value(host1) != get_value(host2);
+    auto val1 = get_value(host1);
+    auto val2 = get_value(host2);
+    // consider two nan values are equal
+    if constexpr (details::has_nan_values<MemberType>{}) {
+      using std::isnan;
+      if (isnan(val1)) {
+        return not isnan(val2);
+      }
+    }
+    return val1 != val2;
   }
 #endif
   // returns number of bytes written
